@@ -130,7 +130,7 @@ const commands = [
 ];
 
 // ==========================================
-// REGISTER COMMANDS
+// REGISTER COMMANDS GLOBALLY
 // ==========================================
 
 const rest = new REST({
@@ -142,13 +142,12 @@ const rest = new REST({
     try {
 
         console.log(
-            `🔄 Registering ${commands.length} slash commands...`
+            `🔄 Registering ${commands.length} global slash commands...`
         );
 
         await rest.put(
-            Routes.applicationGuildCommands(
-                process.env.CLIENT_ID,
-                process.env.GUILD_ID
+            Routes.applicationCommands(
+                process.env.CLIENT_ID
             ),
             {
                 body: commands,
@@ -156,7 +155,7 @@ const rest = new REST({
         );
 
         console.log(
-            "✅ Slash commands registered successfully!"
+            "✅ Global slash commands registered successfully!"
         );
 
     } catch (error) {
