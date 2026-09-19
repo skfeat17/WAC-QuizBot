@@ -8,6 +8,17 @@ const {
     getQuestion,
 } = require("./questionManager");
 
+
+/*
+|--------------------------------------------------------------------------
+| Settings
+|--------------------------------------------------------------------------
+*/
+
+const BATCH_SIZE = 50;
+const MAX_OUTPUT_TOKENS = 12000;
+
+
 /*
 |--------------------------------------------------------------------------
 | Gemini
@@ -23,29 +34,141 @@ const ai = new GoogleGenAI({
 |--------------------------------------------------------------------------
 | Quiz validation schema
 |--------------------------------------------------------------------------
+|
+| Gemini generates the data.
+| Zod is responsible for enforcing our application rules.
+|
 */
 
-const quizSchema = z.object({
-    questions: z.array(
-        z.object({
-            question: z.string().min(1),
+const questionSchema = z.object({
 
-            factKey: z.string().min(1),
+    question: z
+        .string()
+        .min(1),
 
-            options: z
-                .array(z.string().min(1))
-                .length(4),
+    factKey: z
+        .string()
+        .min(1),
 
-            correctAnswer: z
-                .number()
-                .int()
-                .min(0)
-                .max(3),
+    options: z
+        .array(
+            z.string().min(1)
+        )
+        .length(4),
 
-            explanation: z.string().min(1),
-        })
-    ),
+    correctAnswer: z
+        .number()
+        .int()
+        .min(0)
+        .max(3),
+
+    explanation: z
+        .string()
+        .min(1),
 });
+
+
+const quizSchema = z.object({
+
+    questions: z
+        .array(questionSchema)
+        .length(BATCH_SIZE),
+});
+
+
+/*
+|--------------------------------------------------------------------------
+| Normalize text
+|--------------------------------------------------------------------------
+*/
+
+function normalizeText(value) {
+
+    return String(value)
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, " ");
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| Normalize fact key
+|--------------------------------------------------------------------------
+*/
+
+function normalizeFactKey(value) {
+
+    return String(value)
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, "_");
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| Validate a question
+|--------------------------------------------------------------------------
+*/
+
+function validateQuestion(question) {
+
+    if (!question.question.trim()) {
+        throw new Error(
+            "Question text cannot be empty."
+        );
+    }
+
+    if (!question.factKey.trim()) {
+        throw new Error(
+            "factKey cannot be empty."
+        );
+    }
+
+    if (question.options.length !== 4) {
+        throw new Error(
+            `Question "${question.question}" does not have exactly 4 options.`
+        );
+    }
+
+    if (
+        question.correctAnswer < 0 ||
+        question.correctAnswer > 3
+    ) {
+        throw new Error(
+            `Invalid correctAnswer for "${question.question}".`
+        );
+    }
+
+    /*
+     * Make sure the four options are actually different.
+     */
+    const normalizedOptions =
+        question.options.map(normalizeText);
+
+    const uniqueOptions =
+        new Set(normalizedOptions);
+
+    if (
+        uniqueOptions.size !== 4
+    ) {
+        throw new Error(
+            `Duplicate options found in "${question.question}".`
+        );
+    }
+
+    /*
+     * Keep explanations reasonably short.
+     */
+    if (
+        question.explanation.length > 500
+    ) {
+        throw new Error(
+            `Explanation is too long for "${question.question}".`
+        );
+    }
+}
 
 
 /*
@@ -53,8 +176,7 @@ const quizSchema = z.object({
 | Generate a batch of questions
 |--------------------------------------------------------------------------
 |
-| Gemini is called ONLY when Redis has no suitable
-| unused question.
+| Gemini is called ONLY when Redis has no suitable question.
 |
 */
 
@@ -63,20 +185,28 @@ async function generateQuestionBatch(
     topic,
     difficulty
 ) {
+
     console.log(
-        `🤖 Generating 20 questions: ${region} / ${topic} / ${difficulty}`
+        `🤖 Generating ${BATCH_SIZE} questions: ${region} / ${topic} / ${difficulty}`
     );
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Prompt
+    |--------------------------------------------------------------------------
+    */
+
     const prompt = `
-Generate exactly 20 unique world-trivia multiple-choice questions.
+Generate exactly ${BATCH_SIZE} unique world-trivia multiple-choice questions.
 
 Region: ${region}
 Topic: ${topic}
 Difficulty: ${difficulty}
 
-Rules:
+RULES:
 
-- Generate exactly 20 questions.
+- Generate exactly ${BATCH_SIZE} questions.
 - Every question must have exactly 4 plausible options.
 - Exactly 1 option must be correct.
 - correctAnswer must be the zero-based index of the correct option.
@@ -90,157 +220,283 @@ Rules:
 - Stay strictly within the requested region.
 - Each factKey must identify the unique underlying fact.
 - factKey must use lowercase_snake_case.
-- Make all 20 questions substantially different.
+- All ${BATCH_SIZE} questions must be substantially different.
 - Avoid uncertain, disputed, or misleading facts.
 - Avoid trick questions.
 - Avoid questions where multiple options could reasonably be correct.
+- Do not reuse the same wording across questions.
+- Do not create multiple questions whose answers are based on the same fact.
+- Make the questions varied within the requested topic.
+- Do not add numbering such as "1.", "2.", etc. to the question text.
 
-Return only JSON matching the requested schema.
+IMPORTANT:
+
+Return exactly ${BATCH_SIZE} questions.
+
+Return ONLY the JSON object matching the provided schema.
 `;
 
+
     try {
-        const response = await ai.models.generateContent({
-            model: "gemini-3.1-flash-lite",
 
-            contents: prompt,
+        /*
+        |--------------------------------------------------------------------------
+        | Gemini request
+        |--------------------------------------------------------------------------
+        */
 
-            config: {
-                responseMimeType: "application/json",
+        const response =
+            await ai.models.generateContent({
 
-                responseSchema: {
-                    type: "object",
+                model:
+                    "gemini-3.1-flash-lite",
 
-                    properties: {
-                        questions: {
-                            type: "array",
+                contents:
+                    prompt,
 
-                            minItems: 20,
-                            maxItems: 20,
+                config: {
 
-                            items: {
-                                type: "object",
+                    responseMimeType:
+                        "application/json",
 
-                                properties: {
-                                    question: {
-                                        type: "string",
-                                    },
+                    /*
+                     * Keep the Gemini schema simple.
+                     *
+                     * We enforce the exact 50-question
+                     * requirement using Zod below.
+                     */
+                    responseSchema: {
 
-                                    factKey: {
-                                        type: "string",
-                                    },
+                        type: "object",
 
-                                    options: {
-                                        type: "array",
+                        properties: {
 
-                                        minItems: 4,
-                                        maxItems: 4,
+                            questions: {
 
-                                        items: {
+                                type: "array",
+
+                                items: {
+
+                                    type: "object",
+
+                                    properties: {
+
+                                        question: {
+                                            type: "string",
+                                        },
+
+                                        factKey: {
+                                            type: "string",
+                                        },
+
+                                        options: {
+
+                                            type: "array",
+
+                                            items: {
+                                                type: "string",
+                                            },
+                                        },
+
+                                        correctAnswer: {
+                                            type: "integer",
+                                        },
+
+                                        explanation: {
                                             type: "string",
                                         },
                                     },
 
-                                    correctAnswer: {
-                                        type: "integer",
-                                        minimum: 0,
-                                        maximum: 3,
-                                    },
+                                    required: [
+                                        "question",
+                                        "factKey",
+                                        "options",
+                                        "correctAnswer",
+                                        "explanation",
+                                    ],
 
-                                    explanation: {
-                                        type: "string",
-                                    },
+                                    additionalProperties:
+                                        false,
                                 },
-
-                                required: [
-                                    "question",
-                                    "factKey",
-                                    "options",
-                                    "correctAnswer",
-                                    "explanation",
-                                ],
-
-                                additionalProperties: false,
                             },
                         },
+
+                        required: [
+                            "questions",
+                        ],
+
+                        additionalProperties:
+                            false,
                     },
 
-                    required: ["questions"],
-
-                    additionalProperties: false,
+                    maxOutputTokens:
+                        MAX_OUTPUT_TOKENS,
                 },
+            });
 
-                /*
-                 * 20 questions need more output than
-                 * a single-question generation.
-                 */
-                maxOutputTokens: 5000,
-            },
-        });
 
         /*
-         * Make sure Gemini actually returned something.
-         */
-        if (!response.text) {
+        |--------------------------------------------------------------------------
+        | Check response
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            !response ||
+            !response.text
+        ) {
+
             throw new Error(
                 "Gemini returned an empty response."
             );
         }
 
+
         /*
-         * Parse JSON.
-         */
+        |--------------------------------------------------------------------------
+        | Parse JSON
+        |--------------------------------------------------------------------------
+        */
+
         let parsed;
 
         try {
-            parsed = JSON.parse(response.text);
+
+            parsed =
+                JSON.parse(
+                    response.text
+                );
+
         } catch (error) {
+
+            console.error(
+                "❌ Gemini raw response:",
+                response.text
+            );
+
             throw new Error(
                 "Gemini returned invalid JSON."
             );
         }
 
-        /*
-         * Validate Gemini output with Zod.
-         */
-        const result = quizSchema.parse(parsed);
 
         /*
-         * Prevent duplicates inside this batch.
-         */
-        const seenQuestions = new Set();
-        const seenFacts = new Set();
+        |--------------------------------------------------------------------------
+        | Validate entire batch with Zod
+        |--------------------------------------------------------------------------
+        |
+        | This guarantees exactly 50 questions.
+        |
+        */
 
-        let saved = 0;
+        const result =
+            quizSchema.safeParse(
+                parsed
+            );
 
-        for (const question of result.questions) {
+
+        if (!result.success) {
+
+            console.error(
+                "❌ Gemini question validation failed:"
+            );
+
+            console.error(
+                result.error.issues
+            );
+
+            throw new Error(
+                `Gemini did not return exactly ${BATCH_SIZE} valid questions.`
+            );
+        }
+
+
+        const questions =
+            result.data.questions;
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Validate individual questions
+        |--------------------------------------------------------------------------
+        */
+
+        for (
+            const question
+            of questions
+        ) {
+
+            validateQuestion(
+                question
+            );
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Detect duplicates inside this batch
+        |--------------------------------------------------------------------------
+        */
+
+        const seenQuestions =
+            new Set();
+
+        const seenFacts =
+            new Set();
+
+        const uniqueQuestions =
+            [];
+
+
+        for (
+            const question
+            of questions
+        ) {
+
             const normalizedQuestion =
-                question.question
-                    .toLowerCase()
-                    .trim()
-                    .replace(/\s+/g, " ");
+                normalizeText(
+                    question.question
+                );
 
             const normalizedFact =
-                question.factKey
-                    .toLowerCase()
-                    .trim();
+                normalizeFactKey(
+                    question.factKey
+                );
+
 
             /*
-             * Duplicate generated in the same batch.
+             * Duplicate question
              */
             if (
                 seenQuestions.has(
                     normalizedQuestion
-                ) ||
-                seenFacts.has(
-                    normalizedFact
                 )
             ) {
-                console.log(
-                    `⚠️ Batch duplicate skipped: ${question.factKey}`
+
+                console.warn(
+                    `⚠️ Duplicate question detected: ${question.question}`
                 );
 
                 continue;
             }
+
+
+            /*
+             * Duplicate underlying fact
+             */
+            if (
+                seenFacts.has(
+                    normalizedFact
+                )
+            ) {
+
+                console.warn(
+                    `⚠️ Duplicate fact detected: ${question.factKey}`
+                );
+
+                continue;
+            }
+
 
             seenQuestions.add(
                 normalizedQuestion
@@ -250,44 +506,111 @@ Return only JSON matching the requested schema.
                 normalizedFact
             );
 
-            /*
-             * Save to Redis.
-             *
-             * addQuestion() will also check whether
-             * this question/fact already exists in Redis.
-             */
-            const added = await addQuestion({
-                question: question.question,
+            uniqueQuestions.push(
+                question
+            );
+        }
 
-                factKey: question.factKey,
 
-                options: question.options,
+        /*
+        |--------------------------------------------------------------------------
+        | We don't want to save a broken batch.
+        |--------------------------------------------------------------------------
+        |
+        | If Gemini technically returned 50 but our duplicate
+        | protection reduces it below 50, reject the batch.
+        |
+        */
 
-                correctAnswer:
-                    question.correctAnswer,
+        if (
+            uniqueQuestions.length !==
+            BATCH_SIZE
+        ) {
 
-                explanation:
-                    question.explanation,
+            throw new Error(
+                `Gemini generated ${BATCH_SIZE} questions, but only ${uniqueQuestions.length} were unique. Batch rejected.`
+            );
+        }
 
-                region,
 
-                topic,
+        /*
+        |--------------------------------------------------------------------------
+        | Save questions to Redis
+        |--------------------------------------------------------------------------
+        */
 
-                difficulty,
-            });
+        let saved = 0;
 
-            if (added) {
-                saved++;
+
+        for (
+            const question
+            of uniqueQuestions
+        ) {
+
+            try {
+
+                const added =
+                    await addQuestion({
+
+                        question:
+                            question.question,
+
+                        factKey:
+                            question.factKey,
+
+                        options:
+                            question.options,
+
+                        correctAnswer:
+                            question.correctAnswer,
+
+                        explanation:
+                            question.explanation,
+
+                        region,
+
+                        topic,
+
+                        difficulty,
+                    });
+
+
+                if (added) {
+
+                    saved++;
+
+                } else {
+
+                    console.log(
+                        `⚠️ Question already exists: ${question.factKey}`
+                    );
+                }
+
+            } catch (error) {
+
+                console.error(
+                    `❌ Failed to save question "${question.factKey}":`,
+                    error.message
+                );
+
+                /*
+                 * Don't necessarily destroy the whole batch
+                 * because one Redis write failed.
+                 */
             }
         }
 
+
         console.log(
-            `✅ ${saved} new questions saved to Redis`
+            `✅ ${saved}/${BATCH_SIZE} new questions saved to Redis`
         );
+
 
         return saved;
 
+
     } catch (error) {
+
         console.error(
             "❌ Question batch generation failed:",
             error.message
@@ -303,11 +626,11 @@ Return only JSON matching the requested schema.
 | Get a quiz question
 |--------------------------------------------------------------------------
 |
-| 1. Check Redis first.
-| 2. If Redis has a question → use it.
-| 3. If Redis is empty → generate 20 questions.
+| 1. Check Redis.
+| 2. If a suitable question exists → use it.
+| 3. If Redis has nothing suitable → generate 50.
 | 4. Save them to Redis.
-| 5. Take one question from Redis.
+| 5. Retrieve a question.
 |
 */
 
@@ -316,18 +639,43 @@ async function generateQuiz(
     topic,
     difficulty
 ) {
-    /*
-     * FIRST:
-     * Always check Redis.
-     */
 
-    let question = await getQuestion(
-        region,
-        topic,
-        difficulty
-    );
+    /*
+    |--------------------------------------------------------------------------
+    | FIRST: Redis
+    |--------------------------------------------------------------------------
+    */
+
+    let question;
+
+    try {
+
+        question =
+            await getQuestion(
+                region,
+                topic,
+                difficulty
+            );
+
+    } catch (error) {
+
+        console.error(
+            "❌ Failed to read question from Redis:",
+            error.message
+        );
+
+        throw error;
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Redis hit
+    |--------------------------------------------------------------------------
+    */
 
     if (question) {
+
         console.log(
             "⚡ Quiz loaded from Redis"
         );
@@ -337,8 +685,10 @@ async function generateQuiz(
 
 
     /*
-     * Redis has nothing suitable.
-     */
+    |--------------------------------------------------------------------------
+    | Redis miss
+    |--------------------------------------------------------------------------
+    */
 
     console.log(
         "📦 No cached questions found."
@@ -346,11 +696,10 @@ async function generateQuiz(
 
 
     /*
-     * NOW use Gemini.
-     *
-     * Gemini generates a batch of 20,
-     * not just one question.
-     */
+    |--------------------------------------------------------------------------
+    | Generate 50 questions
+    |--------------------------------------------------------------------------
+    */
 
     await generateQuestionBatch(
         region,
@@ -360,33 +709,50 @@ async function generateQuiz(
 
 
     /*
-     * Try Redis again.
-     *
-     * One of the newly generated questions
-     * should now be available.
-     */
+    |--------------------------------------------------------------------------
+    | Try Redis again
+    |--------------------------------------------------------------------------
+    */
 
-    question = await getQuestion(
-        region,
-        topic,
-        difficulty
-    );
+    try {
+
+        question =
+            await getQuestion(
+                region,
+                topic,
+                difficulty
+            );
+
+    } catch (error) {
+
+        console.error(
+            "❌ Failed to retrieve generated question:",
+            error.message
+        );
+
+        throw error;
+    }
 
 
     /*
-     * Safety check.
-     */
+    |--------------------------------------------------------------------------
+    | Safety check
+    |--------------------------------------------------------------------------
+    */
 
     if (!question) {
+
         throw new Error(
-            "No usable quiz question was generated."
+            "No usable quiz question was available after generating a new batch."
         );
     }
 
 
     /*
-     * Return the question to index.js.
-     */
+    |--------------------------------------------------------------------------
+    | Return question
+    |--------------------------------------------------------------------------
+    */
 
     return question;
 }

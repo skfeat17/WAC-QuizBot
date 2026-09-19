@@ -42,7 +42,7 @@ const client = new Client({
 
 const activeQuizzes = new Map();
 
-const QUIZ_DURATION = 30_000;
+const QUIZ_DURATION = 15_000;
 const MAX_WINNERS = 5;
 
 // ==============================
