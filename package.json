@@ -4,21 +4,22 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon src/index.js"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "dependencies": {
-    "@google/genai": "^2.23.0",
-    "@upstash/redis": "^1.38.4",
-    "discord.js": "^14.27.0",
-    "dotenv": "^18.0.1",
-    "groq-sdk": "^1.6.0",
-    "zod": "^4.6.5"
-  },
-  "devDependencies": {
-    "nodemon": "^3.1.14"
-  }
+    "dev": "nodemon src/index.js",
+    "start": "node index.js"
+},
+"keywords": [],
+"author": "",
+"license": "ISC",
+"type": "commonjs",
+"dependencies": {
+  "@google/genai": "^2.23.0",
+  "@upstash/redis": "^1.38.4",
+  "discord.js": "^14.27.0",
+  "dotenv": "^18.0.1",
+  "groq-sdk": "^1.6.0",
+  "zod": "^4.6.5"
+},
+"devDependencies": {
+  "nodemon": "^3.1.14"
+}
 }
