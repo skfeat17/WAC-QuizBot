@@ -1171,11 +1171,17 @@ async function handleDailyQuizAnswer(
         // Persist the strike
         await persistActiveDailyQuiz();
 
+        const correctAnswer =
+            Array.isArray(country.answers) && country.answers.length > 0
+                ? country.answers[0]
+                : "the correct answer was not available";
+
         await interaction.editReply({
             content:
                 `❌ **Wrong answer!**\n\n` +
                 `${country.flag} **${country.country}** ` +
                 `has been marked as **~~strike~~** for you.\n\n` +
+                `✅ **Correct answer:** ${correctAnswer}\n\n` +
                 `You cannot attempt this country again.`,
         });
 
@@ -1227,7 +1233,8 @@ async function handleDailyQuizAnswer(
     await updateDailyQuizMessage();
 
     await sendPaymentNotification(
-        winner
+        winner,
+        interaction
     );
 
     // ==========================================
@@ -1323,13 +1330,11 @@ async function updateDailyQuizMessage() {
 // ==========================================
 
 async function sendPaymentNotification(
-    winner
+    winner,
+    interaction
 ) {
 
-    if (
-        !activeDailyQuiz ||
-        !activeDailyQuiz.channel
-    ) {
+    if (!winner || !interaction) {
         return;
     }
 
@@ -1343,7 +1348,10 @@ async function sendPaymentNotification(
 
     try {
 
-        await activeDailyQuiz.channel.send({
+        // Use the fresh modal interaction's webhook instead of
+        // channel.send(). This works with User Install and does
+        // not require normal bot channel permissions.
+        await interaction.followUp({
             content:
                 `💰 **DAILY QUIZ PAYMENT**\n\n` +
 
@@ -1355,6 +1363,13 @@ async function sendPaymentNotification(
                 `💵 Amount: **${PRIZE_AMOUNT} Mora**\n\n` +
 
                 `${mentions} please process the payment.`,
+
+            allowedMentions: {
+                users: [
+                    ...PAYMENT_STAFF,
+                    winner.id,
+                ],
+            },
         });
 
     } catch (error) {
