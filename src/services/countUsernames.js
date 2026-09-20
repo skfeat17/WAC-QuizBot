@@ -427,7 +427,6 @@ async function handleCountUsernamesCopy(
 
     await interaction.reply({
         content:
-            `📋 **Copy List**\n\n` +
             "```text\n" +
             chunks[0] +
             "\n```",
