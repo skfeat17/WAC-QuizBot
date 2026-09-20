@@ -1017,6 +1017,12 @@ async function finishQuiz(
         // ==========================================
 
         await quiz.interaction.followUp({
+            content:
+                winners.length > 0
+                    ? winners
+                        .map(winner => `<@${winner.userId}>`)
+                        .join(" ")
+                    : undefined,
             embeds: [
                 resultsEmbed,
             ],
