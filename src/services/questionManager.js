@@ -97,10 +97,92 @@ function factId(factKey) {
 
 /*
 |--------------------------------------------------------------------------
+| Shuffle question options
+|--------------------------------------------------------------------------
+|
+| IMPORTANT:
+|
+| The question stored in Redis keeps its original options.
+|
+| Every time the question is retrieved:
+|
+|     1. Attach isCorrect to every option
+|     2. Shuffle using Fisher-Yates
+|     3. Find the new correctAnswer index
+|     4. Return the shuffled copy
+|
+| This prevents the correct answer from repeatedly appearing
+| in the same position.
+|
+|--------------------------------------------------------------------------
+*/
+
+function shuffleQuestionOptions(question) {
+
+    if (
+        !question ||
+        !Array.isArray(question.options) ||
+        question.options.length !== 4
+    ) {
+        return question;
+    }
+
+    const shuffled = question.options.map(
+        (option, index) => ({
+            text: option,
+            isCorrect:
+                index === question.correctAnswer,
+        })
+    );
+
+    /*
+     * Fisher-Yates shuffle
+     */
+    for (
+        let i = shuffled.length - 1;
+        i > 0;
+        i--
+    ) {
+        const j =
+            Math.floor(
+                Math.random() * (i + 1)
+            );
+
+        [
+            shuffled[i],
+            shuffled[j],
+        ] = [
+            shuffled[j],
+            shuffled[i],
+        ];
+    }
+
+    const newCorrectAnswer =
+        shuffled.findIndex(
+            option => option.isCorrect
+        );
+
+    return {
+        ...question,
+
+        options:
+            shuffled.map(
+                option => option.text
+            ),
+
+        correctAnswer:
+            newCorrectAnswer,
+    };
+}
+
+
+/*
+|--------------------------------------------------------------------------
 | Save question
 |--------------------------------------------------------------------------
 |
 | Returns:
+|
 | true  → newly saved
 | false → already exists
 |
@@ -117,8 +199,12 @@ async function addQuestion({
     topic,
     difficulty,
 }) {
-    const qId = questionId(question);
-    const fId = factId(factKey);
+
+    const qId =
+        questionId(question);
+
+    const fId =
+        factId(factKey);
 
     const questionKey =
         `${QUESTION_PREFIX}${qId}`;
@@ -126,15 +212,19 @@ async function addQuestion({
     const factKeyName =
         `${FACT_PREFIX}${fId}`;
 
+
     /*
      * Check whether this exact question
      * already exists.
      */
 
     const questionExists =
-        await redis.exists(questionKey);
+        await redis.exists(
+            questionKey
+        );
 
     if (questionExists) {
+
         console.log(
             `⚠️ Question already exists: ${question}`
         );
@@ -149,9 +239,12 @@ async function addQuestion({
      */
 
     const factExists =
-        await redis.exists(factKeyName);
+        await redis.exists(
+            factKeyName
+        );
 
     if (factExists) {
+
         console.log(
             `⚠️ Fact already exists: ${factKey}`
         );
@@ -162,6 +255,12 @@ async function addQuestion({
 
     /*
      * Store complete question.
+     *
+     * IMPORTANT:
+     *
+     * We intentionally DO NOT shuffle here.
+     *
+     * Redis stores the canonical question.
      */
 
     const data = {
@@ -174,6 +273,7 @@ async function addQuestion({
         topic,
         difficulty,
     };
+
 
     await redis.set(
         questionKey,
@@ -220,20 +320,23 @@ async function getFromPool(
     topic,
     difficulty
 ) {
-    const key = poolKey(
-        region,
-        topic,
-        difficulty
-    );
+
+    const key =
+        poolKey(
+            region,
+            topic,
+            difficulty
+        );
+
 
     /*
      * Remove the question from the unused pool.
      *
-     * This means once a question is used,
-     * it won't be selected again.
+     * The question itself remains stored in Redis.
      */
 
-    const qId = await redis.lpop(key);
+    const qId =
+        await redis.lpop(key);
 
     if (!qId) {
         return null;
@@ -256,6 +359,7 @@ async function getFromPool(
      */
 
     if (!question) {
+
         console.log(
             `⚠️ Missing question data for ID: ${qId}`
         );
@@ -267,7 +371,28 @@ async function getFromPool(
         );
     }
 
-    return question;
+
+    /*
+     * IMPORTANT:
+     *
+     * Shuffle ONLY the returned copy.
+     *
+     * Redis keeps the original question
+     * untouched.
+     */
+
+    const shuffledQuestion =
+        shuffleQuestionOptions(
+            question
+        );
+
+
+    console.log(
+        `🔀 Options shuffled | Correct option index: ${shuffledQuestion.correctAnswer}`
+    );
+
+
+    return shuffledQuestion;
 }
 
 
@@ -296,6 +421,7 @@ async function getQuestion(
     topic,
     difficulty
 ) {
+
     /*
      * ------------------------------------------------
      * CASE 1:
@@ -307,6 +433,7 @@ async function getQuestion(
         topic !== "mixed" &&
         difficulty !== "mixed"
     ) {
+
         return getFromPool(
             region,
             topic,
@@ -349,13 +476,20 @@ async function getQuestion(
 
     const pools = [];
 
-    for (const currentTopic of topics) {
+    for (
+        const currentTopic
+        of topics
+    ) {
+
         for (
             const currentDifficulty
             of difficulties
         ) {
+
             pools.push({
-                topic: currentTopic,
+                topic:
+                    currentTopic,
+
                 difficulty:
                     currentDifficulty,
             });
@@ -367,7 +501,7 @@ async function getQuestion(
      * Randomize pool order.
      *
      * This prevents mixed quizzes from
-     * always preferring geography/easy.
+     * always preferring the same pool.
      */
 
     pools.sort(
@@ -382,6 +516,7 @@ async function getQuestion(
      */
 
     for (const pool of pools) {
+
         const question =
             await getFromPool(
                 region,
@@ -390,6 +525,7 @@ async function getQuestion(
             );
 
         if (question) {
+
             console.log(
                 `⚡ Mixed quiz loaded from: ${pool.topic} / ${pool.difficulty}`
             );
@@ -401,10 +537,6 @@ async function getQuestion(
 
     /*
      * No suitable question exists.
-     *
-     * IMPORTANT:
-     *
-     * We return null here.
      *
      * generateQuiz() will decide which
      * concrete pool Gemini should generate.
@@ -425,6 +557,7 @@ async function getPoolSize(
     topic,
     difficulty
 ) {
+
     return await redis.llen(
         poolKey(
             region,
@@ -442,6 +575,7 @@ async function getPoolSize(
 */
 
 async function getTotalQuestionCount() {
+
     const keys =
         await redis.keys(
             `${QUESTION_PREFIX}*`

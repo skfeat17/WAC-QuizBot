@@ -5,7 +5,9 @@ const {
     Routes,
     SlashCommandBuilder,
 } = require("discord.js");
-
+const {
+    resolveCommand,
+} = require("./src/services/resolve");
 const commands = [
 
     // ==========================================
@@ -127,6 +129,7 @@ const commands = [
         )
 
         .toJSON(),
+    resolveCommand.toJSON(),
 ];
 
 // ==========================================

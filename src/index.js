@@ -1,3 +1,35 @@
+// ==============================
+// USERS WHO CAN ACCESS COMMANDS
+// ==============================
+const COMMAND_ACCESS = {
+
+    quiz: [
+        "1242132608574292118", //me
+        "1295671787375296542", //ani
+    ],
+
+    dailyquiz: [
+        "1242132608574292118", //me
+        "1295671787375296542", //ani
+    ],
+
+    resolve: [
+        "1295671787375296542", //ani
+        "1242132608574292118",//me
+        "1133800295059705906" //mae
+    ],
+
+    "kill:dailyquiz": [
+        "1295671787375296542", //ani
+        "1242132608574292118", //me
+    ],
+
+    "kill:history": [
+        "1242132608574292118"//me
+    ],
+
+};
+
 require("dotenv").config();
 const http = require("http");
 
@@ -9,6 +41,9 @@ http.createServer((req, res) => {
 }).listen(PORT, () => {
     console.log(`🌐 HTTP server running on port ${PORT}`);
 });
+const {
+    handleResolve,
+} = require("./services/resolve");
 const {
     Client,
     GatewayIntentBits,
@@ -32,13 +67,8 @@ const {
     killDailyQuizHistory
 } = require("./services/dailyQuiz");
 
-// ==============================
-// USERS WHO CAN ACCESS COMMANDS
-// ==============================
 
-const COMMAND_ACCESS_USERS = [
-    "1242132608574292118", "1295671787375296542"
-];
+
 
 
 const client = new Client({
@@ -78,16 +108,31 @@ client.on(Events.InteractionCreate, async (interaction) => {
         // COMMAND ACCESS CONTROL
         // ==========================================
 
-        if (!COMMAND_ACCESS_USERS.includes(interaction.user.id)) {
+        let accessKey = interaction.commandName;
+
+        if (interaction.commandName === "kill") {
+            const subcommand =
+                interaction.options.getSubcommand();
+
+            accessKey = `kill:${subcommand}`;
+        }
+
+        const allowedUsers =
+            COMMAND_ACCESS[accessKey] || [];
+
+        if (!allowedUsers.includes(interaction.user.id)) {
             await interaction.reply({
                 content:
-                    "❌ You are not authorized to use WAC commands.",
+                    "❌ You are not authorized to use this command.",
                 flags: MessageFlags.Ephemeral,
             });
 
             return;
         }
-
+        if (interaction.commandName === "resolve") {
+            await handleResolve(interaction);
+            return;
+        }
         // ==========================================
         // /kill dailyquiz
         // ==========================================
@@ -99,33 +144,33 @@ client.on(Events.InteractionCreate, async (interaction) => {
             // ==========================================
             // /kill history
             // ==========================================
-    if (subcommand === "history") {
-    console.log("🔥 /kill history reached"); //yes
-        await interaction.deferReply({
-            flags: MessageFlags.Ephemeral,
-        });
+            if (subcommand === "history") {
+                console.log("🔥 /kill history reached"); //yes
+                await interaction.deferReply({
+                    flags: MessageFlags.Ephemeral,
+                });
 
-        const deleted =
-            await killDailyQuizHistory();
+                const deleted =
+                    await killDailyQuizHistory();
 
-        if (deleted === false) {
-            console.log("🔥 /kill history reached deleted false"); //not
-            await interaction.editReply({
-                content:
-                    "❌ Failed to clear Daily Quiz participation history.",
-            });
+                if (deleted === false) {
+                    console.log("🔥 /kill history reached deleted false"); //not
+                    await interaction.editReply({
+                        content:
+                            "❌ Failed to clear Daily Quiz participation history.",
+                    });
 
-            return;
-        }
+                    return;
+                }
 
-        await interaction.editReply({
-            content:
-                `✅ Cleared **${deleted}** Daily Quiz participation record(s).\n\n` +
-                `Everyone can participate again.`,
-        });
-     console.log("🔥 /kill history reached deleted true"); //not
-        return;
-    }
+                await interaction.editReply({
+                    content:
+                        `✅ Cleared **${deleted}** Daily Quiz participation record(s).\n\n` +
+                        `Everyone can participate again.`,
+                });
+                console.log("🔥 /kill history reached deleted true"); //not
+                return;
+            }
 
             if (
                 interaction.options.getSubcommand() ===
