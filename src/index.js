@@ -38,7 +38,12 @@ const COMMAND_ACCESS = {
 };
 
 require("dotenv").config();
+const { Redis } = require("@upstash/redis");
 
+const redis = new Redis({
+    url: process.env.UPSTASH_REDIS_REST_URL,
+    token: process.env.UPSTASH_REDIS_REST_TOKEN,
+});
 const http = require("http");
 
 const PORT = process.env.PORT || 3000;
@@ -303,6 +308,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
             interaction.options.getString(
                 "difficulty"
             );
+        const reset =
+            interaction.options.getBoolean("reset") || false;
 
         await interaction.deferReply();
 
@@ -318,6 +325,24 @@ client.on(Events.InteractionCreate, async (interaction) => {
                     topic,
                     difficulty
                 );
+
+
+            // Reset counter when reset:true
+            if (reset) {
+                await redis.set(
+                    "wac:stats:questions_asked",
+                    0
+                );
+            }
+
+            // Get next question number
+            const questionNumber =
+                await redis.incr(
+                    "wac:stats:questions_asked"
+                );
+
+
+
 
             const quizId =
                 interaction.id;
@@ -377,6 +402,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
                             "🌍 WORLD ADVENTURE CLUB QUIZ",
                     })
                     .setDescription(
+                            `### Question No. ${questionNumber}\n\n` +
                         `### ${quiz.question}\n\n` +
                         `⏱️ **Time Remaining:** <t:${endUnix}:R>`
                     )

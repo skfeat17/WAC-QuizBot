@@ -70,7 +70,12 @@ const commands = [
                     { name: "Medium", value: "medium" },
                     { name: "Hard", value: "hard" }
                 )
-        )
+        ).addBooleanOption(option =>
+    option
+        .setName("reset")
+        .setDescription("Reset question numbering to 1")
+        .setRequired(false)
+)
 
         .toJSON(),
 
