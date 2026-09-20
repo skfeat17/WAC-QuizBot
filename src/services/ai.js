@@ -217,6 +217,7 @@ RULES:
 - Do not create multiple questions about the same underlying fact.
 - Keep questions concise and clear.
 - Explanation must be 25 words or fewer.
+- Explanation must be 500 characters or fewer.
 - Stay strictly within the requested region.
 - Each factKey must identify the unique underlying fact.
 - factKey must use lowercase_snake_case.
