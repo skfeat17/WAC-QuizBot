@@ -368,6 +368,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
                 {
                     question:
                         quiz.question,
+                    questionNumber,
 
                     options:
                         quiz.options,
@@ -402,7 +403,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
                             "🌍 WORLD ADVENTURE CLUB QUIZ",
                     })
                     .setDescription(
-                            `### Question No. ${questionNumber}\n\n` +
+                        `### Question No. ${questionNumber}\n\n` +
                         `### ${quiz.question}\n\n` +
                         `⏱️ **Time Remaining:** <t:${endUnix}:R>`
                     )
@@ -817,6 +818,7 @@ function startTimestampUpdater(
                             "🌍 WORLD ADVENTURE CLUB QUIZ",
                     })
                     .setDescription(
+                        `### Question No. ${quiz.questionNumber}\n\n` +
                         `### ${quiz.question}\n\n` +
                         `⏱️ **Time Remaining:** <t:${endUnix}:R>`
                     )
