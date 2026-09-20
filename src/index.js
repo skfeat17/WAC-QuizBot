@@ -35,7 +35,7 @@ const COMMAND_ACCESS = {
         "715152515791978597",  // choppah
     ],
 
-}; 
+};
 
 require("dotenv").config();
 const http = require("http");
@@ -56,6 +56,7 @@ const {
 } = require("./services/resolve");
 const {
     handleCountUsernames,
+    handleCountUsernamesCopy,
 } = require("./services/countUsernames");
 
 
@@ -483,6 +484,17 @@ client.on(Events.InteractionCreate, async (interaction) => {
     // ==========================================
 
     if (interaction.isButton()) {
+
+        // ------------------------------------------
+        // COPY USERNAMES BUTTON
+        // ------------------------------------------
+
+        if (interaction.customId === "countusernames_copy") {
+            await handleCountUsernamesCopy(interaction);
+            return;
+        }
+
+
 
         // ------------------------------------------
         // DAILY QUIZ
