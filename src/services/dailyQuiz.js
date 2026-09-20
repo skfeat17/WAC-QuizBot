@@ -1162,32 +1162,61 @@ async function handleDailyQuizAnswer(
         return;
     }
 
+// ==========================================
+// WRONG ANSWER
+// ==========================================
+
+if (!judgment.correct) {
+
+    const username =
+        interaction.user.username || "Unknown";
+
+    const displayName =
+        interaction.member?.displayName ||
+        interaction.user.globalName ||
+        interaction.user.username ||
+        "Unknown";
+
+    const quizType =
+        getTypeName(activeDailyQuiz.type);
+
+    const correctAnswer =
+        Array.isArray(country.answers) &&
+        country.answers.length > 0
+            ? country.answers[0]
+            : "the correct answer was not available";
+
     // ==========================================
-    // WRONG ANSWER
+    // LOG WRONG ANSWER TO CONSOLE
     // ==========================================
 
-    if (!judgment.correct) {
+    console.log(
+        "\n" +
+        "❌ WRONG ANSWER\n" +
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
+        `👤 Username: ${username}\n` +
+        `🏷️ Display Name: ${displayName}\n` +
+        `🧠 Quiz: ${quizType}\n` +
+        `🌍 Country: ${country.flag || "🌍"} ${country.country}\n` +
+        `💬 Answer: ${answer}\n` +
+        `✅ Correct Answer: ${correctAnswer}\n` +
+        "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+    );
 
-        // Persist the strike
-        await persistActiveDailyQuiz();
+    // Persist the strike
+    await persistActiveDailyQuiz();
 
-        const correctAnswer =
-            Array.isArray(country.answers) && country.answers.length > 0
-                ? country.answers[0]
-                : "the correct answer was not available";
+    await interaction.editReply({
+        content:
+            `❌ **Wrong answer!**\n\n` +
+            `${country.flag} **${country.country}** ` +
+            `has been marked as **~~strike~~** for you.\n\n` +
+            `✅ **Correct answer:** ${correctAnswer}\n\n` +
+            `You cannot attempt this country again.`,
+    });
 
-        await interaction.editReply({
-            content:
-                `❌ **Wrong answer!**\n\n` +
-                `${country.flag} **${country.country}** ` +
-                `has been marked as **~~strike~~** for you.\n\n` +
-                `✅ **Correct answer:** ${correctAnswer}\n\n` +
-                `You cannot attempt this country again.`,
-        });
-
-        return;
-    }
-
+    return;
+}
     // ==========================================
     // CORRECT ANSWER
     // ==========================================
