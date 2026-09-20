@@ -689,11 +689,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
                     await interaction.reply({
                         content:
-                            `✅ Correct!\n\n` +
-                            `🏆 You are currently **#${position}**!`,
-
-                        flags:
-                            MessageFlags.Ephemeral,
+                            "✅ **Your answer has been submitted successfully!**\n\n" +
+                            "⏳ Please wait for the **rankings and answer reveal**.",
+                        flags: MessageFlags.Ephemeral,
                     });
 
                 } catch (error) {
@@ -710,11 +708,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
                     await interaction.reply({
                         content:
-                            "✅ Correct!\n\n" +
-                            "The first 5 winners have already been reached.",
-
-                        flags:
-                            MessageFlags.Ephemeral,
+                            "✅ **Your answer has been submitted successfully!**\n\n" +
+                            "⏳ Please wait for the **rankings and answer reveal**.",
+                        flags: MessageFlags.Ephemeral,
                     });
 
                 } catch (error) {
@@ -738,10 +734,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
                 await interaction.reply({
                     content:
-                        "❌ Wrong answer!",
-
-                    flags:
-                        MessageFlags.Ephemeral,
+                        "✅ **Your answer has been submitted successfully!**\n\n" +
+                        "⏳ Please wait for the **rankings and answer reveal**.",
+                    flags: MessageFlags.Ephemeral,
                 });
 
             } catch (error) {
