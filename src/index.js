@@ -101,7 +101,7 @@ const client = new Client({
 const activeQuizzes = new Map();
 
 // 30 seconds
-const QUIZ_DURATION = 30_000;
+const QUIZ_DURATION = 20_000;
 
 const MAX_WINNERS = 5;
 
