@@ -4,39 +4,41 @@
 const COMMAND_ACCESS = {
 
     quiz: [
-        "1242132608574292118", //me
-        "1295671787375296542", //ani
+        "1242132608574292118", // me
+        "1295671787375296542", // ani
     ],
 
     dailyquiz: [
-        "1242132608574292118", //me
-        "1295671787375296542", //ani
+        "1242132608574292118", // me
+        "1295671787375296542", // ani
     ],
 
     resolve: [
-        "1295671787375296542", //ani
-        "1242132608574292118",//me
-        "1133800295059705906", //mae
-        "715152515791978597", //choppah
+        "1295671787375296542", // ani
+        "1242132608574292118", // me
+        "1133800295059705906", // mae
+        "715152515791978597", // choppah
     ],
 
     "kill:dailyquiz": [
-        "1295671787375296542", //ani
-        "1242132608574292118", //me
+        "1295671787375296542", // ani
+        "1242132608574292118", // me
     ],
 
     "kill:history": [
-        "1242132608574292118"//me
+        "1242132608574292118", // me
     ],
+
     countusernames: [
         "1295671787375296542", // ani
         "1242132608574292118", // me
-        "715152515791978597",  // choppah
+        "715152515791978597", // choppah
     ],
 
 };
 
 require("dotenv").config();
+
 const http = require("http");
 
 const PORT = process.env.PORT || 3000;
@@ -47,17 +49,19 @@ http.createServer((req, res) => {
 }).listen(PORT, () => {
     console.log(`🌐 HTTP server running on port ${PORT}`);
 });
+
 // ==============================
 // UTILITIES FUNCTION IMPORTS
 // ==============================
+
 const {
     handleResolve,
 } = require("./services/resolve");
+
 const {
     handleCountUsernames,
     handleCountUsernamesCopy,
 } = require("./services/countUsernames");
-
 
 const {
     Client,
@@ -79,12 +83,12 @@ const {
     handleDailyQuizCountrySelect,
     handleDailyQuizAnswer,
     killDailyQuiz,
-    killDailyQuizHistory
+    killDailyQuizHistory,
 } = require("./services/dailyQuiz");
 
-
-
-
+// ==============================
+// CLIENT
+// ==============================
 
 const client = new Client({
     intents: [GatewayIntentBits.Guilds],
@@ -96,7 +100,9 @@ const client = new Client({
 
 const activeQuizzes = new Map();
 
-const QUIZ_DURATION = 15_000;
+// 30 seconds
+const QUIZ_DURATION = 30_000;
+
 const MAX_WINNERS = 5;
 
 // ==============================
@@ -126,6 +132,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
         let accessKey = interaction.commandName;
 
         if (interaction.commandName === "kill") {
+
             const subcommand =
                 interaction.options.getSubcommand();
 
@@ -136,6 +143,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
             COMMAND_ACCESS[accessKey] || [];
 
         if (!allowedUsers.includes(interaction.user.id)) {
+
             await interaction.reply({
                 content:
                     "❌ You are not authorized to use this command.",
@@ -144,33 +152,46 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
             return;
         }
+
         // ==========================================
-        // ADDD COMMANDS HERE - NOT ABOVE
+        // /resolve
         // ==========================================
 
         if (interaction.commandName === "resolve") {
-            await handleResolve(interaction);
-            return;
-        }
 
-        if (interaction.commandName === "countusernames") {
-            await handleCountUsernames(interaction);
+            await handleResolve(interaction);
+
             return;
         }
 
         // ==========================================
-        // /kill dailyquiz
+        // /countusernames
+        // ==========================================
+
+        if (interaction.commandName === "countusernames") {
+
+            await handleCountUsernames(interaction);
+
+            return;
+        }
+
+        // ==========================================
+        // /kill
         // ==========================================
 
         if (interaction.commandName === "kill") {
+
             const subcommand =
                 interaction.options.getSubcommand();
 
             // ==========================================
             // /kill history
             // ==========================================
+
             if (subcommand === "history") {
-                console.log("🔥 /kill history reached"); //yes
+
+                console.log("🔥 /kill history reached");
+
                 await interaction.deferReply({
                     flags: MessageFlags.Ephemeral,
                 });
@@ -179,7 +200,11 @@ client.on(Events.InteractionCreate, async (interaction) => {
                     await killDailyQuizHistory();
 
                 if (deleted === false) {
-                    console.log("🔥 /kill history reached deleted false"); //not
+
+                    console.log(
+                        "🔥 /kill history reached deleted false"
+                    );
+
                     await interaction.editReply({
                         content:
                             "❌ Failed to clear Daily Quiz participation history.",
@@ -193,9 +218,17 @@ client.on(Events.InteractionCreate, async (interaction) => {
                         `✅ Cleared **${deleted}** Daily Quiz participation record(s).\n\n` +
                         `Everyone can participate again.`,
                 });
-                console.log("🔥 /kill history reached deleted true"); //not
+
+                console.log(
+                    "🔥 /kill history reached deleted true"
+                );
+
                 return;
             }
+
+            // ==========================================
+            // /kill dailyquiz
+            // ==========================================
 
             if (
                 interaction.options.getSubcommand() ===
@@ -206,6 +239,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
                     await killDailyQuiz();
 
                 if (!killed) {
+
                     await interaction.reply({
                         content:
                             "ℹ️ There is no active Daily Quiz to terminate.",
@@ -251,10 +285,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
             return;
         }
 
-
         // ==========================================
-        // NORMAL /QUIZ CODE
-        // DO NOT TOUCH
+        // NORMAL /QUIZ
         // ==========================================
 
         const region =
@@ -276,7 +308,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
         try {
 
-            // Generate question
+            // ==========================================
+            // GENERATE QUESTION
+            // ==========================================
+
             const quiz =
                 await generateQuiz(
                     region,
@@ -299,7 +334,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
                     endsAt / 1000
                 );
 
-            // Store quiz
+            // ==========================================
+            // STORE QUIZ
+            // ==========================================
+
             activeQuizzes.set(
                 quizId,
                 {
@@ -368,7 +406,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
                     }
                 );
 
-            // 2 × 2 layout
+            // ==========================================
+            // 2 × 2 LAYOUT
+            // ==========================================
+
             const row1 =
                 new ActionRowBuilder()
                     .addComponents(
@@ -383,7 +424,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
                         buttons[3]
                     );
 
-            // Send quiz
+            // ==========================================
+            // SEND QUIZ
+            // ==========================================
+
             await interaction.editReply({
                 embeds: [
                     embed,
@@ -395,12 +439,18 @@ client.on(Events.InteractionCreate, async (interaction) => {
                 ],
             });
 
-            // Start timestamp updater
+            // ==========================================
+            // START TIMESTAMP UPDATER
+            // ==========================================
+
             startTimestampUpdater(
                 quizId
             );
 
-            // Finish after 30 seconds
+            // ==========================================
+            // FINISH AFTER 30 SECONDS
+            // ==========================================
+
             setTimeout(
                 () =>
                     finishQuiz(
@@ -488,12 +538,17 @@ client.on(Events.InteractionCreate, async (interaction) => {
         // COPY USERNAMES BUTTON
         // ------------------------------------------
 
-        if (interaction.customId === "countusernames_copy") {
-            await handleCountUsernamesCopy(interaction);
+        if (
+            interaction.customId ===
+            "countusernames_copy"
+        ) {
+
+            await handleCountUsernamesCopy(
+                interaction
+            );
+
             return;
         }
-
-
 
         // ------------------------------------------
         // DAILY QUIZ
@@ -579,7 +634,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
                 await interaction.reply({
                     content:
-                        "⏱️ The 30-second timer has ended!",
+                        "⏱️ **The 30-second timer has ended!**\n\n" +
+                        "Please wait for the **rankings and answer reveal**.",
 
                     flags:
                         MessageFlags.Ephemeral,
@@ -658,99 +714,32 @@ client.on(Events.InteractionCreate, async (interaction) => {
         );
 
         // ==========================================
-        // CORRECT ANSWER
+        // ANSWER SUBMITTED
         // ==========================================
+        // IMPORTANT:
+        // We still calculate and store whether the
+        // answer is correct above.
+        //
+        // We simply DO NOT reveal the result to the
+        // participant until the quiz finishes.
 
-        if (isCorrect) {
+        try {
 
-            const correctAnswers =
-                [
-                    ...quiz.answers.values(),
-                ]
-                    .filter(
-                        answer =>
-                            answer.isCorrect
-                    )
-                    .sort(
-                        (a, b) =>
-                            a.answeredAt -
-                            b.answeredAt
-                    );
+            await interaction.reply({
+                content:
+                    "✅ **Your answer has been submitted successfully!**\n\n" +
+                    "⏳ Please wait for the **rankings and answer reveal**.",
 
-            const position =
-                correctAnswers.length;
+                flags:
+                    MessageFlags.Ephemeral,
+            });
 
-            if (
-                position <=
-                MAX_WINNERS
-            ) {
+        } catch (error) {
 
-                try {
-
-                    await interaction.reply({
-                        content:
-                            `✅ Correct!\n\n` +
-                            `🏆 You are currently **#${position}**!`,
-
-                        flags:
-                            MessageFlags.Ephemeral,
-                    });
-
-                } catch (error) {
-
-                    console.error(
-                        "Failed to send correct answer:",
-                        error
-                    );
-                }
-
-            } else {
-
-                try {
-
-                    await interaction.reply({
-                        content:
-                            "✅ Correct!\n\n" +
-                            "The first 5 winners have already been reached.",
-
-                        flags:
-                            MessageFlags.Ephemeral,
-                    });
-
-                } catch (error) {
-
-                    console.error(
-                        "Failed to send correct answer:",
-                        error
-                    );
-                }
-            }
-
-        }
-
-        // ==========================================
-        // WRONG ANSWER
-        // ==========================================
-
-        else {
-
-            try {
-
-                await interaction.reply({
-                    content:
-                        "❌ Wrong answer!",
-
-                    flags:
-                        MessageFlags.Ephemeral,
-                });
-
-            } catch (error) {
-
-                console.error(
-                    "Failed to send wrong answer:",
-                    error
-                );
-            }
+            console.error(
+                "Failed to send answer submission confirmation:",
+                error
+            );
         }
     }
 });
@@ -1024,7 +1013,7 @@ async function finishQuiz(
                 });
 
         // ==========================================
-        // SEND NEW RESULTS MESSAGE
+        // SEND RESULTS MESSAGE
         // ==========================================
 
         await quiz.interaction.followUp({
