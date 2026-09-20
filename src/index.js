@@ -28,8 +28,14 @@ const COMMAND_ACCESS = {
     "kill:history": [
         "1242132608574292118"//me
     ],
+    countusernames: [
+        "1295671787375296542", // ani
+        "1242132608574292118", // me
+        "1133800295059705906", // mae
+        "715152515791978597",  // choppah
+    ],
 
-};
+}; 
 
 require("dotenv").config();
 const http = require("http");
@@ -42,9 +48,17 @@ http.createServer((req, res) => {
 }).listen(PORT, () => {
     console.log(`🌐 HTTP server running on port ${PORT}`);
 });
+// ==============================
+// UTILITIES FUNCTION IMPORTS
+// ==============================
 const {
     handleResolve,
 } = require("./services/resolve");
+const {
+    handleCountUsernames,
+} = require("./services/countUsernames");
+
+
 const {
     Client,
     GatewayIntentBits,
@@ -130,10 +144,20 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
             return;
         }
+        // ==========================================
+        // ADDD COMMANDS HERE - NOT ABOVE
+        // ==========================================
+
         if (interaction.commandName === "resolve") {
             await handleResolve(interaction);
             return;
         }
+
+        if (interaction.commandName === "countusernames") {
+            await handleCountUsernames(interaction);
+            return;
+        }
+
         // ==========================================
         // /kill dailyquiz
         // ==========================================

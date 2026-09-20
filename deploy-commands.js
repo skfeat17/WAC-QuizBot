@@ -8,6 +8,11 @@ const {
 const {
     resolveCommand,
 } = require("./src/services/resolve");
+
+const {
+    countUsernamesCommand,
+} = require("./src/services/countUsernames");
+
 const commands = [
 
     // ==========================================
@@ -130,6 +135,7 @@ const commands = [
 
         .toJSON(),
     resolveCommand.toJSON(),
+    countUsernamesCommand.toJSON(),
 ];
 
 // ==========================================
