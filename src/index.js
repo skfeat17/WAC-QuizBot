@@ -728,7 +728,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
             await interaction.reply({
                 content:
                     "📝 **Answer submitted!**\n" +
-                    "⏳ Wait for the reveal — you'll be **pinged if you're correct!**",
+                    "⏳ Wait for the reveal — you'll be **pinged if you're in the Top 5!**",
                 flags:
                     MessageFlags.Ephemeral,
             });
