@@ -727,8 +727,8 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
             await interaction.reply({
                 content:
-                    "✅ **Your answer has been submitted successfully!**\n\n" +
-                    "⏳ Please wait for the **rankings and answer reveal**.",
+                    "📝 **Answer submitted!**\n\n" +
+                    "⏳ **Wait for the reveal.**",
 
                 flags:
                     MessageFlags.Ephemeral,
