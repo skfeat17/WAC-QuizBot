@@ -8,7 +8,7 @@ const COMMAND_ACCESS = {
         "1295671787375296542", // ani
     ],
 
-    dailyquiz: [
+    dailyevent: [
         "1242132608574292118", // me
         "1295671787375296542", // ani
     ],
@@ -20,12 +20,13 @@ const COMMAND_ACCESS = {
         "715152515791978597", // choppah
     ],
 
-    "kill:dailyquiz": [
+    "kill:dailyevent": [
         "1295671787375296542", // ani
         "1242132608574292118", // me
     ],
 
     "kill:history": [
+         "1295671787375296542", // ani
         "1242132608574292118", // me
     ],
 
@@ -237,24 +238,30 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
             if (
                 interaction.options.getSubcommand() ===
-                "dailyquiz"
+                "dailyevent"
             ) {
+
+
+                // Acknowledge immediately so Discord does not expire
+                // the interaction while killDailyQuiz() is working.
+                await interaction.deferReply({
+                    flags: MessageFlags.Ephemeral,
+                });
 
                 const killed =
                     await killDailyQuiz();
 
                 if (!killed) {
 
-                    await interaction.reply({
+                    await interaction.editReply({
                         content:
                             "ℹ️ There is no active Daily Quiz to terminate.",
-                        flags: MessageFlags.Ephemeral,
                     });
 
                     return;
                 }
 
-                await interaction.reply({
+                await interaction.editReply({
                     content:
                         "🛑 **Daily Quiz forcefully terminated.** You can start a new `/dailyquiz` now.",
                 });
@@ -269,7 +276,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
         if (
             interaction.commandName ===
-            "dailyquiz"
+            "dailyevent"
         ) {
 
             await startDailyQuiz(
@@ -580,6 +587,12 @@ client.on(Events.InteractionCreate, async (interaction) => {
         // ------------------------------------------
         // DAILY QUIZ
         // ------------------------------------------
+        if (
+            interaction.customId.startsWith("dailyquiz_option_")
+        ) {
+            await handleDailyQuizAnswer(interaction);
+            return;
+        }
 
         if (
             interaction.customId ===
@@ -818,8 +831,8 @@ function startTimestampUpdater(
                             "🌍 WORLD ADVENTURE CLUB QUIZ",
                     })
                     .setDescription(
-                        `### Question No. ${quiz.questionNumber}\n\n` +
-                        `### ${quiz.question}\n\n` +
+                        `### Question No. ${quiz.questionNumber}\n\n`
+                            `### ${quiz.question}\n\n` +
                         `⏱️ **Time Remaining:** <t:${endUnix}:R>`
                     )
                     .setFooter({

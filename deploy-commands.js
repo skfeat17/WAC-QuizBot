@@ -71,11 +71,11 @@ const commands = [
                     { name: "Hard", value: "hard" }
                 )
         ).addBooleanOption(option =>
-    option
-        .setName("reset")
-        .setDescription("Reset question numbering to 1")
-        .setRequired(false)
-)
+            option
+                .setName("reset")
+                .setDescription("Reset question numbering to 1")
+                .setRequired(false)
+        )
 
         .toJSON(),
 
@@ -84,8 +84,8 @@ const commands = [
     // ==========================================
 
     new SlashCommandBuilder()
-        .setName("dailyquiz")
-        .setDescription("Start the World Adventure Club Daily Quiz")
+        .setName("dailyevent")
+        .setDescription("Start the World Adventure Club Daily Event")
 
         .addStringOption(option =>
             option
@@ -93,22 +93,11 @@ const commands = [
                 .setDescription("Choose the Daily Quiz type")
                 .setRequired(true)
                 .addChoices(
-                    {
-                        name: "Currency",
-                        value: "currency",
-                    },
-                    {
-                        name: "Capital",
-                        value: "capital",
-                    },
-                    {
-                        name: "Food",
-                        value: "food",
-                    },
-                    {
-                        name: "Unscramble",
-                        value: "unscramble",
-                    }
+                    { name: "Capital", value: "capital" },
+                    { name: "Famous Food", value: "food" },
+                    { name: "Famous Monument", value: "monument" },
+                    { name: "President", value: "president" },
+                    { name: "Independence Day", value: "independence" },
                 )
         )
 
@@ -124,9 +113,9 @@ const commands = [
 
         .addSubcommand(subcommand =>
             subcommand
-                .setName("dailyquiz")
+                .setName("dailyevent")
                 .setDescription(
-                    "Force terminate the active Daily Quiz"
+                    "Force terminate the active Daily Event"
                 )
         )
 
