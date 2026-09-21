@@ -6,6 +6,7 @@ const COMMAND_ACCESS = {
     quiz: [
         "1242132608574292118", // me
         "1295671787375296542", // ani
+        "1161273612167295047"  //zibai
     ],
 
     dailyevent: [
