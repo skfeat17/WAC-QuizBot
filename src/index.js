@@ -27,7 +27,7 @@ const COMMAND_ACCESS = {
     ],
 
     "kill:history": [
-         "1295671787375296542", // ani
+        "1295671787375296542", // ani
         "1242132608574292118", // me
     ],
 
@@ -38,6 +38,14 @@ const COMMAND_ACCESS = {
     ],
 
 };
+// ==============================
+// BLOCKED QUIZ USERS
+// ==============================
+const BLOCKED_QUIZ_USERS = new Set([
+"1492139771651297380", // RAVEN
+]);
+
+
 
 require("dotenv").config();
 const { Redis } = require("@upstash/redis");
@@ -290,6 +298,16 @@ client.on(Events.InteractionCreate, async (interaction) => {
         // ==========================================
         // /quiz
         // ==========================================
+
+        if (BLOCKED_QUIZ_USERS.has(interaction.user.id)) {
+            await interaction.reply({
+                content: "🚫 You are not allowed to participate in this quiz.",
+                flags: MessageFlags.Ephemeral,
+            });
+
+            return;
+        }
+
 
         if (
             interaction.commandName !==
