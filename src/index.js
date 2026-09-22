@@ -41,9 +41,7 @@ const COMMAND_ACCESS = {
 // ==============================
 // BLOCKED QUIZ USERS
 // ==============================
-const BLOCKED_QUIZ_USERS = new Set([
-    "1492139771651297380", // RAVEN
-]);
+const BLOCKED_QUIZ_USERS = new Set([]);
 
 
 
