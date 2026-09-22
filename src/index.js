@@ -42,7 +42,6 @@ const COMMAND_ACCESS = {
 // BLOCKED QUIZ USERS
 // ==============================
 const BLOCKED_QUIZ_USERS = new Set([
-    "1492139771651297380", // RAVEN
 ]);
 
 
@@ -745,6 +744,18 @@ client.on(Events.InteractionCreate, async (interaction) => {
         const isCorrect =
             selectedAnswer ===
             quiz.correctAnswer;
+
+          if (BLOCKED_QUIZ_USERS.has(interaction.user.id)) {
+                await interaction.reply({
+                    content: "🚫 You are not allowed to participate in this quiz.",
+                    flags: MessageFlags.Ephemeral,
+                });
+
+
+
+                return;
+            }
+
 
 
         quiz.answers.set(
