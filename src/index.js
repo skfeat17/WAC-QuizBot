@@ -42,7 +42,7 @@ const COMMAND_ACCESS = {
 // BLOCKED QUIZ USERS
 // ==============================
 const BLOCKED_QUIZ_USERS = new Set([
-"1492139771651297380", // RAVEN
+    "1492139771651297380", // RAVEN
 ]);
 
 
@@ -299,14 +299,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
         // /quiz
         // ==========================================
 
-        if (BLOCKED_QUIZ_USERS.has(interaction.user.id)) {
-            await interaction.reply({
-                content: "🚫 You are not allowed to participate in this quiz.",
-                flags: MessageFlags.Ephemeral,
-            });
-
-            return;
-        }
 
 
         if (
@@ -754,6 +746,19 @@ client.on(Events.InteractionCreate, async (interaction) => {
             selectedAnswer ===
             quiz.correctAnswer;
 
+          if (BLOCKED_QUIZ_USERS.has(interaction.user.id)) {
+                await interaction.reply({
+                    content: "🚫 You are not allowed to participate in this quiz.",
+                    flags: MessageFlags.Ephemeral,
+                });
+
+
+
+                return;
+            }
+
+
+
         quiz.answers.set(
             interaction.user.id,
             {
@@ -784,22 +789,23 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
         try {
 
-            await interaction.reply({
-                content:
-                    "📝 **Answer submitted!**\n" +
-                    "⏳ Wait for the reveal — you'll be **pinged if you're in the Top 5!**",
-                flags:
-                    MessageFlags.Ephemeral,
-            });
+  
+                await interaction.reply({
+                    content:
+                        "📝 **Answer submitted!**\n" +
+                        "⏳ Wait for the reveal — you'll be **pinged if you're in the Top 5!**",
+                    flags:
+                        MessageFlags.Ephemeral,
+                });
 
-        } catch (error) {
+            } catch (error) {
 
-            console.error(
-                "Failed to send answer submission confirmation:",
-                error
-            );
+                console.error(
+                    "Failed to send answer submission confirmation:",
+                    error
+                );
+            }
         }
-    }
 });
 
 // ==================================================
