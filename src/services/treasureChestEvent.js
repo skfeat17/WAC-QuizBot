@@ -527,7 +527,7 @@ async function handleTreasureChestButton(interaction) {
                 "🎉 TREASURE CHEST OPENED!"
             )
             .setDescription(
-                `🌟 **Congratulations, ${interaction.user.username}!**\n\n` +
+                `🌟 **Congratulations, <@${interaction.user.id}>!**\n\n` +
                 `📦 You opened the treasure chest washed ashore at\n` +
                 `${chest.location.flag} **${chest.location.island}, ${chest.location.country}**\n\n` +
                 `💰 **You found ${reward} Mora inside!** 🪙`
