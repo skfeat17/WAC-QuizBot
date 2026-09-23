@@ -26,7 +26,7 @@ const dailyEventSchema = z.object({
     ).length(10),
 });
 
-const MAX_GENERATION_ATTEMPTS = 5;
+const MAX_GENERATION_ATTEMPTS = 10;
 
 async function generateDailyQuiz(type) {
     console.log(`🤖 Generating Daily Event: ${type}`);
