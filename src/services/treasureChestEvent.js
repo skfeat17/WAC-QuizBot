@@ -455,6 +455,13 @@ async function handleTreasureChestButton(interaction) {
             const ttl =
                 await getTreasureCooldown(userId);
 
+
+            console.log(
+                `⏳ TREASURE COOLDOWN | User: ${interaction.user.username} | ` +
+                `ID: ${userId} | ` +
+                `Remaining: ${formatCooldown(ttl)}`
+            );
+
             await interaction.reply({
                 content:
                     `⏳ You already claimed a treasure!\n` +
@@ -478,24 +485,24 @@ async function handleTreasureChestButton(interaction) {
 
         return;
     }
-// ======================================
-// ATOMIC CLAIM LOCK
-// ======================================
+    // ======================================
+    // ATOMIC CLAIM LOCK
+    // ======================================
 
-const claimed = await claimTreasureChest(
-    eventId,
-    userId
-);
+    const claimed = await claimTreasureChest(
+        eventId,
+        userId
+    );
 
-if (!claimed) {
-    await interaction.reply({
-        content:
-            "📦 Someone else opened this treasure chest first!",
-        flags: MessageFlags.Ephemeral,
-    });
+    if (!claimed) {
+        await interaction.reply({
+            content:
+                "📦 Someone else opened this treasure chest first!",
+            flags: MessageFlags.Ephemeral,
+        });
 
-    return;
-}
+        return;
+    }
     // ======================================
     // LOCK CHEST
     // ======================================

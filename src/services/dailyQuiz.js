@@ -231,6 +231,12 @@ async function handleDailyQuizButton(interaction) {
 
     try {
         if (await hasUserCooldown(activeDailyQuiz.type, interaction.user.id)) {
+            console.log(
+                `⏳ DAILY EVENT COOLDOWN | User: ${interaction.user.username} | ` +
+                `ID: ${interaction.user.id} | ` +
+                `Event: ${getTypeName(activeDailyQuiz.type)}`
+            );
+
             await interaction.editReply({
                 content:
                     `⏳ You have already participated in today's **${getTypeName(activeDailyQuiz.type)}** event.\n\n` +
@@ -557,7 +563,7 @@ async function handleDailyQuizAnswer(interaction) {
         try {
             await interaction.followUp({
                 content:
-                    `💰 **DAILY EVENT WINNER **\n\n` +
+                    `💰 **DAILY EVENT WINNER #${winner.position}**\n\n` +
                     `👤 USER : <@${winner.id}>\n` +
                     `🎯 EVENT : **${getTypeName(activeDailyQuiz.type)}**\n` +
                     `🌍 COUNTRY : ${winner.flag} **${winner.country}**\n` +
