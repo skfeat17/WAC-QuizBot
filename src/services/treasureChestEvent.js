@@ -151,28 +151,28 @@ function getRandomLocation() {
 // ==========================================
 
 function getTreasureReward() {
-  const tiers = [
-        {
-            weight: 50,
-            min: 25,
-            max: 35,
-        },
-        {
-            weight: 30,
-            min: 36,
-            max: 45,
-        },
-        {
-            weight: 15,
-            min: 46,
-            max: 55,
-        },
-        {
-            weight: 5,
-            min: 56,
-            max: 75,
-        },
-    ];
+ const tiers = [
+    {
+        weight: 70,
+        min: 25,
+        max: 30,
+    },
+    {
+        weight: 20,
+        min: 31,
+        max: 40,
+    },
+    {
+        weight: 7,
+        min: 41,
+        max: 55,
+    },
+    {
+        weight: 3,
+        min: 56,
+        max: 75,
+    },
+];
 
     const totalWeight = tiers.reduce(
         (sum, tier) => sum + tier.weight,
