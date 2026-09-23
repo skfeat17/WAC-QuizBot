@@ -16,6 +16,7 @@ const {
     saveActiveTreasureChest,
     getActiveTreasureChest,
     deleteActiveTreasureChest,
+    claimTreasureChest,
 } = require("./treasureChestEventredis");
 
 // ==========================================
@@ -477,7 +478,24 @@ async function handleTreasureChestButton(interaction) {
 
         return;
     }
+// ======================================
+// ATOMIC CLAIM LOCK
+// ======================================
 
+const claimed = await claimTreasureChest(
+    eventId,
+    userId
+);
+
+if (!claimed) {
+    await interaction.reply({
+        content:
+            "📦 Someone else opened this treasure chest first!",
+        flags: MessageFlags.Ephemeral,
+    });
+
+    return;
+}
     // ======================================
     // LOCK CHEST
     // ======================================

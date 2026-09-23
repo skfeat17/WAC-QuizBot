@@ -10,10 +10,19 @@ const redis = new Redis({
 const PREFIX = "wac:treasure:";
 
 // ==========================================
-// 3 DAYS
+// CONFIG
 // ==========================================
 
+// 3 DAYS
 const TREASURE_COOLDOWN_SECONDS = 24 * 60 * 60;
+
+// Active chest can remain available for 24 hours
+const TREASURE_CHEST_TTL_SECONDS =
+    24 * 60 * 60;
+
+// Prevent two people from claiming
+// the same chest simultaneously
+const TREASURE_CLAIM_LOCK_SECONDS = 30;
 
 // ==========================================
 // COOLDOWN
@@ -36,7 +45,8 @@ async function getTreasureCooldown(userId) {
 }
 
 async function hasTreasureCooldown(userId) {
-    const ttl = await getTreasureCooldown(userId);
+    const ttl =
+        await getTreasureCooldown(userId);
 
     return ttl > 0;
 }
@@ -86,24 +96,25 @@ async function clearAllTreasureCooldowns() {
 
         if (keys.length > 0) {
             await redis.del(...keys);
+
             deleted += keys.length;
         }
     } while (cursor !== 0);
 
     return deleted;
 }
+
 // ==========================================
 // ACTIVE TREASURE CHESTS
 // ==========================================
-
-const TREASURE_CHEST_TTL_SECONDS = 24 * 60 * 60;
 
 function getActiveChestKey(eventId) {
     return `${PREFIX}active:${eventId}`;
 }
 
 async function saveActiveTreasureChest(chest) {
-    const key = getActiveChestKey(chest.eventId);
+    const key =
+        getActiveChestKey(chest.eventId);
 
     await redis.set(
         key,
@@ -117,32 +128,82 @@ async function saveActiveTreasureChest(chest) {
 }
 
 async function getActiveTreasureChest(eventId) {
-    const key = getActiveChestKey(eventId);
+    const key =
+        getActiveChestKey(eventId);
 
     return await redis.get(key);
 }
 
 async function deleteActiveTreasureChest(eventId) {
-    const key = getActiveChestKey(eventId);
+    const key =
+        getActiveChestKey(eventId);
 
     await redis.del(key);
 
     return true;
 }
+
+// ==========================================
+// ATOMIC TREASURE CLAIM LOCK
+// ==========================================
+
+function getTreasureClaimLockKey(eventId) {
+    return `${PREFIX}claim:${eventId}`;
+}
+
+/**
+ * Only ONE person can successfully claim
+ * a particular treasure chest.
+ *
+ * Redis NX = create only if key doesn't exist.
+ *
+ * If two people click at the same time:
+ *
+ * User A -> OK
+ * User B -> null
+ *
+ * Therefore only one winner.
+ */
+async function claimTreasureChest(
+    eventId,
+    userId
+) {
+    const key =
+        getTreasureClaimLockKey(eventId);
+
+    const result = await redis.set(
+        key,
+        {
+            userId,
+            claimedAt: Date.now(),
+        },
+        {
+            nx: true,
+            ex: TREASURE_CLAIM_LOCK_SECONDS,
+        }
+    );
+
+    return result === "OK";
+}
+
 // ==========================================
 // EXPORTS
 // ==========================================
 
 module.exports = {
+    // Cooldown
     TREASURE_COOLDOWN_SECONDS,
-
     getTreasureCooldown,
     hasTreasureCooldown,
     setTreasureCooldown,
     clearTreasureCooldown,
     clearAllTreasureCooldowns,
 
+    // Active chest
     saveActiveTreasureChest,
     getActiveTreasureChest,
     deleteActiveTreasureChest,
+
+    // Atomic winner lock
+    claimTreasureChest,
 };
