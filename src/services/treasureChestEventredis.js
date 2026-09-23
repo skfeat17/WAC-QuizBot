@@ -92,7 +92,43 @@ async function clearAllTreasureCooldowns() {
 
     return deleted;
 }
+// ==========================================
+// ACTIVE TREASURE CHESTS
+// ==========================================
 
+const TREASURE_CHEST_TTL_SECONDS = 24 * 60 * 60;
+
+function getActiveChestKey(eventId) {
+    return `${PREFIX}active:${eventId}`;
+}
+
+async function saveActiveTreasureChest(chest) {
+    const key = getActiveChestKey(chest.eventId);
+
+    await redis.set(
+        key,
+        chest,
+        {
+            ex: TREASURE_CHEST_TTL_SECONDS,
+        }
+    );
+
+    return true;
+}
+
+async function getActiveTreasureChest(eventId) {
+    const key = getActiveChestKey(eventId);
+
+    return await redis.get(key);
+}
+
+async function deleteActiveTreasureChest(eventId) {
+    const key = getActiveChestKey(eventId);
+
+    await redis.del(key);
+
+    return true;
+}
 // ==========================================
 // EXPORTS
 // ==========================================
@@ -105,4 +141,8 @@ module.exports = {
     setTreasureCooldown,
     clearTreasureCooldown,
     clearAllTreasureCooldowns,
+
+    saveActiveTreasureChest,
+    getActiveTreasureChest,
+    deleteActiveTreasureChest,
 };

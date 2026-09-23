@@ -12,6 +12,10 @@ const {
     hasTreasureCooldown,
     getTreasureCooldown,
     setTreasureCooldown,
+
+    saveActiveTreasureChest,
+    getActiveTreasureChest,
+    deleteActiveTreasureChest,
 } = require("./treasureChestEventredis");
 
 // ==========================================
@@ -25,11 +29,6 @@ const PAYMENT_STAFF = [
     "1295671787375296542",
 ];
 
-// ==========================================
-// ACTIVE TREASURE CHESTS
-// ==========================================
-
-const activeTreasureChests = new Map();
 
 // ==========================================
 // COUNTRY / ISLAND LOCATIONS
@@ -151,7 +150,7 @@ function getRandomLocation() {
 // ==========================================
 
 function getTreasureReward() {
- const tiers = [
+    const tiers = [
         {
             weight: 60,
             min: 25,
@@ -173,6 +172,7 @@ function getTreasureReward() {
             max: 75,
         },
     ];
+
     const totalWeight = tiers.reduce(
         (sum, tier) => sum + tier.weight,
         0
@@ -249,10 +249,10 @@ async function getTreasureImage(searchQuery) {
 
         const photo =
             data.photos[
-                Math.floor(
-                    Math.random() *
-                    data.photos.length
-                )
+            Math.floor(
+                Math.random() *
+                data.photos.length
+            )
             ];
 
         return (
@@ -343,17 +343,16 @@ async function startTreasureChestEvent(interaction) {
             location.search
         );
 
-    activeTreasureChests.set(
+    const chest = {
         eventId,
-        {
-            eventId,
-            userId,
-            location,
-            imageUrl,
-            opened: false,
-            createdAt: Date.now(),
-        }
-    );
+        userId,
+        location,
+        imageUrl,
+        opened: false,
+        createdAt: Date.now(),
+    };
+
+    await saveActiveTreasureChest(chest);
 
     // ======================================
     // EMBED
@@ -414,7 +413,7 @@ async function handleTreasureChestButton(interaction) {
         );
 
     const chest =
-        activeTreasureChests.get(eventId);
+        await getActiveTreasureChest(eventId);
 
     // ======================================
     // INVALID / EXPIRED CHEST
@@ -585,9 +584,7 @@ async function handleTreasureChestButton(interaction) {
     // CLEAN MEMORY
     // ======================================
 
-    activeTreasureChests.delete(
-        eventId
-    );
+    await deleteActiveTreasureChest(eventId);
 }
 
 // ==========================================
