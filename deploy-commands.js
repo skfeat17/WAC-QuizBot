@@ -126,10 +126,20 @@ const commands = [
                     "Clear all Daily Quiz participation history"
                 )
         )
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName("treasure")
+                .setDescription("Clear all Treasure Chest cooldown history")
+        )
 
         .toJSON(),
     resolveCommand.toJSON(),
     countUsernamesCommand.toJSON(),
+
+    new SlashCommandBuilder()
+        .setName("treasure")
+        .setDescription("Discover a treasure chest washed ashore!")
+        .toJSON(),
 ];
 
 // ==========================================

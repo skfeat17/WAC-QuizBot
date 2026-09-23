@@ -1,43 +1,9 @@
 // ==============================
 // USERS WHO CAN ACCESS COMMANDS
 // ==============================
-const COMMAND_ACCESS = {
+const COMMAND_ACCESS =
+    require("./services/COMMAND_ACCESS.js").COMMAND_ACCESS;
 
-    quiz: [
-        "1242132608574292118", // me
-        "1295671787375296542", // ani
-        "1161273612167295047"  //zibai
-    ],
-
-    dailyevent: [
-        "1242132608574292118", // me
-        "1295671787375296542", // ani
-    ],
-
-    resolve: [
-        "1295671787375296542", // ani
-        "1242132608574292118", // me
-        "1133800295059705906", // mae
-        "715152515791978597", // choppah
-    ],
-
-    "kill:dailyevent": [
-        "1295671787375296542", // ani
-        "1242132608574292118", // me
-    ],
-
-    "kill:history": [
-        "1295671787375296542", // ani
-        "1242132608574292118", // me
-    ],
-
-    countusernames: [
-        "1295671787375296542", // ani
-        "1242132608574292118", // me
-        "715152515791978597", // choppah
-    ],
-
-};
 // ==============================
 // BLOCKED QUIZ USERS
 // ==============================
@@ -75,7 +41,13 @@ const {
     handleCountUsernames,
     handleCountUsernamesCopy,
 } = require("./services/countUsernames");
-
+const {
+    startTreasureChestEvent,
+    handleTreasureChestButton,
+} = require("./services/treasureChestEvent");
+const {
+    clearAllTreasureCooldowns,
+} = require("./services/treasureChestEventredis");
 const {
     Client,
     GatewayIntentBits,
@@ -84,8 +56,7 @@ const {
     ButtonBuilder,
     ButtonStyle,
     EmbedBuilder,
-    MessageFlags,
-    PermissionFlagsBits,
+    MessageFlags
 } = require("discord.js");
 
 const { generateQuiz } = require("./services/ai");
@@ -163,6 +134,46 @@ client.on(Events.InteractionCreate, async (interaction) => {
                 flags: MessageFlags.Ephemeral,
             });
 
+            return;
+        }
+
+        // ==========================================
+        // /kill treasure COMMAND
+        // ==========================================
+        if (
+            interaction.commandName === "kill" &&
+            interaction.options.getSubcommand() === "treasure"
+        ) {
+            try {
+                const deleted =
+                    await clearAllTreasureCooldowns();
+
+                await interaction.reply({
+                    content:
+                        `🧹 **TREASURE HISTORY CLEARED**\n\n` +
+                        `🗑️ Removed **${deleted}** treasure cooldown(s).\n` +
+                        `🏝️ Everyone can use \`/treasure\` again.`,
+                });
+            } catch (error) {
+                console.error(
+                    "❌ Failed to clear treasure history:",
+                    error
+                );
+
+                await interaction.reply({
+                    content:
+                        "❌ Failed to clear Treasure history.",
+                    flags: MessageFlags.Ephemeral,
+                });
+            }
+
+            return;
+        }
+        // ==========================================
+        // /treasure COMMAND
+        // ==========================================
+        if (interaction.commandName === "treasure") {
+            await startTreasureChestEvent(interaction);
             return;
         }
 
@@ -576,7 +587,14 @@ client.on(Events.InteractionCreate, async (interaction) => {
     // ==========================================
 
     if (interaction.isButton()) {
-
+        // ------------------------------------------
+        // TREASURE CHEST BUTTON
+        // ------------------------------------------
+        if (interaction.customId.startsWith("treasure_open_")
+        ) {
+            await handleTreasureChestButton(interaction);
+            return;
+        }
         // ------------------------------------------
         // COPY USERNAMES BUTTON
         // ------------------------------------------
@@ -744,16 +762,16 @@ client.on(Events.InteractionCreate, async (interaction) => {
             selectedAnswer ===
             quiz.correctAnswer;
 
-          if (BLOCKED_QUIZ_USERS.has(interaction.user.id)) {
-                await interaction.reply({
-                    content: "🚫 You are not allowed to participate in this quiz.",
-                    flags: MessageFlags.Ephemeral,
-                });
+        if (BLOCKED_QUIZ_USERS.has(interaction.user.id)) {
+            await interaction.reply({
+                content: "🚫 You are not allowed to participate in this quiz.",
+                flags: MessageFlags.Ephemeral,
+            });
 
 
 
-                return;
-            }
+            return;
+        }
 
 
 
@@ -787,23 +805,23 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
         try {
 
-  
-                await interaction.reply({
-                    content:
-                        "📝 **Answer submitted!**\n" +
-                        "⏳ Wait for the reveal — you'll be **pinged if you're in the Top 5!**",
-                    flags:
-                        MessageFlags.Ephemeral,
-                });
 
-            } catch (error) {
+            await interaction.reply({
+                content:
+                    "📝 **Answer submitted!**\n" +
+                    "⏳ Wait for the reveal — you'll be **pinged if you're in the Top 5!**",
+                flags:
+                    MessageFlags.Ephemeral,
+            });
 
-                console.error(
-                    "Failed to send answer submission confirmation:",
-                    error
-                );
-            }
+        } catch (error) {
+
+            console.error(
+                "Failed to send answer submission confirmation:",
+                error
+            );
         }
+    }
 });
 
 // ==================================================
