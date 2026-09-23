@@ -25,7 +25,7 @@ const PAYMENT_STAFF = [
     "1295671787375296542",
 ];
 
-const WINNERS_REQUIRED = 5;
+const WINNERS_REQUIRED = 10;
 const PRIZE_AMOUNT = 10;
 
 let activeDailyQuiz = null;
@@ -99,11 +99,13 @@ async function startDailyQuiz(interaction) {
 
     try {
         const quiz = await generateDailyQuiz(type);
-
-        if (!quiz || !Array.isArray(quiz.countries) || quiz.countries.length !== 5) {
-            throw new Error("Invalid Daily Event generated.");
+        if (
+            !quiz ||
+            !Array.isArray(quiz.countries) ||
+            quiz.countries.length < 10
+        ) {
+            throw new Error("Invalid Daily Event generated. At least 10 countries are required.");
         }
-
         activeDailyQuiz = {
             eventId,
             hostId: interaction.user.id,
@@ -472,6 +474,7 @@ async function handleDailyQuizAnswer(interaction) {
         country.resolving = false;
 
         const correctAnswer = country.answers[country.correctAnswer];
+
         console.log(
             `❌ WRONG ANSWER | User: ${interaction.user.username} | ` +
             `Display: ${interaction.member?.displayName || interaction.user.globalName || interaction.user.username} | ` +
@@ -483,13 +486,38 @@ async function handleDailyQuizAnswer(interaction) {
 
         await persistActiveDailyQuiz();
 
+        // ==============================
+        // PRIVATE MESSAGE
+        // ==============================
+
         await interaction.editReply({
             content:
                 `❌ **Wrong answer!**\n\n` +
                 `${country.flag} **${country.country}**\n` +
-                `✅ Correct answer: **${correctAnswer}**\n\n` +
+                `✅ Correct answer: **${correctAnswer}**\n` +
                 `Your attempt for this event is used.`,
         });
+
+        // ==============================
+        // PUBLIC MESSAGE
+        // ==============================
+
+        try {
+            await interaction.followUp({
+                content:
+                    `🌟 <@${interaction.user.id}> Great try! Keep going next win could be yours! 💗\n` +
+                    `🌍 See you in the next Daily Event!`,
+                allowedMentions: {
+                    users: [interaction.user.id],
+                },
+            });
+        } catch (error) {
+            console.error(
+                "❌ Failed to send public wrong-answer message:",
+                error.message
+            );
+        }
+
         return;
     }
 

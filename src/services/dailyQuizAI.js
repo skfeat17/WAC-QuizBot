@@ -23,7 +23,7 @@ const dailyEventSchema = z.object({
             answers: z.array(z.string().min(1)).length(4),
             correctAnswer: z.number().int().min(0).max(3),
         })
-    ).length(5),
+    ).length(10),
 });
 
 const MAX_GENERATION_ATTEMPTS = 5;
@@ -32,10 +32,14 @@ async function generateDailyQuiz(type) {
     console.log(`🤖 Generating Daily Event: ${type}`);
 
     let previousContexts = [];
+
     try {
         previousContexts = await getStoredQuestionContexts(type);
     } catch (error) {
-        console.error("⚠️ Could not load Daily Event history:", error.message);
+        console.error(
+            "⚠️ Could not load Daily Event history:",
+            error.message
+        );
     }
 
     for (let attempt = 1; attempt <= MAX_GENERATION_ATTEMPTS; attempt++) {
@@ -47,31 +51,47 @@ async function generateDailyQuiz(type) {
                 contents: prompt,
                 config: {
                     responseMimeType: "application/json",
+
                     responseSchema: {
                         type: "object",
                         properties: {
                             countries: {
                                 type: "array",
-                                minItems: 5,
-                                maxItems: 5,
+                                minItems: 10,
+                                maxItems: 10,
+
                                 items: {
                                     type: "object",
+
                                     properties: {
-                                        country: { type: "string" },
-                                        flag: { type: "string" },
-                                        prompt: { type: "string" },
+                                        country: {
+                                            type: "string",
+                                        },
+
+                                        flag: {
+                                            type: "string",
+                                        },
+
+                                        prompt: {
+                                            type: "string",
+                                        },
+
                                         answers: {
                                             type: "array",
                                             minItems: 4,
                                             maxItems: 4,
-                                            items: { type: "string" },
+                                            items: {
+                                                type: "string",
+                                            },
                                         },
+
                                         correctAnswer: {
                                             type: "integer",
                                             minimum: 0,
                                             maximum: 3,
                                         },
                                     },
+
                                     required: [
                                         "country",
                                         "flag",
@@ -79,20 +99,26 @@ async function generateDailyQuiz(type) {
                                         "answers",
                                         "correctAnswer",
                                     ],
+
                                     additionalProperties: false,
                                 },
                             },
                         },
+
                         required: ["countries"],
                         additionalProperties: false,
                     },
-                    maxOutputTokens: 4000,
+
+                    maxOutputTokens: 7000,
                 },
             });
 
-            if (!response.text) throw new Error("Gemini returned an empty response.");
+            if (!response.text) {
+                throw new Error("Gemini returned an empty response.");
+            }
 
             let parsed;
+
             try {
                 parsed = JSON.parse(response.text);
             } catch {
@@ -100,17 +126,30 @@ async function generateDailyQuiz(type) {
             }
 
             const result = dailyEventSchema.parse(parsed);
+
             const usedCountries = new Set();
             const freshQuestions = [];
 
             for (const item of result.countries) {
                 const countryKey = normalize(item.country);
+
                 const answers = item.answers.map(a => a.trim());
+
                 const normalizedAnswers = answers.map(normalize);
 
-                if (usedCountries.has(countryKey)) continue;
-                if (new Set(normalizedAnswers).size !== 4) continue;
-                if (normalizedAnswers[item.correctAnswer] === "") continue;
+                // Prevent duplicate countries
+                if (usedCountries.has(countryKey)) {
+                    continue;
+                }
+
+                // Prevent duplicate answers
+                if (new Set(normalizedAnswers).size !== 4) {
+                    continue;
+                }
+
+                if (normalizedAnswers[item.correctAnswer] === "") {
+                    continue;
+                }
 
                 usedCountries.add(countryKey);
 
@@ -122,7 +161,10 @@ async function generateDailyQuiz(type) {
                     scrambled: String(item.correctAnswer),
                 });
 
-                if (await hasQuestionBeenUsed(type, context)) continue;
+                // Prevent previously used questions
+                if (await hasQuestionBeenUsed(type, context)) {
+                    continue;
+                }
 
                 freshQuestions.push({
                     country: item.country.trim(),
@@ -134,20 +176,28 @@ async function generateDailyQuiz(type) {
                 });
             }
 
-            if (freshQuestions.length === 5) {
+            if (freshQuestions.length === 10) {
                 await saveQuestionContexts(
                     type,
-                    freshQuestions.map(item => item._questionContext)
+                    freshQuestions.map(
+                        item => item._questionContext
+                    )
                 );
 
-                console.log(`✅ 5 fresh ${type} Daily Event questions generated.`);
+                console.log(
+                    `✅ 10 fresh ${type} Daily Event questions generated.`
+                );
 
                 return {
-                    countries: freshQuestions.map(({ _questionContext, ...country }) => country),
+                    countries: freshQuestions.map(
+                        ({ _questionContext, ...country }) => country
+                    ),
                 };
             }
 
-            console.log(`⚠️ Only ${freshQuestions.length}/5 fresh questions. Retrying...`);
+            console.log(
+                `⚠️ Only ${freshQuestions.length}/10 fresh questions. Retrying...`
+            );
 
             for (const item of result.countries) {
                 const context = createQuestionContext({
@@ -157,27 +207,37 @@ async function generateDailyQuiz(type) {
                     answers: item.answers,
                     scrambled: String(item.correctAnswer),
                 });
-                if (!previousContexts.includes(context)) previousContexts.push(context);
+
+                if (!previousContexts.includes(context)) {
+                    previousContexts.push(context);
+                }
             }
         } catch (error) {
-            console.error(`❌ Daily Event generation attempt ${attempt} failed:`, error.message);
+            console.error(
+                `❌ Daily Event generation attempt ${attempt} failed:`,
+                error.message
+            );
         }
     }
 
     throw new Error(
-        `Could not generate 5 unique Daily Event questions for "${type}" after ${MAX_GENERATION_ATTEMPTS} attempts.`
+        `Could not generate 10 unique Daily Event questions for "${type}" after ${MAX_GENERATION_ATTEMPTS} attempts.`
     );
 }
 
 function getPrompt(type, previousContexts = []) {
     const history = previousContexts.length
-        ? previousContexts.slice(-100).map((context, i) => `${i + 1}. ${context}`).join("\n")
+        ? previousContexts
+              .slice(-100)
+              .map((context, i) => `${i + 1}. ${context}`)
+              .join("\n")
         : "NONE";
 
     const rules = `
-Generate exactly 5 different sovereign countries.
+Generate exactly 10 different sovereign countries.
 
 IMPORTANT:
+
 - Every country must be different.
 - Every country gets exactly 4 MCQ options.
 - Exactly ONE option must be correct.
@@ -195,42 +255,66 @@ IMPORTANT:
 - Return ONLY JSON.
 
 PREVIOUSLY USED QUESTION CONTEXTS:
+
 ${history}
 `;
 
     const typeRules = {
         capital: `
 EVENT TYPE: GUESS THE CAPITAL
+
 For each country, ask for its capital city.
+
 The four options must be capital cities and only one belongs to the selected country.
 `,
+
         food: `
 EVENT TYPE: GUESS THE FAMOUS FOOD
+
 For each country, ask which food is strongly associated with that country.
+
 The four answers must be food names. Avoid generic foods.
+
 Only one option should be the strongest established association.
 `,
+
         monument: `
 EVENT TYPE: GUESS THE FAMOUS BUILDING / MONUMENT
+
 For each country, ask which famous building or monument is associated with that country.
+
 The four answers must be landmark names. Only one should belong to the selected country.
 `,
+
         president: `
 EVENT TYPE: GUESS THE PRESIDENT
+
 For each country, ask for the current head of state/president where the country has a presidential head of state.
+
 Use the currently serving person as of generation time.
+
 The four answers must be person names. Avoid countries where the wording would be constitutionally ambiguous.
 `,
+
         independence: `
 EVENT TYPE: GUESS THE INDEPENDENCE DAY
+
 For each country, ask for its nationally recognized independence day/date.
+
 The four answers must be dates such as "15 August". Avoid disputed or ambiguous independence dates.
 `,
     };
 
-    if (!typeRules[type]) throw new Error(`Unsupported Daily Event type: ${type}`);
+    if (!typeRules[type]) {
+        throw new Error(
+            `Unsupported Daily Event type: ${type}`
+        );
+    }
 
-    return `${rules}\n${typeRules[type]}\nChoose countries from different regions when practical.`;
+    return `${rules}
+${typeRules[type]}
+Choose countries from different regions when practical.
+`;
 }
 
 function normalize(value) {
