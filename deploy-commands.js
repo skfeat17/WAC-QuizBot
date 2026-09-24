@@ -15,7 +15,9 @@ const {
 const {
     treasureCooldownCommand,
 } = require("./src/services/treasureCooldownAdmin.js");
-
+const {
+    dailyeventCooldownCommand,
+} = require("./src/services/dailyEventCooldownAdmin");
 const commands = [
 
     // ==========================================
@@ -144,6 +146,7 @@ const commands = [
         .setDescription("Discover a treasure chest washed ashore!")
         .toJSON(),
     treasureCooldownCommand.toJSON(),
+    dailyeventCooldownCommand.toJSON(),
 ];
 
 // ==========================================

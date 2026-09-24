@@ -36,6 +36,11 @@ http.createServer((req, res) => {
 const {
     handleResolve,
 } = require("./services/resolve");
+
+const {
+    dailyeventCooldownCommand,
+    handleDailyEventCooldown,
+} = require("./services/dailyEventCooldownAdmin");
 const {
     treasureCooldownCommand,
     handleTreasureCooldown,
@@ -139,7 +144,39 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
             return;
         }
+        // ==========================================
+        // /dailyeventcooldown COMMAND
+        // ==========================================     
+if (interaction.commandName === "dailyeventcooldown") {
+    try {
+        await interaction.deferReply({
+            flags: MessageFlags.Ephemeral,
+        });
 
+        await handleDailyEventCooldown(interaction);
+    } catch (error) {
+        console.error(
+            "❌ Daily Event Cooldown command failed:",
+            error?.message || error
+        );
+
+        try {
+            if (interaction.deferred || interaction.replied) {
+                await interaction.editReply({
+                    content:
+                        "❌ Failed to retrieve Daily Event cooldowns.",
+                });
+            }
+        } catch (replyError) {
+            console.error(
+                "❌ Could not send cooldown error:",
+                replyError?.message || replyError
+            );
+        }
+    }
+
+    return;
+}
         // ==========================================
         // /treasurecooldown COMMAND
         // ==========================================       
