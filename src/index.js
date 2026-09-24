@@ -143,10 +143,36 @@ client.on(Events.InteractionCreate, async (interaction) => {
         // ==========================================
         // /treasurecooldown COMMAND
         // ==========================================       
-    if (interaction.commandName === "treasurecooldown") {
-        await handleTreasureCooldown(interaction);
-        return;
-    }
+        if (interaction.commandName === "treasurecooldown") {
+            try {
+                await interaction.deferReply({
+                    flags: MessageFlags.Ephemeral,
+                });
+
+                await handleTreasureCooldown(interaction);
+            } catch (error) {
+                console.error(
+                    "❌ Treasure Cooldown command failed:",
+                    error?.message || error
+                );
+
+                try {
+                    if (interaction.deferred || interaction.replied) {
+                        await interaction.editReply({
+                            content:
+                                "❌ Failed to process Treasure Cooldown command.",
+                        });
+                    }
+                } catch (replyError) {
+                    console.error(
+                        "❌ Could not send Treasure Cooldown error:",
+                        replyError?.message || replyError
+                    );
+                }
+            }
+
+            return;
+        }
         // ==========================================
         // /kill treasure COMMAND
         // ==========================================

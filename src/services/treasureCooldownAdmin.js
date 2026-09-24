@@ -165,7 +165,7 @@ async function handleTreasureCooldown(interaction) {
         const ttl = await getTreasureCooldown(user.id);
 
         if (ttl <= 0) {
-            await interaction.reply({
+            await interaction.editReply({
                 content:
                     `🟢 **${user.username}** has no Treasure Chest cooldown.\n` +
                     `👤 <@${user.id}>`,
@@ -175,7 +175,7 @@ async function handleTreasureCooldown(interaction) {
             return;
         }
 
-        await interaction.reply({
+        await interaction.editReply({
             content:
                 `⏳ **Treasure Chest Cooldown**\n\n` +
                 `👤 **User:** <@${user.id}>\n` +
@@ -197,7 +197,7 @@ async function handleTreasureCooldown(interaction) {
         const ttl = await getTreasureCooldown(user.id);
 
         if (ttl <= 0) {
-            await interaction.reply({
+            await interaction.editReply({
                 content:
                     `ℹ️ <@${user.id}> does not currently have a Treasure Chest cooldown.`,
                 flags: MessageFlags.Ephemeral,
@@ -208,7 +208,7 @@ async function handleTreasureCooldown(interaction) {
 
         await clearTreasureCooldown(user.id);
 
-        await interaction.reply({
+        await interaction.editReply({
             content:
                 `✅ Treasure Chest cooldown removed.\n\n` +
                 `👤 **User:** <@${user.id}>\n` +
@@ -231,7 +231,7 @@ async function handleTreasureCooldown(interaction) {
         const cooldowns = await getTreasureCooldownList();
 
         if (!cooldowns.length) {
-            await interaction.reply({
+            await interaction.editReply({
                 content:
                     "🟢 **No one is currently on Treasure Chest cooldown.**",
                 flags: MessageFlags.Ephemeral,
@@ -271,7 +271,7 @@ async function handleTreasureCooldown(interaction) {
             },
         };
 
-        await interaction.reply({
+        await interaction.editReply({
             embeds: [firstEmbed],
             flags: MessageFlags.Ephemeral,
         });
@@ -295,7 +295,7 @@ async function handleTreasureCooldown(interaction) {
         return;
     }
 
-    await interaction.reply({
+    await interaction.editReply({
         content: "❌ Unknown Treasure cooldown action.",
         flags: MessageFlags.Ephemeral,
     });
