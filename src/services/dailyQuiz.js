@@ -551,12 +551,7 @@ async function handleDailyQuizAnswer(interaction) {
     // ==========================================
 
     await interaction.editReply({
-        content:
-            `✅ **Correct!**\n\n` +
-            `🏆 You won **${PRIZE_AMOUNT}** <:mora:1503931162525962333>!\n\n` +
-            `Please send a new message and tag ${PAYMENT_STAFF.map(id => `<@${id}>`).join(" ")} to receive your reward.\n` +
-            `-# You must tag the ${PAYMENT_STAFF.map(id => `<@${id}>`).join(" ")}, otherwise you may not get paid.\n\n` +
-            `-# Don't copy-paste this auto-generated message or your reward will be ignored.`,
+        content: `✅ **Correct!** You won **${PRIZE_AMOUNT}** <:mora:1503931162525962333>! Tag/Ping/Mention ${PAYMENT_STAFF.map(id => `<@${id}>`).join(" ")} to get rewarded!`,
         allowedMentions: {
             users: [],
         },
