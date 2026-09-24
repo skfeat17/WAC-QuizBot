@@ -151,15 +151,15 @@ function getRandomLocation() {
 // ==========================================
 
 function getTreasureReward() {
-const tiers = [
-    { weight: 50, min: 25, max: 35 },  // 50%
-    { weight: 25, min: 36, max: 45 },  // 25%
-    { weight: 13, min: 46, max: 55 },  // 13%
-    { weight: 7,  min: 56, max: 65 },  // 7%
-    { weight: 3,  min: 66, max: 75 },  // 3%
-    { weight: 1.5, min: 76, max: 85 }, // 1.5%
-    { weight: 0.5, min: 86, max: 100 }, // 0.5%
-];
+    const tiers = [
+        { weight: 50, min: 25, max: 35 },  // 50%
+        { weight: 25, min: 36, max: 45 },  // 25%
+        { weight: 13, min: 46, max: 55 },  // 13%
+        { weight: 7, min: 56, max: 65 },  // 7%
+        { weight: 3, min: 66, max: 75 },  // 3%
+        { weight: 1.5, min: 76, max: 85 }, // 1.5%
+        { weight: 0.5, min: 86, max: 100 }, // 0.5%
+    ];
     const totalWeight = tiers.reduce(
         (sum, tier) => sum + tier.weight,
         0
@@ -568,15 +568,14 @@ async function handleTreasureChestButton(interaction) {
     try {
         await interaction.followUp({
             content:
-                `💰 **TREASURE CHEST WINNER**\n\n` +
-                `👤 USER : <@${userId}>\n` +
-                `🏝️ LOCATION : ${chest.location.flag} **${chest.location.island}, ${chest.location.country}**\n` +
-                `💵 REWARD : **${reward} Mora**\n\n` +
-                `${PAYMENT_STAFF.map(id => `<@${id}>`).join(" ")} ` +
-                `please process **${reward} Mora** to "${interaction.user.username}".`,
+                `🎉 Congratulations! You are a **Treasure Chest Winner**! 🏆\n\n` +
+                `🏆 You won **${reward}** <:mora:1503931162525962333>!\n\n` +
+                `💰 **Payment Staff:** ${PAYMENT_STAFF.map(id => `<@${id}>`).join(" ")}\n` +
+                `Please tag a payment staff member to receive your reward.`,
             allowedMentions: {
-                users: [...new Set(PAYMENT_STAFF)],
+                users: [],
             },
+            flags: MessageFlags.Ephemeral,
         });
     } catch (error) {
         console.error(

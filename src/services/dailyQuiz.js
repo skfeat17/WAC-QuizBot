@@ -552,7 +552,13 @@ async function handleDailyQuizAnswer(interaction) {
 
     await interaction.editReply({
         content:
-            `✅ **Correct!**`
+            `✅ **Correct!**\n\n` +
+            `🏆 You won **${PRIZE_AMOUNT}** <:mora:1503931162525962333>!\n\n` +
+            `💰 **Payment Staff:** ${PAYMENT_STAFF.map(id => `<@${id}>`).join(" ")}\n` +
+            `Please tag a payment staff member to receive your reward.`,
+        allowedMentions: {
+            users: [],
+        },
     });
 
     // ==========================================
@@ -563,19 +569,11 @@ async function handleDailyQuizAnswer(interaction) {
         try {
             await interaction.followUp({
                 content:
-                    `💰 **DAILY EVENT WINNER #${winner.position}**\n\n` +
-                    `👤 USER : <@${winner.id}>\n` +
-                    `🎯 EVENT : **${getTypeName(activeDailyQuiz.type)}**\n` +
-                    `🌍 COUNTRY : ${winner.flag} **${winner.country}**\n` +
-                    `✅ ANSWER : **${winner.answer}**\n` +
-                    `💵 REWARD : **${PRIZE_AMOUNT} Mora**\n\n` +
-                    `${PAYMENT_STAFF.map(id => `<@${id}>`).join(" ")} ` +
-                    `please process the payment to "${winner.username}".`,
+                    `🎉 **Congratulations** <@${winner.id}>! You are a **Daily Event Winner #${winner.position}**! 🏆`,
                 allowedMentions: {
-                    users: [...new Set(PAYMENT_STAFF)],
+                    users: [winner.id],
                 },
             });
-
             console.log(
                 `💰 Payment notification sent for ${winner.username} — ` +
                 `${getTypeName(activeDailyQuiz.type)} — ${winner.answer}`

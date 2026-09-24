@@ -6,12 +6,13 @@ const readline = require("readline");
 
 function getTreasureReward() {
 const tiers = [
-    { weight: 42, min: 25, max: 35 },  // 42%
-    { weight: 22, min: 36, max: 50 },  // 22%
-    { weight: 16, min: 51, max: 65 },  // 16%
-    { weight: 10, min: 66, max: 75 },  // 10%
-    { weight: 7,  min: 76, max: 90 },  // 7%
-    { weight: 3,  min: 91, max: 100 }, // 3%
+    { weight: 50, min: 25, max: 35 },  // 50%
+    { weight: 25, min: 36, max: 45 },  // 25%
+    { weight: 13, min: 46, max: 55 },  // 13%
+    { weight: 7,  min: 56, max: 65 },  // 7%
+    { weight: 3,  min: 66, max: 75 },  // 3%
+    { weight: 1.5, min: 76, max: 85 }, // 1.5%
+    { weight: 0.5, min: 86, max: 100 }, // 0.5%
 ];
     let random = Math.random() * 100;
 
