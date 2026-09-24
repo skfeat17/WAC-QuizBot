@@ -571,7 +571,8 @@ async function handleTreasureChestButton(interaction) {
                 `🎉 Congratulations! You are a **Treasure Chest Winner**! 🏆\n\n` +
                 `🏆 You won **${reward}** <:mora:1503931162525962333>!\n\n` +
                 `💰 **Payment Staff:** ${PAYMENT_STAFF.map(id => `<@${id}>`).join(" ")}\n` +
-                `Please tag a payment staff member to receive your reward.`,
+                `Please tag a payment staff member to receive your reward.`+
+                `-# If you didn't tag a payment staff you won't get paid`,
             allowedMentions: {
                 users: [],
             },
