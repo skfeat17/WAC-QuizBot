@@ -570,7 +570,7 @@ async function handleDailyQuizAnswer(interaction) {
         try {
             await interaction.followUp({
                 content:
-                    `🎉 **Congratulations** <@${winner.id}>! You are a **Daily Event Winner #${winner.position}**! 🏆`,
+                    `🎉 **Congratulations** <@${winner.id}>! You are a **DAILY EVENT — ${getTypeName(activeDailyQuiz.type)} WINNER #${winner.position}**! 🏆`,
                 allowedMentions: {
                     users: [winner.id],
                 },
