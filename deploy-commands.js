@@ -12,6 +12,9 @@ const {
 const {
     countUsernamesCommand,
 } = require("./src/services/countUsernames");
+const {
+    treasureCooldownCommand,
+} = require("./src/services/treasureCooldownAdmin.js");
 
 const commands = [
 
@@ -140,6 +143,7 @@ const commands = [
         .setName("treasure")
         .setDescription("Discover a treasure chest washed ashore!")
         .toJSON(),
+    treasureCooldownCommand.toJSON(),
 ];
 
 // ==========================================

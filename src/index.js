@@ -36,7 +36,10 @@ http.createServer((req, res) => {
 const {
     handleResolve,
 } = require("./services/resolve");
-
+const {
+    treasureCooldownCommand,
+    handleTreasureCooldown,
+} = require("./services/treasureCooldownAdmin");
 const {
     handleCountUsernames,
     handleCountUsernamesCopy,
@@ -137,6 +140,13 @@ client.on(Events.InteractionCreate, async (interaction) => {
             return;
         }
 
+        // ==========================================
+        // /treasurecooldown COMMAND
+        // ==========================================       
+    if (interaction.commandName === "treasurecooldown") {
+        await handleTreasureCooldown(interaction);
+        return;
+    }
         // ==========================================
         // /kill treasure COMMAND
         // ==========================================
