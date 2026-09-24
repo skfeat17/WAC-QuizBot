@@ -554,9 +554,9 @@ async function handleDailyQuizAnswer(interaction) {
         content:
             `✅ **Correct!**\n\n` +
             `🏆 You won **${PRIZE_AMOUNT}** <:mora:1503931162525962333>!\n\n` +
-            `💰 **Payment Staff:** ${PAYMENT_STAFF.map(id => `<@${id}>`).join(" ")}\n` +
-            `Please tag a payment staff member to receive your reward.`+
-            `-# If you didn't tag a payment staff you won't get paid`,
+            `Please send a new message and tag ${PAYMENT_STAFF.map(id => `<@${id}>`).join(" ")} to receive your reward.\n` +
+            `-# You must tag the ${PAYMENT_STAFF.map(id => `<@${id}>`).join(" ")}, otherwise you may not get paid.\n\n` +
+            `-# Don't copy-paste this auto-generated message or your reward will be ignored.`,
         allowedMentions: {
             users: [],
         },
