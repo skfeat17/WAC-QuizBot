@@ -567,7 +567,7 @@ async function handleTreasureChestButton(interaction) {
 
     try {
         await interaction.followUp({
-                 content: `🎉** You Won a Treasure Chest** with **${reward}** <:mora:1503931162525962333>! Tag/Ping/Mention ${PAYMENT_STAFF.map(id => `<@${id}>`).join(" ")} to get rewarded!`,
+                 content: `🎉** You Won** ${reward} ** <:mora:1503931162525962333>! Tag/Ping/Mention ${PAYMENT_STAFF.map(id => `<@${id}>`).join(" ")} to get rewarded!`,
             allowedMentions: {
                 users: [],
             },
