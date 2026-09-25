@@ -15,6 +15,10 @@ const COOLDOWN_SECONDS = 24 * 60 * 60;
 const EVENT_TTL_SECONDS = 7 * 24 * 60 * 60;
 const PREFIX = "wac:dailyquiz:";
 
+const DAILY_QUIZ_COOLDOWN_IMMUNE = [
+    "1295671787375296542",
+    "1242132608574292118",
+];
 // ==========================================
 // COOLDOWN
 // ==========================================
@@ -28,6 +32,9 @@ async function getUserCooldown(type, userId) {
 }
 
 async function hasUserCooldown(type, userId) {
+    if (DAILY_QUIZ_COOLDOWN_IMMUNE.includes(userId)) {
+        return false;
+    }
     try {
         return (await getUserCooldown(type, userId)) > 0;
     } catch (error) {
@@ -37,6 +44,10 @@ async function hasUserCooldown(type, userId) {
 }
 
 async function setUserCooldown(type, userId) {
+    if (DAILY_QUIZ_COOLDOWN_IMMUNE.includes(userId)) {
+        return true;
+    }
+
     await redis.set(
         cooldownKey(type, userId),
         {
