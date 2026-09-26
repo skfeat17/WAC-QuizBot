@@ -147,6 +147,16 @@ const commands = [
         .toJSON(),
     treasureCooldownCommand.toJSON(),
     dailyeventCooldownCommand.toJSON(),
+
+    new SlashCommandBuilder()
+    .setName("testdm")
+    .setDescription("Test sending a DM")
+    .addUserOption(option =>
+        option
+            .setName("user")
+            .setDescription("User to DM")
+            .setRequired(true)
+    )
 ];
 
 // ==========================================

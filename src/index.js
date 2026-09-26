@@ -9,7 +9,9 @@ const COMMAND_ACCESS =
 // ==============================
 const BLOCKED_QUIZ_USERS = new Set([]);
 
-
+const {
+    handlePaymentButton,
+} = require("./services/paymentService");
 
 require("dotenv").config();
 const { Redis } = require("@upstash/redis");
@@ -144,39 +146,72 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
             return;
         }
+
+
+        // ==========================================
+        // /testdm @username COMMAND
+        // ==========================================  
+
+        if (interaction.commandName === "testdm") {
+            try {
+                const user = interaction.options.getUser("user");
+
+                await user.send(
+                    `🧪 Test DM\nTime: ${new Date().toLocaleTimeString()}`
+                );
+
+                await interaction.reply({
+                    content: `✅ DM sent to ${user.tag}`,
+                    flags: MessageFlags.Ephemeral,
+                });
+            } catch (error) {
+                console.error("❌ DM failed:", error);
+
+                if (!interaction.replied && !interaction.deferred) {
+                    await interaction.reply({
+                        content: `❌ DM failed: ${error.message}`,
+                        flags: MessageFlags.Ephemeral,
+                    });
+                }
+            }
+
+            return;
+        }
+
+
         // ==========================================
         // /dailyeventcooldown COMMAND
         // ==========================================     
-if (interaction.commandName === "dailyeventcooldown") {
-    try {
-        await interaction.deferReply({
-            flags: MessageFlags.Ephemeral,
-        });
-
-        await handleDailyEventCooldown(interaction);
-    } catch (error) {
-        console.error(
-            "❌ Daily Event Cooldown command failed:",
-            error?.message || error
-        );
-
-        try {
-            if (interaction.deferred || interaction.replied) {
-                await interaction.editReply({
-                    content:
-                        "❌ Failed to retrieve Daily Event cooldowns.",
+        if (interaction.commandName === "dailyeventcooldown") {
+            try {
+                await interaction.deferReply({
+                    flags: MessageFlags.Ephemeral,
                 });
-            }
-        } catch (replyError) {
-            console.error(
-                "❌ Could not send cooldown error:",
-                replyError?.message || replyError
-            );
-        }
-    }
 
-    return;
-}
+                await handleDailyEventCooldown(interaction);
+            } catch (error) {
+                console.error(
+                    "❌ Daily Event Cooldown command failed:",
+                    error?.message || error
+                );
+
+                try {
+                    if (interaction.deferred || interaction.replied) {
+                        await interaction.editReply({
+                            content:
+                                "❌ Failed to retrieve Daily Event cooldowns.",
+                        });
+                    }
+                } catch (replyError) {
+                    console.error(
+                        "❌ Could not send cooldown error:",
+                        replyError?.message || replyError
+                    );
+                }
+            }
+
+            return;
+        }
         // ==========================================
         // /treasurecooldown COMMAND
         // ==========================================       
@@ -660,6 +695,15 @@ if (interaction.commandName === "dailyeventcooldown") {
     // ==========================================
 
     if (interaction.isButton()) {
+        // ------------------------------------------
+        // Payment BUTTON
+        // ------------------------------------------        
+        if (
+            interaction.customId.startsWith("payment_paid_")
+        ) {
+            await handlePaymentButton(interaction);
+            return;
+        }
         // ------------------------------------------
         // TREASURE CHEST BUTTON
         // ------------------------------------------

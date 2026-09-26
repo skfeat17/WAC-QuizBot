@@ -8,7 +8,9 @@ const {
 } = require("discord.js");
 
 const { generateDailyQuiz } = require("./dailyQuizAI");
-
+const {
+    createPaymentTransaction,
+} = require("./paymentService");
 const {
     hasUserCooldown,
     setUserCooldown,
@@ -594,6 +596,39 @@ async function handleDailyQuizAnswer(interaction) {
         );
     }
     await updateDailyQuizMessage();
+
+await createPaymentTransaction({
+    client: interaction.client,
+
+    winnerId: winner.id,
+
+    displayName:
+        interaction.member?.displayName ||
+        interaction.user.globalName ||
+        winner.username,
+
+    username:
+        winner.username,
+
+    eventName:
+        `${winner.flag} ${winner.country}`,
+
+    eventType:
+        "Daily Event",
+
+    reward:
+        PRIZE_AMOUNT,
+
+    sourceChannelId:
+        interaction.channelId,
+
+    sourceMessageId:
+        activeDailyQuiz.message?.id ||
+        activeDailyQuiz.messageId ||
+        null,
+});
+
+
 
     if (activeDailyQuiz && activeDailyQuiz.winners.length >= WINNERS_REQUIRED) {
         await finishDailyQuiz();

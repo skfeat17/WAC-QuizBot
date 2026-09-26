@@ -7,7 +7,9 @@ const {
     EmbedBuilder,
     MessageFlags,
 } = require("discord.js");
-
+const {
+    createPaymentTransaction,
+} = require("./paymentService");
 const {
     hasTreasureCooldown,
     getTreasureCooldown,
@@ -564,18 +566,44 @@ async function handleTreasureChestButton(interaction) {
     // ======================================
     // PAYMENT STAFF NOTIFICATION
     // ======================================
+    // ======================================
+    // PAYMENT TRANSACTION
+    // ======================================
 
     try {
-        await interaction.followUp({
-                 content: `🎉** You Won ${reward} ** <:mora:1503931162525962333>! Tag/Ping/Mention ${PAYMENT_STAFF.map(id => `<@${id}>`).join(" ")} to get rewarded!`,
-            allowedMentions: {
-                users: [],
-            },
-            flags: MessageFlags.Ephemeral,
+        const winnerUser =
+            await interaction.client.users.fetch(userId);
+
+        await createPaymentTransaction({
+            client: interaction.client,
+
+            winnerId: userId,
+
+            displayName:
+                winnerUser.globalName ||
+                winnerUser.username,
+
+            username:
+                winnerUser.username,
+
+            eventName:
+                `${chest.location.flag} ${chest.location.island}, ${chest.location.country}`,
+
+            eventType:
+                "Treasure Chest",
+
+            reward,
+
+            sourceChannelId:
+                interaction.channelId,
+
+            sourceMessageId:
+                interaction.message?.id || null,
         });
+
     } catch (error) {
         console.error(
-            "❌ Treasure payment notification failed:",
+            "❌ Treasure payment transaction failed:",
             error.message
         );
     }
