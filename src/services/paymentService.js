@@ -62,7 +62,7 @@ function buildPaymentEmbed(transaction) {
             },
             {
                 name: "Winner Username",
-                value: `\`${transaction.username}\``,
+                value: `${transaction.username}`,
                 inline: true,
             },
             {
