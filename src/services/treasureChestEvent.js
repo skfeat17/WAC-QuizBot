@@ -27,15 +27,13 @@ const {
 
 const TREASURE_MIN = 25;
 const TREASURE_MAX = 75;
-const TREASURE_EXPIRY_MS =  10 * 1000; // 10 minutes
+
 const PAYMENT_STAFF = [
     "1295671787375296542",
 ];
 
 
-// ==========================================
-// COUNTRY / ISLAND LOCATIONS
-// ==========================================
+
 
 
 // ==========================================
@@ -273,67 +271,11 @@ async function startTreasureChestEvent(interaction) {
     // ======================================
     // SEND CHEST
     // ======================================
-const response = await interaction.reply({
-    embeds: [embed],
-    components: buildTreasureButton(eventId),
-    withResponse: true,
-});
 
-const messageId = response.resource.message.id;
-const channelId = interaction.channelId;
-
-setTimeout(async () => {
-    try {
-        const activeChest = await getActiveTreasureChest(eventId);
-
-        // Someone already claimed it
-        if (!activeChest || activeChest.opened) {
-            return;
-        }
-
-        // Remove it from Redis
-        await deleteActiveTreasureChest(eventId);
-
-        const expiredEmbed = new EmbedBuilder()
-            .setColor(0x7f8c8d)
-            .setTitle("🏴‍☠️ TREASURE CHEST LOOTED BY THIEVES!")
-            .setDescription(
-                `⏰ **You were too late!**\n\n` +
-                `🌊 The treasure chest at\n` +
-                `${location.flag} **${location.island}, ${location.country}**\n\n` +
-                `💨 The treasure hunters arrived too late...\n` +
-                `The chest and its treasure are gone!`
-            )
-            .setFooter({
-                text: "World Adventure Club • Treasure Hunt",
-            });
-
-        if (imageUrl) {
-            expiredEmbed.setImage(imageUrl);
-        }
-
-        // Fetch channel directly
-        const channel = await interaction.client.channels.fetch(channelId);
-
-        // Fetch message directly
-        const chestMessage = await channel.messages.fetch(messageId);
-
-        await chestMessage.edit({
-            embeds: [expiredEmbed],
-            components: [],
-        });
-
-        console.log(
-            `⏰ TREASURE EXPIRED | Event: ${eventId}`
-        );
-
-    } catch (error) {
-        console.error(
-            "❌ Failed to expire treasure chest:",
-            error.message
-        );
-    }
-}, TREASURE_EXPIRY_MS);
+    await interaction.reply({
+        embeds: [embed],
+        components: buildTreasureButton(eventId),
+    });
 
     console.log(
         `🏝️ TREASURE CHEST | ${location.island}, ${location.country}`
