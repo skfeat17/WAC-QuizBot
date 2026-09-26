@@ -289,11 +289,11 @@ The four answers must be landmark names. Only one should belong to the selected 
         president: `
 EVENT TYPE: GUESS THE PRESIDENT
 
-For each country, ask for the current head of state/president where the country has a presidential head of state.
-
-Use the currently serving person as of generation time.
-
-The four answers must be person names. Avoid countries where the wording would be constitutionally ambiguous.
+- Ask for the most recent person to have served as president of the country.
+- Interpret "most recent president" as the latest person who actually held the office, including the current officeholder if they are currently serving.
+- Do not confuse president with prime minister, monarch, acting president, or ceremonial head of state.
+- Use established factual information and avoid speculation.
+- The question must have exactly one correct answer.
 `,
 
         independence: `
