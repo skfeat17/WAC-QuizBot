@@ -17,7 +17,7 @@ const PREFIX = "wac:dailyquiz:";
 
 const DAILY_QUIZ_COOLDOWN_IMMUNE = [
     "1295671787375296542",
-
+    "1242132608574292118",
 ];
 // ==========================================
 // COOLDOWN

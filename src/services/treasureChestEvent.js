@@ -1,5 +1,5 @@
 require("dotenv").config();
-
+const TREASURE_LOCATIONS= require("../data/TREASURE_LOCATION_DATA")
 const {
     ActionRowBuilder,
     ButtonBuilder,
@@ -27,7 +27,7 @@ const {
 
 const TREASURE_MIN = 25;
 const TREASURE_MAX = 75;
-
+const TREASURE_EXPIRY_MS =  10 * 1000; // 10 minutes
 const PAYMENT_STAFF = [
     "1295671787375296542",
 ];
@@ -37,104 +37,6 @@ const PAYMENT_STAFF = [
 // COUNTRY / ISLAND LOCATIONS
 // ==========================================
 
-const TREASURE_LOCATIONS = [
-    {
-        country: "India",
-        island: "Andaman Islands",
-        flag: "🇮🇳",
-        search: "Andaman Islands tropical beach",
-    },
-    {
-        country: "Japan",
-        island: "Okinawa Island",
-        flag: "🇯🇵",
-        search: "Okinawa Island tropical beach",
-    },
-    {
-        country: "Indonesia",
-        island: "Bali",
-        flag: "🇮🇩",
-        search: "Bali island tropical beach",
-    },
-    {
-        country: "Philippines",
-        island: "Palawan",
-        flag: "🇵🇭",
-        search: "Palawan island tropical beach",
-    },
-    {
-        country: "Thailand",
-        island: "Phuket",
-        flag: "🇹🇭",
-        search: "Phuket island tropical beach",
-    },
-    {
-        country: "Maldives",
-        island: "Maldives",
-        flag: "🇲🇻",
-        search: "Maldives island tropical beach",
-    },
-    {
-        country: "Fiji",
-        island: "Viti Levu",
-        flag: "🇫🇯",
-        search: "Fiji Viti Levu tropical beach",
-    },
-    {
-        country: "Australia",
-        island: "Tasmania",
-        flag: "🇦🇺",
-        search: "Tasmania island coast",
-    },
-    {
-        country: "New Zealand",
-        island: "North Island",
-        flag: "🇳🇿",
-        search: "New Zealand North Island coast",
-    },
-    {
-        country: "Greece",
-        island: "Crete",
-        flag: "🇬🇷",
-        search: "Crete Greece island beach",
-    },
-    {
-        country: "Italy",
-        island: "Sicily",
-        flag: "🇮🇹",
-        search: "Sicily Italy island coast",
-    },
-    {
-        country: "Spain",
-        island: "Mallorca",
-        flag: "🇪🇸",
-        search: "Mallorca island beach",
-    },
-    {
-        country: "Portugal",
-        island: "Madeira",
-        flag: "🇵🇹",
-        search: "Madeira island coast",
-    },
-    {
-        country: "Brazil",
-        island: "Ilhabela",
-        flag: "🇧🇷",
-        search: "Brazil island beach",
-    },
-    {
-        country: "Canada",
-        island: "Vancouver Island",
-        flag: "🇨🇦",
-        search: "Vancouver Island coast",
-    },
-    {
-        country: "United Kingdom",
-        island: "Isle of Wight",
-        flag: "🇬🇧",
-        search: "Isle of Wight coast",
-    },
-];
 
 // ==========================================
 // RANDOM LOCATION
@@ -371,11 +273,67 @@ async function startTreasureChestEvent(interaction) {
     // ======================================
     // SEND CHEST
     // ======================================
+const response = await interaction.reply({
+    embeds: [embed],
+    components: buildTreasureButton(eventId),
+    withResponse: true,
+});
 
-    await interaction.reply({
-        embeds: [embed],
-        components: buildTreasureButton(eventId),
-    });
+const messageId = response.resource.message.id;
+const channelId = interaction.channelId;
+
+setTimeout(async () => {
+    try {
+        const activeChest = await getActiveTreasureChest(eventId);
+
+        // Someone already claimed it
+        if (!activeChest || activeChest.opened) {
+            return;
+        }
+
+        // Remove it from Redis
+        await deleteActiveTreasureChest(eventId);
+
+        const expiredEmbed = new EmbedBuilder()
+            .setColor(0x7f8c8d)
+            .setTitle("🏴‍☠️ TREASURE CHEST LOOTED BY THIEVES!")
+            .setDescription(
+                `⏰ **You were too late!**\n\n` +
+                `🌊 The treasure chest at\n` +
+                `${location.flag} **${location.island}, ${location.country}**\n\n` +
+                `💨 The treasure hunters arrived too late...\n` +
+                `The chest and its treasure are gone!`
+            )
+            .setFooter({
+                text: "World Adventure Club • Treasure Hunt",
+            });
+
+        if (imageUrl) {
+            expiredEmbed.setImage(imageUrl);
+        }
+
+        // Fetch channel directly
+        const channel = await interaction.client.channels.fetch(channelId);
+
+        // Fetch message directly
+        const chestMessage = await channel.messages.fetch(messageId);
+
+        await chestMessage.edit({
+            embeds: [expiredEmbed],
+            components: [],
+        });
+
+        console.log(
+            `⏰ TREASURE EXPIRED | Event: ${eventId}`
+        );
+
+    } catch (error) {
+        console.error(
+            "❌ Failed to expire treasure chest:",
+            error.message
+        );
+    }
+}, TREASURE_EXPIRY_MS);
 
     console.log(
         `🏝️ TREASURE CHEST | ${location.island}, ${location.country}`
