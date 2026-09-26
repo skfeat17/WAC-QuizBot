@@ -13,7 +13,6 @@ const {
 } = require("./paymentService");
 const {
     hasUserCooldown,
-    setUserCooldown,
     clearAllUserCooldowns,
     saveEvent,
     updateEvent,
@@ -21,6 +20,7 @@ const {
     getActiveEventId,
     acquireActiveEvent,
     releaseActiveEvent,
+    claimUserCooldown
 } = require("./dailyQuizRedis");
 
 const PAYMENT_STAFF = [
@@ -435,21 +435,35 @@ async function handleDailyQuizAnswer(interaction) {
     }
 
     try {
-        if (await hasUserCooldown(activeDailyQuiz.type, interaction.user.id)) {
+        const claimed = await claimUserCooldown(
+            activeDailyQuiz.type,
+            interaction.user.id
+        );
+
+        if (!claimed) {
             await interaction.editReply({
-                content: `⏳ You have already participated in today's **${getTypeName(activeDailyQuiz.type)}** event.`,
+                content:
+                    `⏳ You have already participated in today's **${getTypeName(activeDailyQuiz.type)}** event.`,
                 flags: MessageFlags.Ephemeral,
             });
             return;
         }
     } catch (error) {
-        console.error("❌ Cooldown check failed:", error.message);
+        console.error(
+            "❌ Cooldown claim failed:",
+            error.message
+        );
+
         await interaction.editReply({
-            content: "⚠️ I couldn't verify your participation status.",
+            content:
+                "⚠️ I couldn't verify your participation status.",
             flags: MessageFlags.Ephemeral,
         });
+
         return;
     }
+
+
 
     if (!Number.isInteger(selectedAnswer) || selectedAnswer < 0 || selectedAnswer > 3) {
         await interaction.editReply({
@@ -465,18 +479,6 @@ async function handleDailyQuizAnswer(interaction) {
 
     const correct = selectedAnswer === country.correctAnswer;
 
-    try {
-        await setUserCooldown(activeDailyQuiz.type, interaction.user.id);
-    } catch (error) {
-        country.resolving = false;
-        country.attempts.delete(interaction.user.id);
-        console.error("❌ Failed to save participation cooldown:", error.message);
-
-        await interaction.editReply({
-            content: "⚠️ I couldn't save your participation status. Your answer was not counted.",
-        });
-        return;
-    }
 
     if (!correct) {
         country.resolving = false;
@@ -546,8 +548,6 @@ async function handleDailyQuizAnswer(interaction) {
 
     await persistActiveDailyQuiz();
 
-    await persistActiveDailyQuiz();
-
     // ==========================================
     // CORRECT ANSWER — PRIVATE USER RESPONSE
     // ==========================================
@@ -610,8 +610,8 @@ await createPaymentTransaction({
     username:
         winner.username,
 
-    eventName:
-        `${winner.flag} ${winner.country}`,
+eventName:
+    `${getTypeName(activeDailyQuiz.type)} — ${winner.flag} ${winner.country}`,
 
     eventType:
         "Daily Event",

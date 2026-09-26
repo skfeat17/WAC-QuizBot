@@ -17,7 +17,7 @@ const PREFIX = "wac:dailyquiz:";
 
 const DAILY_QUIZ_COOLDOWN_IMMUNE = [
     "1295671787375296542",
-    "1242132608574292118",
+
 ];
 // ==========================================
 // COOLDOWN
@@ -58,7 +58,34 @@ async function setUserCooldown(type, userId) {
         { ex: COOLDOWN_SECONDS }
     );
 }
+async function claimUserCooldown(type, userId) {
+    if (DAILY_QUIZ_COOLDOWN_IMMUNE.includes(userId)) {
+        return true;
+    }
 
+    try {
+        const result = await redis.set(
+            cooldownKey(type, userId),
+            {
+                participatedAt: Date.now(),
+                type,
+                userId,
+            },
+            {
+                nx: true,
+                ex: COOLDOWN_SECONDS,
+            }
+        );
+
+        return result === "OK";
+    } catch (error) {
+        console.error(
+            "❌ Redis cooldown claim error:",
+            error.message
+        );
+        throw error;
+    }
+}
 async function redisDeleteUserCooldown(type, userId) {
     await redis.del(cooldownKey(type, userId));
 }
@@ -256,6 +283,7 @@ module.exports = {
     getUserCooldown,
     hasUserCooldown,
     setUserCooldown,
+    claimUserCooldown,
     redisDeleteUserCooldown,
     saveEvent,
     getEvent,
