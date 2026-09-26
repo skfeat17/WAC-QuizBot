@@ -4,7 +4,9 @@ const {
     SlashCommandBuilder,
     MessageFlags,
 } = require("discord.js");
-
+const {
+    setTreasureCooldownForDuration,
+} = require("./treasureChestEventredis");
 const {
     getTreasureCooldown,
     clearTreasureCooldown,
@@ -50,6 +52,33 @@ const treasureCooldownCommand = new SlashCommandBuilder()
                 option
                     .setName("user")
                     .setDescription("Person whose cooldown should be removed.")
+                    .setRequired(true)
+            )
+    )
+    .addSubcommand(subcommand =>
+        subcommand
+            .setName("set")
+            .setDescription("Set a treasure cooldown for a user")
+            .addUserOption(option =>
+                option
+                    .setName("user")
+                    .setDescription("User to give the cooldown")
+                    .setRequired(true)
+            )
+            .addIntegerOption(option =>
+                option
+                    .setName("hr")
+                    .setDescription("Hours")
+                    .setMinValue(0)
+                    .setMaxValue(720)
+                    .setRequired(true)
+            )
+            .addIntegerOption(option =>
+                option
+                    .setName("min")
+                    .setDescription("Minutes")
+                    .setMinValue(0)
+                    .setMaxValue(59)
                     .setRequired(true)
             )
     );
@@ -206,6 +235,7 @@ async function handleTreasureCooldown(interaction) {
             return;
         }
 
+
         await clearTreasureCooldown(user.id);
 
         await interaction.editReply({
@@ -222,7 +252,48 @@ async function handleTreasureCooldown(interaction) {
 
         return;
     }
+    // ======================================
+    // SET
+    // ======================================        
+        if (
+            interaction.options.getSubcommand() ===
+            "set"
+        ) {
+            const user =
+                interaction.options.getUser("user");
 
+            const hours =
+                interaction.options.getInteger("hr");
+
+            const minutes =
+                interaction.options.getInteger("min");
+
+            const totalSeconds =
+                (hours * 60 * 60) +
+                (minutes * 60);
+
+            if (totalSeconds <= 0) {
+                await interaction.editReply({
+                    content:
+                        "❌ Cooldown must be greater than 0 minutes.",
+                });
+
+                return;
+            }
+
+            await setTreasureCooldownForDuration(
+                user.id,
+                totalSeconds
+            );
+
+            await interaction.editReply({
+                content:
+                    `✅ Treasure cooldown restored for ${user}.\n\n` +
+                    `⏳ Duration: **${hours}h ${minutes}m**`,
+            });
+
+            return;
+        }
     // ======================================
     // LIST
     // ======================================

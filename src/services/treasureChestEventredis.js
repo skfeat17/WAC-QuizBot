@@ -185,7 +185,23 @@ async function claimTreasureChest(
 
     return result === "OK";
 }
+async function setTreasureCooldownForDuration(userId, seconds) {
+    const key = getCooldownKey(userId);
 
+    await redis.set(
+        key,
+        {
+            userId,
+            createdAt: Date.now(),
+            restoredByAdmin: true,
+        },
+        {
+            ex: seconds,
+        }
+    );
+
+    return true;
+}
 // ==========================================
 // EXPORTS
 // ==========================================
@@ -198,7 +214,7 @@ module.exports = {
     setTreasureCooldown,
     clearTreasureCooldown,
     clearAllTreasureCooldowns,
-
+    setTreasureCooldownForDuration,
     // Active chest
     saveActiveTreasureChest,
     getActiveTreasureChest,
