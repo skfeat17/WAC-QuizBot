@@ -1,3 +1,4 @@
+// dailyEventCooldownAdmin.js
 const {
     SlashCommandBuilder,
     EmbedBuilder,

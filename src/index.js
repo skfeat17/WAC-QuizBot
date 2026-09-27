@@ -1,3 +1,4 @@
+// WAC-QuizBot - index.js
 // ==============================
 // USERS WHO CAN ACCESS COMMANDS
 // ==============================

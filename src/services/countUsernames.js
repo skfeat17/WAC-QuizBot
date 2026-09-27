@@ -1,3 +1,4 @@
+// countUsernames.js
 const {
     SlashCommandBuilder,
     MessageFlags,

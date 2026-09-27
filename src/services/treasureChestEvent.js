@@ -1,3 +1,4 @@
+//treasureChestEvent.js
 require("dotenv").config();
 const TREASURE_LOCATIONS= require("../data/TREASURE_LOCATION_DATA")
 const {

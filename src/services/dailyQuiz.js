@@ -1,3 +1,4 @@
+// dailyQuiz.js
 const {
     ActionRowBuilder,
     ButtonBuilder,
@@ -20,7 +21,9 @@ const {
     getActiveEventId,
     acquireActiveEvent,
     releaseActiveEvent,
-    claimUserCooldown
+    claimUserCooldown,
+    hasQuestionSubjectBeenUsed,
+    saveQuestionSubject
 } = require("./dailyQuizRedis");
 
 const PAYMENT_STAFF = [
@@ -534,6 +537,25 @@ async function handleDailyQuizAnswer(interaction) {
     country.solved = true;
     country.resolving = false;
 
+    // Save the actual subject only after a correct answer.
+    // This prevents the same country + food/monument/person
+    // from being used again in future events.
+    if (
+        ["food", "monument", "famousPerson"]
+            .includes(activeDailyQuiz.type)
+    ) {
+        const subjectKey = [
+            activeDailyQuiz.type,
+            country.country,
+            country.answers[country.correctAnswer],
+        ].join(" :: ");
+
+        await saveQuestionSubject(
+            activeDailyQuiz.type,
+            subjectKey
+        );
+    }
+
     const winner = {
         id: interaction.user.id,
         username: interaction.user.username,
@@ -597,36 +619,36 @@ async function handleDailyQuizAnswer(interaction) {
     }
     await updateDailyQuizMessage();
 
-await createPaymentTransaction({
-    client: interaction.client,
+    await createPaymentTransaction({
+        client: interaction.client,
 
-    winnerId: winner.id,
+        winnerId: winner.id,
 
-    displayName:
-        interaction.member?.displayName ||
-        interaction.user.globalName ||
-        winner.username,
+        displayName:
+            interaction.member?.displayName ||
+            interaction.user.globalName ||
+            winner.username,
 
-    username:
-        winner.username,
+        username:
+            winner.username,
 
-eventName:
-    `${getTypeName(activeDailyQuiz.type)} — ${winner.flag} ${winner.country}`,
+        eventName:
+            `${getTypeName(activeDailyQuiz.type)} — ${winner.flag} ${winner.country}`,
 
-    eventType:
-        "Daily Event",
+        eventType:
+            "Daily Event",
 
-    reward:
-        PRIZE_AMOUNT,
+        reward:
+            PRIZE_AMOUNT,
 
-    sourceChannelId:
-        interaction.channelId,
+        sourceChannelId:
+            interaction.channelId,
 
-    sourceMessageId:
-        activeDailyQuiz.message?.id ||
-        activeDailyQuiz.messageId ||
-        null,
-});
+        sourceMessageId:
+            activeDailyQuiz.message?.id ||
+            activeDailyQuiz.messageId ||
+            null,
+    });
 
 
 
@@ -927,7 +949,7 @@ function getTypeName(type) {
         capital: "🏛️ GUESS THE CAPITAL",
         food: "🍜 GUESS THE FAMOUS FOOD",
         monument: "🏰 GUESS THE FAMOUS MONUMENT",
-        president: "👤 GUESS THE PRESIDENT",
+        famousPerson: "👤 GUESS THE FAMOUS PERSON",
         independence: "🎉 GUESS THE INDEPENDENCE DAY",
     };
 

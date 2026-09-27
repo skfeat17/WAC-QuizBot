@@ -1,3 +1,4 @@
+// dailyQuizRedis.js
 require("dotenv").config();
 
 const { Redis } = require("@upstash/redis");
@@ -177,7 +178,50 @@ async function releaseActiveEvent(eventId) {
 function questionHistoryKey(type) {
     return `${PREFIX}questions:${type}`;
 }
+function questionSubjectHistoryKey(type) {
+    return `${PREFIX}subjects:${type}`;
+}
 
+async function hasQuestionSubjectBeenUsed(type, subject) {
+    const normalizedSubject = normalizeContextPart(subject);
+
+    if (!normalizedSubject) return false;
+
+    return await redis.sismember(
+        questionSubjectHistoryKey(type),
+        normalizedSubject
+    );
+}
+
+async function saveQuestionSubject(type, subject) {
+    const normalizedSubject = normalizeContextPart(subject);
+
+    if (!normalizedSubject) return;
+
+    await redis.sadd(
+        questionSubjectHistoryKey(type),
+        normalizedSubject
+    );
+}
+
+async function saveQuestionSubjects(type, subjects) {
+    if (!Array.isArray(subjects) || subjects.length === 0) return;
+
+    const normalizedSubjects = [
+        ...new Set(
+            subjects
+                .map(normalizeContextPart)
+                .filter(Boolean)
+        ),
+    ];
+
+    if (!normalizedSubjects.length) return;
+
+    await redis.sadd(
+        questionSubjectHistoryKey(type),
+        ...normalizedSubjects
+    );
+}
 function normalizeContextPart(value) {
     return String(value ?? "")
         .toLowerCase()
@@ -296,4 +340,8 @@ module.exports = {
     saveQuestionContext,
     saveQuestionContexts,
     getStoredQuestionContexts,
+    questionSubjectHistoryKey,
+    hasQuestionSubjectBeenUsed,
+    saveQuestionSubject,
+    saveQuestionSubjects,
 };

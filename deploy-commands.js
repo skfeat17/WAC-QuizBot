@@ -1,3 +1,4 @@
+// deploy-commands.js
 require("dotenv").config();
 
 const {
@@ -101,7 +102,7 @@ const commands = [
                     { name: "Capital", value: "capital" },
                     { name: "Famous Food", value: "food" },
                     { name: "Famous Monument", value: "monument" },
-                    { name: "President", value: "president" },
+                    { name: "Famous Person", value: "famousPerson" },
                     { name: "Independence Day", value: "independence" },
                 )
         )
