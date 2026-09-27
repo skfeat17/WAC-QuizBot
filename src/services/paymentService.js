@@ -229,8 +229,12 @@ async function handlePaymentButton(interaction) {
             content: "❌ You are not authorized to manage payments.",
             flags: MessageFlags.Ephemeral,
         });
+
         return true;
     }
+
+    // Silently acknowledge the button click.
+    await interaction.deferUpdate();
 
     const transactionId =
         customId.slice("payment_paid_".length);
@@ -239,18 +243,10 @@ async function handlePaymentButton(interaction) {
         await getPaymentTransaction(transactionId);
 
     if (!transaction) {
-        await interaction.reply({
-            content: "❌ This payment transaction no longer exists.",
-            flags: MessageFlags.Ephemeral,
-        });
         return true;
     }
 
     if (transaction.status === "paid") {
-        await interaction.reply({
-            content: "ℹ️ This transaction has already been marked as paid.",
-            flags: MessageFlags.Ephemeral,
-        });
         return true;
     }
 
