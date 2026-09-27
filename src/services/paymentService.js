@@ -268,14 +268,6 @@ async function handlePaymentButton(interaction) {
         updated
     );
 
-    await interaction.reply({
-        content:
-            `✅ Transaction **${transactionId}** marked as paid.\n` +
-            `Winner: <@${updated.winnerId}>\n` +
-            `Reward: **${updated.reward}** ${MORA_EMOJI}`,
-        flags: MessageFlags.Ephemeral,
-    });
-
     console.log(
         `✅ PAYMENT MARKED PAID | ${transactionId} | ` +
         `Winner: ${updated.winnerId} | Paid By: ${interaction.user.id}`
