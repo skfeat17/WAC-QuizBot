@@ -12,7 +12,7 @@ const redis = new Redis({
 // SETTINGS
 // ==========================================
 
-const COOLDOWN_SECONDS = 24 * 60 * 60;
+const COOLDOWN_SECONDS = 12 * 60 * 60;
 const EVENT_TTL_SECONDS = 7 * 24 * 60 * 60;
 const PREFIX = "wac:dailyquiz:";
 
