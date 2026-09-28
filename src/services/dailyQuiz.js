@@ -245,7 +245,7 @@ async function handleDailyQuizButton(interaction) {
             await interaction.editReply({
                 content:
                     `⏳ You have already participated in today's **${getTypeName(activeDailyQuiz.type)}** event.\n\n` +
-                    `You can participate again after your 24-hour cooldown expires.`,
+                    `You can participate again after your 12-hour cooldown expires.`,
                 flags: MessageFlags.Ephemeral,
             });
             return;
