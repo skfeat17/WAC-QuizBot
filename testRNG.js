@@ -1,175 +1,69 @@
-const readline = require("readline");
+function generateReward() {
+    const roll = Math.random() * 100;
 
-// ==========================================
-// TREASURE REWARD
-// ==========================================
+    if (roll < 70) {
+        return Math.floor(Math.random() * 6) + 10; // 10-15
+    }
 
-function getTreasureReward() {
-const tiers = [
-    { weight: 50, min: 25, max: 35 },  // 50%
-    { weight: 25, min: 36, max: 45 },  // 25%
-    { weight: 13, min: 46, max: 55 },  // 13%
-    { weight: 7,  min: 56, max: 65 },  // 7%
-    { weight: 3,  min: 66, max: 75 },  // 3%
-    { weight: 1.5, min: 76, max: 85 }, // 1.5%
-    { weight: 0.5, min: 86, max: 100 }, // 0.5%
-];
-    let random = Math.random() * 100;
+    if (roll < 85) {
+        return Math.floor(Math.random() * 6) + 15; // 15-20
+    }
 
-    for (const tier of tiers) {
-        random -= tier.weight;
+    if (roll < 95) {
+        return Math.floor(Math.random() * 6) + 20; // 20-25
+    }
 
-        if (random <= 0) {
-            return randomInteger(tier.min, tier.max);
+    return Math.floor(Math.random() * 6) + 25; // 25-30
+}
+
+function testRewards(iterations = 100000) {
+    const counts = {
+        "10-15": 0,
+        "15-20": 0,
+        "20-25": 0,
+        "25-30": 0,
+    };
+
+    let total = 0;
+
+    for (let i = 0; i < iterations; i++) {
+        const reward = generateReward();
+
+        total += reward;
+
+        if (reward >= 10 && reward <= 15) {
+            counts["10-15"]++;
+        } else if (reward >= 16 && reward <= 20) {
+            counts["15-20"]++;
+        } else if (reward >= 21 && reward <= 25) {
+            counts["20-25"]++;
+        } else if (reward >= 26 && reward <= 30) {
+            counts["25-30"]++;
         }
     }
 
-    return 25;
+    console.log("\n🎁 REWARD TEST");
+    console.log(`Iterations: ${iterations}`);
+
+    console.log(
+        `10-15: ${counts["10-15"]} (${((counts["10-15"] / iterations) * 100).toFixed(2)}%)`
+    );
+
+    console.log(
+        `15-20: ${counts["15-20"]} (${((counts["15-20"] / iterations) * 100).toFixed(2)}%)`
+    );
+
+    console.log(
+        `20-25: ${counts["20-25"]} (${((counts["20-25"] / iterations) * 100).toFixed(2)}%)`
+    );
+
+    console.log(
+        `25-30: ${counts["25-30"]} (${((counts["25-30"] / iterations) * 100).toFixed(2)}%)`
+    );
+
+    console.log(
+        `Average Reward: ${(total / iterations).toFixed(2)} Mora`
+    );
 }
 
-// ==========================================
-// RANDOM INTEGER
-// ==========================================
-
-function randomInteger(min, max) {
-    return Math.floor(
-        Math.random() * (max - min + 1)
-    ) + min;
-}
-
-// ==========================================
-// TEST
-// ==========================================
-
-const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-});
-
-rl.question(
-    "How many treasure openings? ",
-    (input) => {
-
-        const totalTests = Number(input);
-
-        if (
-            !Number.isInteger(totalTests) ||
-            totalTests <= 0
-        ) {
-            console.log("❌ Invalid number.");
-            rl.close();
-            return;
-        }
-
-        const results = {};
-
-        for (let amount = 25; amount <= 100; amount++) {
-            results[amount] = 0;
-        }
-
-        let totalReward = 0;
-
-        console.log("\n======================================");
-        console.log("       TREASURE OPENING TEST");
-        console.log("======================================\n");
-
-        // ==========================================
-        // SHOW EVERY RESULT
-        // ==========================================
-
-        for (let i = 1; i <= totalTests; i++) {
-
-            const reward = getTreasureReward();
-
-            results[reward]++;
-            totalReward += reward;
-
-            console.log(
-                `#${String(i).padStart(5)} → 💰 ${reward} Mora`
-            );
-        }
-
-        // ==========================================
-        // SUMMARY
-        // ==========================================
-
-        console.log("\n\n======================================");
-        console.log("          FINAL SUMMARY");
-        console.log("======================================");
-
-        console.log(
-            `Total openings : ${totalTests.toLocaleString()}`
-        );
-
-        console.log(
-            `Total Mora     : ${totalReward.toLocaleString()}`
-        );
-
-        console.log(
-            `Average reward : ${(totalReward / totalTests).toFixed(2)} Mora`
-        );
-
-        console.log("\n--------------------------------------");
-        console.log("REWARD DISTRIBUTION");
-        console.log("--------------------------------------");
-
-        for (let amount = 25; amount <= 100; amount++) {
-
-            const count = results[amount];
-
-            if (count === 0) continue;
-
-            const percentage =
-                (count / totalTests) * 100;
-
-            console.log(
-                `${String(amount).padStart(3)} Mora → ` +
-                `${String(count).padStart(6)} times ` +
-                `(${percentage.toFixed(3)}%)`
-            );
-        }
-
-        // ==========================================
-        // RANGE SUMMARY
-        // ==========================================
-
-        console.log("\n--------------------------------------");
-        console.log("RANGE SUMMARY");
-        console.log("--------------------------------------");
-
-        const ranges = [
-            ["25-35", 25, 35],
-            ["36-50", 36, 50],
-            ["51-65", 51, 65],
-            ["66-75", 66, 75],
-            ["76-90", 76, 90],
-            ["91-100", 91, 100],
-        ];
-
-        for (const [name, min, max] of ranges) {
-
-            let count = 0;
-
-            for (
-                let amount = min;
-                amount <= max;
-                amount++
-            ) {
-                count += results[amount];
-            }
-
-            const percentage =
-                (count / totalTests) * 100;
-
-            console.log(
-                `${name.padEnd(8)} → ` +
-                `${String(count).padStart(6)} times ` +
-                `(${percentage.toFixed(3)}%)`
-            );
-        }
-
-        console.log("\n======================================");
-
-        rl.close();
-    }
-);
+testRewards(100000);

@@ -72,15 +72,19 @@ const ANSWER_BUTTON_PREFIX =
 function generateReward() {
     const roll = Math.random() * 100;
 
-    if (roll < 65) {
-        return Math.floor(Math.random() * 6) + 10;
+    if (roll < 70) {
+        return Math.floor(Math.random() * 6) + 10; // 10-15
+    }
+
+    if (roll < 85) {
+        return Math.floor(Math.random() * 6) + 15; // 15-20
     }
 
     if (roll < 95) {
-        return Math.floor(Math.random() * 11) + 15;
+        return Math.floor(Math.random() * 6) + 20; // 20-25
     }
 
-    return Math.floor(Math.random() * 6) + 25;
+    return Math.floor(Math.random() * 6) + 25; // 25-30
 }
 
 function createAttemptId() {
