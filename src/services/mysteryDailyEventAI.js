@@ -690,10 +690,7 @@ Use a mixture of:
 - Nature & Wildlife
 - Languages
 - Culture
-- Science
-- Space
 - World Sports
-- Art
 - Interesting World Facts
 
 Avoid making every question about
