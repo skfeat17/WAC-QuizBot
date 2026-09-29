@@ -88,7 +88,7 @@ function buildPaymentEmbed(transaction) {
             {
     name: "Payment Command",
     value:
-        `/club payout club:World Adventure Club user:@${transaction.username} amount:${transaction.reward}`,
+        `/club payout club//:World Adventure Club user:@${transaction.username} amount:${transaction.reward}`,
     inline: false,
 }
         )
