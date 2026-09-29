@@ -84,7 +84,13 @@ function buildPaymentEmbed(transaction) {
                 name: "Payment Status",
                 value: status,
                 inline: true,
-            }
+            },
+            {
+    name: "Payment Command",
+    value:
+        `/club payout club:World Adventure Club user:@${transaction.username} amount:${transaction.reward}`,
+    inline: false,
+}
         )
         .setFooter({
             text: `Transaction ${transaction.transactionId}`,
