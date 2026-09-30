@@ -312,7 +312,7 @@ async function handleTreasureChestButton(interaction) {
     if (!chest) {
         await interaction.reply({
             content:
-                "❌ This treasure chest is no longer available.",
+                "❌ Uh oh! This treasure chest has already been looted by thieves. You were too late! 🏃‍♂️💨",
             flags: MessageFlags.Ephemeral,
         });
 

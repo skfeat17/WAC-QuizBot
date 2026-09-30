@@ -14,12 +14,12 @@ const PREFIX = "wac:treasure:";
 // CONFIG
 // ==========================================
 
-// 3 DAYS
+// 1 DAY
 const TREASURE_COOLDOWN_SECONDS = 24 * 60 * 60;
 
-// Active chest can remain available for 24 hours
+// Active chest can remain available for 1 hour
 const TREASURE_CHEST_TTL_SECONDS =
-    24 * 60 * 60;
+    1 * 60 * 60;
 
 // Prevent two people from claiming
 // the same chest simultaneously
