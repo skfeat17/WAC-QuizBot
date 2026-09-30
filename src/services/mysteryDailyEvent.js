@@ -743,25 +743,7 @@ async function handleMysteryReveal(
         return true;
     }
 
-    // --------------------------------------------------------
-    // RECORD PARTICIPATION
-    // --------------------------------------------------------
 
-    try {
-        await recordParticipation(
-            "mystery",
-            userId
-        );
-
-        console.log(
-            `📊 STATS RECORDED | MYSTERY | ${userId}`
-        );
-    } catch (error) {
-        console.error(
-            "❌ MYSTERY STATS RECORD FAILED:",
-            error.message
-        );
-    }
 
     // --------------------------------------------------------
     // COOLDOWN
@@ -1091,6 +1073,29 @@ async function handleMysteryAnswer(
         isCorrect
             ? generateReward()
             : 0;
+
+    // --------------------------------------------------------
+    // RECORD PARTICIPATION
+    // User actually answered the mystery.
+    // Records both correct and incorrect answers.
+    // --------------------------------------------------------
+
+    try {
+        await recordParticipation(
+            "mystery",
+            userId
+        );
+
+        console.log(
+            `📊 STATS RECORDED | MYSTERY | ${userId} | ` +
+            `${isCorrect ? "CORRECT" : "INCORRECT"}`
+        );
+    } catch (error) {
+        console.error(
+            "❌ MYSTERY STATS RECORD FAILED:",
+            error.message
+        );
+    }
 
     const answeredAttempt = {
         ...attempt,
