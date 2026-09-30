@@ -379,6 +379,33 @@ const commands = [
     treasureCooldownCommand.toJSON(),
 
     dailyeventCooldownCommand.toJSON(),
+
+    // ==========================================
+    // STATS
+    // ==========================================
+
+    new SlashCommandBuilder()
+        .setName("stats")
+        .setDescription(
+            "View World Adventure Club participation statistics"
+        )
+        .addStringOption(option =>
+            option
+                .setName("event")
+                .setDescription("Choose which event statistics to view")
+                .setRequired(true)
+                .addChoices(
+                    {
+                        name: "Mystery Event",
+                        value: "mystery",
+                    },
+                    {
+                        name: "Treasure Chest",
+                        value: "chest",
+                    }
+                )
+        )
+        .toJSON(),
 ];
 
 // ==========================================

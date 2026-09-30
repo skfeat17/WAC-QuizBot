@@ -81,6 +81,10 @@ const COMMAND_ACCESS = {
     testdm: [
         "1242132608574292118",
     ],
+    stats: [
+        "1242132608574292118", // me
+        "1295671787375296542", // ani
+    ],
 };
 
 module.exports = {

@@ -37,6 +37,11 @@ const {
     createPaymentTransaction,
 } = require("./paymentService");
 
+const {
+    recordParticipation,
+    recordMora,
+} = require("./statsService");
+
 // ============================================================
 // CONFIG
 // ============================================================
@@ -667,10 +672,9 @@ async function handleMysteryReveal(
                         : `${seconds}s`;
 
             console.log(
-                `👤 Display Name: ${
-                    interaction.member?.displayName ||
-                    interaction.user.displayName ||
-                    interaction.user.username
+                `👤 Display Name: ${interaction.member?.displayName ||
+                interaction.user.displayName ||
+                interaction.user.username
                 }`
             );
 
@@ -737,6 +741,26 @@ async function handleMysteryReveal(
         });
 
         return true;
+    }
+
+    // --------------------------------------------------------
+    // RECORD PARTICIPATION
+    // --------------------------------------------------------
+
+    try {
+        await recordParticipation(
+            "mystery",
+            userId
+        );
+
+        console.log(
+            `📊 STATS RECORDED | MYSTERY | ${userId}`
+        );
+    } catch (error) {
+        console.error(
+            "❌ MYSTERY STATS RECORD FAILED:",
+            error.message
+        );
     }
 
     // --------------------------------------------------------
@@ -866,10 +890,9 @@ async function handleMysteryReveal(
     );
 
     console.log(
-        `⏱️ Cooldown: ${
-            immune
-                ? "IMMUNE"
-                : "NOT STARTED — starts after answer"
+        `⏱️ Cooldown: ${immune
+            ? "IMMUNE"
+            : "NOT STARTED — starts after answer"
         }`
     );
 
@@ -1239,10 +1262,9 @@ async function processMysteryAnswerAfterResponse({
         );
 
         console.log(
-            `📊 Result: ${
-                isCorrect
-                    ? "CORRECT"
-                    : "INCORRECT"
+            `📊 Result: ${isCorrect
+                ? "CORRECT"
+                : "INCORRECT"
             }`
         );
 
@@ -1251,9 +1273,8 @@ async function processMysteryAnswerAfterResponse({
         );
 
         console.log(
-            `⏱️ Cooldown: ${
-                attempt.cooldownSeconds ??
-                "IMMUNE"
+            `⏱️ Cooldown: ${attempt.cooldownSeconds ??
+            "IMMUNE"
             }`
         );
 
@@ -1309,7 +1330,11 @@ async function processMysteryAnswerAfterResponse({
                     `💳 PAYMENT CREATED | ` +
                     `${transaction.transactionId}`
                 );
-
+                await recordMora(
+                    "mystery",
+                    interaction.user.id,
+                    reward
+                );
             } catch (error) {
 
                 console.error(

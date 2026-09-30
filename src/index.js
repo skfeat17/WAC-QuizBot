@@ -93,6 +93,11 @@ const {
     clearMysteryUserCooldown,
     clearAllMysteryUserCooldowns,
 } = require("./services/mysteryDailyEvent");
+
+const {
+    handleStatsCommand,
+    handleStatsButton,
+} = require("./services/stats");
 // ==============================
 // CLIENT
 // ==============================
@@ -173,6 +178,15 @@ client.on(Events.InteractionCreate, async (interaction) => {
                 flags: MessageFlags.Ephemeral,
             });
 
+            return;
+        }
+
+        // ==========================================
+        // /stats
+        // ==========================================
+
+        if (interaction.commandName === "stats") {
+            await handleStatsCommand(interaction);
             return;
         }
 // ==========================================
@@ -1129,6 +1143,16 @@ ${line}`
         // ------------------------------------------
 // MYSTERY EVENT
 // ------------------------------------------
+
+if (
+    interaction.customId.startsWith("stats_")
+) {
+    await handleStatsButton(
+        interaction
+    );
+
+    return;
+}
 
 if (
     interaction.customId ===

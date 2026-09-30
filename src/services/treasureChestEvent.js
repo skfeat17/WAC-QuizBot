@@ -1,6 +1,6 @@
 //treasureChestEvent.js
 require("dotenv").config();
-const TREASURE_LOCATIONS= require("../data/TREASURE_LOCATION_DATA")
+const TREASURE_LOCATIONS = require("../data/TREASURE_LOCATION_DATA")
 const {
     ActionRowBuilder,
     ButtonBuilder,
@@ -11,6 +11,10 @@ const {
 const {
     createPaymentTransaction,
 } = require("./paymentService");
+const {
+    recordParticipation,
+    recordMora,
+} = require("./statsService");
 const {
     hasTreasureCooldown,
     getTreasureCooldown,
@@ -399,6 +403,26 @@ async function handleTreasureChestButton(interaction) {
     chest.opened = true;
 
     // ======================================
+    // RECORD PARTICIPATION
+    // ======================================
+
+    try {
+        await recordParticipation(
+            "chest",
+            userId
+        );
+
+        console.log(
+            `📊 STATS RECORDED | CHEST | ${userId}`
+        );
+    } catch (error) {
+        console.error(
+            "❌ TREASURE STATS RECORD FAILED:",
+            error.message
+        );
+    }
+
+    // ======================================
     // RANDOM REWARD
     // ======================================
 
@@ -501,7 +525,11 @@ async function handleTreasureChestButton(interaction) {
             sourceMessageId:
                 interaction.message?.id || null,
         });
-
+        await recordMora(
+            "chest",
+            userId,
+            reward
+        );
     } catch (error) {
         console.error(
             "❌ Treasure payment transaction failed:",
