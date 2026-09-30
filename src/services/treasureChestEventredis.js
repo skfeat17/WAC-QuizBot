@@ -19,7 +19,7 @@ const TREASURE_COOLDOWN_SECONDS = 24 * 60 * 60;
 
 // Active chest can remain available for 1 hour
 const TREASURE_CHEST_TTL_SECONDS =
-    1 * 60 * 60;
+    0.5 * 60 * 60;
 
 // Prevent two people from claiming
 // the same chest simultaneously
