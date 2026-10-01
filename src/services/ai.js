@@ -326,31 +326,128 @@ Return ONLY the JSON object matching the provided schema.
         |--------------------------------------------------------------------------
         */
 
-        const response =
-            await ai.models.generateContent({
+        let response;
 
-                model:
-                    "gemini-3.1-flash-lite",
+        /*
+        |--------------------------------------------------------------------------
+        | Gemini 3.1 → 3.5 fallback
+        |--------------------------------------------------------------------------
+        |
+        | Try Gemini 3.1 first.
+        | If it fails OR returns an empty response, try Gemini 3.5.
+        |
+        |--------------------------------------------------------------------------
+        */
 
-                contents:
-                    prompt,
+        try {
 
-                config: {
+            console.log(
+                "🤖 Trying Gemini 3.1 Flash Lite..."
+            );
 
-                    responseMimeType:
-                        "application/json",
+            response =
+                await ai.models.generateContent({
 
-                    responseSchema:
-                        createResponseSchema(
-                            target
-                        ),
+                    model:
+                        "gemini-3.1-flash-lite",
 
-                    maxOutputTokens:
-                        target === 1
-                            ? 1500
-                            : MAX_OUTPUT_TOKENS,
-                },
-            });
+                    contents:
+                        prompt,
+
+                    config: {
+
+                        responseMimeType:
+                            "application/json",
+
+                        responseSchema:
+                            createResponseSchema(
+                                target
+                            ),
+
+                        maxOutputTokens:
+                            target === 1
+                                ? 1500
+                                : MAX_OUTPUT_TOKENS,
+                    },
+                });
+
+            if (
+                !response ||
+                !response.text ||
+                !response.text.trim()
+            ) {
+                throw new Error(
+                    "Gemini 3.1 returned an empty response."
+                );
+            }
+
+            console.log(
+                "✅ Gemini 3.1 responded successfully."
+            );
+
+        } catch (primaryError) {
+
+            console.warn(
+                "⚠️ Gemini 3.1 failed:",
+                primaryError.message
+            );
+
+            console.log(
+                "🔄 Falling back to Gemini 3.5 Flash Lite..."
+            );
+
+            try {
+
+                response =
+                    await ai.models.generateContent({
+
+                        model:
+                            "gemini-3.5-flash-lite",
+
+                        contents:
+                            prompt,
+
+                        config: {
+
+                            responseMimeType:
+                                "application/json",
+
+                            responseSchema:
+                                createResponseSchema(
+                                    target
+                                ),
+
+                            maxOutputTokens:
+                                target === 1
+                                    ? 1500
+                                    : MAX_OUTPUT_TOKENS,
+                        },
+                    });
+
+                if (
+                    !response ||
+                    !response.text ||
+                    !response.text.trim()
+                ) {
+                    throw new Error(
+                        "Gemini 3.5 returned an empty response."
+                    );
+                }
+
+                console.log(
+                    "✅ Gemini 3.5 responded successfully."
+                );
+
+            } catch (fallbackError) {
+
+                console.error(
+                    "❌ Gemini 3.5 fallback also failed:",
+                    fallbackError.message
+                );
+
+                throw fallbackError;
+            }
+        }
 
 
         /*
