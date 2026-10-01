@@ -219,7 +219,7 @@ function buildCorrectEmbed(
                 "📖 **Did you know?**",
                 attempt.explanation,
                 "",
-                "Your next mystery will appear after your hidden cooldown (1-3 hours).<:1EmojiCatSalute:936530415177576458>",
+                "Your next mystery will appear after your hidden cooldown (3-5 hours).<:1EmojiCatSalute:936530415177576458>",
             ].join("\n")
         );
 }
