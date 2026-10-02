@@ -583,10 +583,6 @@ async function handleMysteryReveal(
     );
 
     console.log(
-        `📍 Channel: ${interaction.channelId}`
-    );
-
-    console.log(
         "========================================"
     );
 
@@ -644,10 +640,6 @@ async function handleMysteryReveal(
                 `⏳ COOLDOWN BLOCK`
             );
 
-            console.log(
-                `👤 User: ${userId}`
-            );
-
             const remainingSeconds =
                 Math.max(0, Number(cooldown));
 
@@ -678,13 +670,6 @@ async function handleMysteryReveal(
                 }`
             );
 
-            console.log(
-                `🏷️ Username: @${interaction.user.username}`
-            );
-
-            console.log(
-                `🆔 User ID: ${userId}`
-            );
 
             console.log(
                 `⏱️ Remaining Cooldown: ${formattedTime}`
@@ -927,9 +912,6 @@ async function handleMysteryAnswer(
         `👤 ${interaction.user.username} | ${userId}`
     );
 
-    console.log(
-        `🆔 Attempt: ${attemptId}`
-    );
 
     console.log(
         `🔢 Selected: ${selectedAnswer}`
@@ -1135,9 +1117,6 @@ async function handleMysteryAnswer(
         });
     }
 
-    console.log(
-        `⚡ PRIVATE RESULT SENT | ${attemptId}`
-    );
 
     // --------------------------------------------------------
     // PUBLIC FOLLOW-UP — SECOND
@@ -1173,9 +1152,6 @@ async function handleMysteryAnswer(
             });
         }
 
-        console.log(
-            `📢 PUBLIC RESULT SENT | ${attemptId}`
-        );
 
     } catch (error) {
 
