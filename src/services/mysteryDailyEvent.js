@@ -1318,9 +1318,8 @@ async function processMysteryAnswerAfterResponse({
 
                 await interaction.followUp({
                     content:
-                        `💰 **Reward Pending**\n\n` +
-                        `Please mention <@${PAYMENT_STAFF_ID}> ` +
-                        `to get your **${reward} ${MORA_EMOJI}** reward.`,
+                     
+                        `Please wait the payment will be processed. You will receive your reward soon! Congratulations on earning **${reward} ${MORA_EMOJI}**!`,
 
                     flags:
                         MessageFlags.Ephemeral,
