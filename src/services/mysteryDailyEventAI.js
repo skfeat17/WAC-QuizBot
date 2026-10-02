@@ -53,10 +53,6 @@ const ALLOWED_CATEGORIES = [
     "Nature & Wildlife",
     "Languages",
     "Culture",
-    "Science",
-    "Space",
-    "World Sports",
-    "Art",
     "Interesting World Facts",
 ];
 
@@ -720,7 +716,6 @@ Examples:
 - Identify a historical event.
 - Identify a cultural tradition.
 - Identify a geographical feature.
-- Identify an unusual scientific fact.
 - Identify a famous work of art.
 - Identify a place from a distinctive characteristic.
 - Identify something from a surprising but established fact.

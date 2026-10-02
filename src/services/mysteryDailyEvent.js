@@ -828,23 +828,11 @@ async function handleMysteryReveal(
     );
 
     console.log(
-        `🆔 Attempt: ${attemptId}`
-    );
-
-    console.log(
-        `🆔 Question ID: ${question.id}`
-    );
-
-    console.log(
         `👤 User: ${userId}`
     );
 
     console.log(
         `📚 Category: ${question.category}`
-    );
-
-    console.log(
-        `📌 Subject: ${question.subject}`
     );
 
     console.log(
