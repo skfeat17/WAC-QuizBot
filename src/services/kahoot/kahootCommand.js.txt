@@ -1,0 +1,4 @@
+// Add this import near the other service imports in deploy-commands.js:
+const { kahootCommand } = require("./src/services/kahoot/kahootCommand");
+
+// Add kahootCommand.toJSON() to the commands array.

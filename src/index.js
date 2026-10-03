@@ -9,7 +9,10 @@ const COMMAND_ACCESS =
 // BLOCKED QUIZ USERS
 // ==============================
 const BLOCKED_QUIZ_USERS = new Set([]);
-
+const {
+    handleKahootCommand,
+    handleKahootInteraction,
+} = require("./services/kahoot/kahoot");
 const {
     handlePaymentButton,
 } = require("./services/paymentService");
@@ -180,7 +183,13 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
             return;
         }
-
+        // ==========================================
+        // /kahoot COMMAND
+        // ==========================================
+        if (interaction.commandName === "kahoot") {
+            await handleKahootCommand(interaction);
+            return;
+        }
         // ==========================================
         // /stats
         // ==========================================
@@ -189,409 +198,409 @@ client.on(Events.InteractionCreate, async (interaction) => {
             await handleStatsCommand(interaction);
             return;
         }
-// ==========================================
-// /mysteryevent
-// ==========================================
+        // ==========================================
+        // /mysteryevent
+        // ==========================================
 
-if (
-    interaction.commandName === "mysteryevent"
-) {
-    const subcommand =
-        interaction.options.getSubcommand();
+        if (
+            interaction.commandName === "mysteryevent"
+        ) {
+            const subcommand =
+                interaction.options.getSubcommand();
 
-    const subcommandGroup =
-        interaction.options.getSubcommandGroup(false);
+            const subcommandGroup =
+                interaction.options.getSubcommandGroup(false);
 
-    // ==========================================
-    // /mysteryevent start
-    // ==========================================
-
-    if (
-        !subcommandGroup &&
-        subcommand === "start"
-    ) {
-        try {
-            await interaction.deferReply();
-
-            const result =
-                await startMysteryEvent(
-                    interaction
-                );
-
-            if (!result.success && result.reason === "already_active") {
-                await interaction.editReply({
-                    content:
-                        "⚠️ A Mystery Event is already active.",
-                });
-
-                return;
-            }
-
-        } catch (error) {
-            console.error(
-                "❌ Mystery Event start failed:",
-                error
-            );
-
-            if (interaction.deferred || interaction.replied) {
-                await interaction.editReply({
-                    content:
-                        "❌ Failed to start the Mystery Event.",
-                });
-            }
-        }
-
-        return;
-    }
-
-    // ==========================================
-    // /mysteryevent kill
-    // ==========================================
-
-    if (
-        !subcommandGroup &&
-        subcommand === "kill"
-    ) {
-        try {
-            await interaction.deferReply({
-                flags: MessageFlags.Ephemeral,
-            });
-
-            const result =
-                await killMysteryEvent();
-
-            if (!result.success) {
-                await interaction.editReply({
-                    content:
-                        "ℹ️ There is no active Mystery Event to terminate.",
-                });
-
-                return;
-            }
-
-            await interaction.editReply({
-                content:
-                    "🛑 **Mystery Event forcefully terminated.**\n\n" +
-                    "📦 Question pool and question history were preserved.",
-            });
-
-        } catch (error) {
-            console.error(
-                "❌ Mystery Event kill failed:",
-                error
-            );
+            // ==========================================
+            // /mysteryevent start
+            // ==========================================
 
             if (
-                interaction.deferred ||
-                interaction.replied
+                !subcommandGroup &&
+                subcommand === "start"
             ) {
-                await interaction.editReply({
-                    content:
-                        "❌ Failed to terminate the Mystery Event.",
-                });
-            }
-        }
+                try {
+                    await interaction.deferReply();
 
-        return;
-    }
+                    const result =
+                        await startMysteryEvent(
+                            interaction
+                        );
 
-    // ==========================================
-    // /mysteryevent cooldown
-    // ==========================================
+                    if (!result.success && result.reason === "already_active") {
+                        await interaction.editReply({
+                            content:
+                                "⚠️ A Mystery Event is already active.",
+                        });
 
-    if (
-        subcommandGroup === "cooldown"
-    ) {
-        try {
-            await interaction.deferReply({
-                flags: MessageFlags.Ephemeral,
-            });
-
-            const user =
-                interaction.options.getUser(
-                    "user"
-                );
-
-            // ----------------------------------
-            // LIST ALL ACTIVE COOLDOWNS
-            // ----------------------------------
-
-            if (subcommand === "list") {
-                const cooldowns =
-                    await listAllMysteryUserCooldowns();
-
-                if (!cooldowns.length) {
-                    await interaction.editReply({
-                        content:
-                            "🔮 **MYSTERY ACTIVE COOLDOWNS**\
-\
-" +
-                            "No users currently have an active Mystery cooldown.",
-                    });
-
-                    return;
-                }
-
-                const formatTime = (seconds) => {
-                    const total = Math.max(0, Number(seconds));
-                    const hours = Math.floor(total / 3600);
-                    const minutes = Math.floor((total % 3600) / 60);
-                    const secs = total % 60;
-
-                    if (hours > 0) {
-                        return `${hours}h ${minutes}m ${secs}s`;
+                        return;
                     }
 
-                    if (minutes > 0) {
-                        return `${minutes}m ${secs}s`;
-                    }
-
-                    return `${secs}s`;
-                };
-
-                const lines = [
-                    "🔮 **DAILY MYSTERY EVENT ACTIVE COOLDOWNS**\n\n",
-                    "",
-                ];
-
-                for (const cooldown of cooldowns) {
-                    lines.push(
-                        `👤 <@${cooldown.userId}> - `,
-                        `⏳**${formatTime(cooldown.ttl)}**\n`,
-                        ""
+                } catch (error) {
+                    console.error(
+                        "❌ Mystery Event start failed:",
+                        error
                     );
-                }
 
-                lines.push(
-              
-                    `\n\n👥 **Active Cooldowns: ${cooldowns.length}**`
-                );
-
-                // Discord messages are limited to 2000 characters.
-                const chunks = [];
-                let current = "";
-
-                for (const line of lines) {
-                    const next = current
-                        ? `${current}\
-${line}`
-                        : line;
-
-                    if (next.length > 1900) {
-                        chunks.push(current);
-                        current = line;
-                    } else {
-                        current = next;
+                    if (interaction.deferred || interaction.replied) {
+                        await interaction.editReply({
+                            content:
+                                "❌ Failed to start the Mystery Event.",
+                        });
                     }
                 }
 
-                if (current) {
-                    chunks.push(current);
-                }
+                return;
+            }
 
-                await interaction.editReply({
-                    content: chunks.shift(),
-                });
+            // ==========================================
+            // /mysteryevent kill
+            // ==========================================
 
-                for (const chunk of chunks) {
-                    await interaction.followUp({
-                        content: chunk,
+            if (
+                !subcommandGroup &&
+                subcommand === "kill"
+            ) {
+                try {
+                    await interaction.deferReply({
                         flags: MessageFlags.Ephemeral,
                     });
-                }
 
-                return;
-            }
+                    const result =
+                        await killMysteryEvent();
 
-            // ----------------------------------
-            // CHECK ONE USER
-            // ----------------------------------
+                    if (!result.success) {
+                        await interaction.editReply({
+                            content:
+                                "ℹ️ There is no active Mystery Event to terminate.",
+                        });
 
-            if (subcommand === "check") {
-                const cooldown =
-                    await checkMysteryCooldown(
-                        user.id
-                    );
-
-                if (Number(cooldown) <= 0) {
-                    await interaction.editReply({
-                        content:
-                            `🔮 <@${user.id}> has **no active Mystery cooldown**.`,
-                    });
-
-                    return;
-                }
-
-                const expiresAt =
-                    Date.now() +
-                    Number(cooldown) * 1000;
-
-                await interaction.editReply({
-                    content:
-                        `🔮 **Mystery Cooldown Check**\
-\
-` +
-                        `👤 User: <@${user.id}>\
-` +
-                        `⏳ Remaining: **${cooldown}s**\
-` +
-                        `🕐 Expires: <t:${Math.floor(expiresAt / 1000)}:F>`,
-                });
-
-                return;
-            }
-
-            // ----------------------------------
-            // SET ONE USER
-            // ----------------------------------
-
-            if (subcommand === "set") {
-                const hours =
-                    interaction.options.getNumber(
-                        "hours"
-                    );
-
-                const result =
-                    await setMysteryUserCooldown(
-                        user.id,
-                        hours
-                    );
-
-                const expiresAt =
-                    Date.now() +
-                    Number(result.cooldownSeconds) * 1000;
-
-                await interaction.editReply({
-                    content:
-                        `🔮 **Mystery Cooldown Set**\
-\
-` +
-                        `👤 User: <@${user.id}>\
-` +
-                        `⏳ Duration: **${hours} hour(s)**\
-` +
-                        `🕐 Expires: <t:${Math.floor(expiresAt / 1000)}:F>`,
-                });
-
-                return;
-            }
-
-            // ----------------------------------
-            // CLEAR ONE / ALL
-            // ----------------------------------
-
-            if (subcommand === "clear") {
-                const clearAll =
-                    interaction.options.getBoolean(
-                        "all"
-                    ) || false;
-
-                if (clearAll) {
-                    const deleted =
-                        await clearAllMysteryUserCooldowns();
+                        return;
+                    }
 
                     await interaction.editReply({
                         content:
-                            `🧹 **MYSTERY COOLDOWNS CLEARED**\
-\
-` +
-                            `🗑️ Removed **${deleted}** cooldown(s).`,
+                            "🛑 **Mystery Event forcefully terminated.**\n\n" +
+                            "📦 Question pool and question history were preserved.",
                     });
 
-                    return;
-                }
-
-                if (!user) {
-                    await interaction.editReply({
-                        content:
-                            "❌ Select a user or enable **all**.",
-                    });
-
-                    return;
-                }
-
-                const deleted =
-                    await clearMysteryUserCooldown(
-                        user.id
+                } catch (error) {
+                    console.error(
+                        "❌ Mystery Event kill failed:",
+                        error
                     );
 
-                await interaction.editReply({
-                    content:
-                        deleted
-                            ? `🧹 Cleared Mystery cooldown for <@${user.id}>.`
-                            : `ℹ️ <@${user.id}> did not have an active Mystery cooldown.`,
-                });
+                    if (
+                        interaction.deferred ||
+                        interaction.replied
+                    ) {
+                        await interaction.editReply({
+                            content:
+                                "❌ Failed to terminate the Mystery Event.",
+                        });
+                    }
+                }
 
                 return;
             }
 
-        } catch (error) {
-            console.error(
-                "❌ Mystery cooldown command failed:",
-                error
-            );
-
-            await interaction.editReply({
-                content:
-                    "❌ Failed to process the Mystery cooldown command.",
-            });
-        }
-
-        return;
-    }
-
-    // ==========================================
-    // /mysteryevent
-    // ==========================================
-
-    if (
-        !subcommandGroup &&
-        !subcommand
-    ) {
-        try {
-            await interaction.deferReply({
-                flags: MessageFlags.Ephemeral,
-            });
-
-            const result =
-                await startMysteryEvent({
-                    channel:
-                        interaction.channel,
-                });
+            // ==========================================
+            // /mysteryevent cooldown
+            // ==========================================
 
             if (
-                !result.success &&
-                result.reason === "already_active"
+                subcommandGroup === "cooldown"
             ) {
-                await interaction.editReply({
-                    content:
-                        "⚠️ A Mystery Event is already active.",
-                });
+                try {
+                    await interaction.deferReply({
+                        flags: MessageFlags.Ephemeral,
+                    });
+
+                    const user =
+                        interaction.options.getUser(
+                            "user"
+                        );
+
+                    // ----------------------------------
+                    // LIST ALL ACTIVE COOLDOWNS
+                    // ----------------------------------
+
+                    if (subcommand === "list") {
+                        const cooldowns =
+                            await listAllMysteryUserCooldowns();
+
+                        if (!cooldowns.length) {
+                            await interaction.editReply({
+                                content:
+                                    "🔮 **MYSTERY ACTIVE COOLDOWNS**\
+\
+" +
+                                    "No users currently have an active Mystery cooldown.",
+                            });
+
+                            return;
+                        }
+
+                        const formatTime = (seconds) => {
+                            const total = Math.max(0, Number(seconds));
+                            const hours = Math.floor(total / 3600);
+                            const minutes = Math.floor((total % 3600) / 60);
+                            const secs = total % 60;
+
+                            if (hours > 0) {
+                                return `${hours}h ${minutes}m ${secs}s`;
+                            }
+
+                            if (minutes > 0) {
+                                return `${minutes}m ${secs}s`;
+                            }
+
+                            return `${secs}s`;
+                        };
+
+                        const lines = [
+                            "🔮 **DAILY MYSTERY EVENT ACTIVE COOLDOWNS**\n\n",
+                            "",
+                        ];
+
+                        for (const cooldown of cooldowns) {
+                            lines.push(
+                                `👤 <@${cooldown.userId}> - `,
+                                `⏳**${formatTime(cooldown.ttl)}**\n`,
+                                ""
+                            );
+                        }
+
+                        lines.push(
+
+                            `\n\n👥 **Active Cooldowns: ${cooldowns.length}**`
+                        );
+
+                        // Discord messages are limited to 2000 characters.
+                        const chunks = [];
+                        let current = "";
+
+                        for (const line of lines) {
+                            const next = current
+                                ? `${current}\
+${line}`
+                                : line;
+
+                            if (next.length > 1900) {
+                                chunks.push(current);
+                                current = line;
+                            } else {
+                                current = next;
+                            }
+                        }
+
+                        if (current) {
+                            chunks.push(current);
+                        }
+
+                        await interaction.editReply({
+                            content: chunks.shift(),
+                        });
+
+                        for (const chunk of chunks) {
+                            await interaction.followUp({
+                                content: chunk,
+                                flags: MessageFlags.Ephemeral,
+                            });
+                        }
+
+                        return;
+                    }
+
+                    // ----------------------------------
+                    // CHECK ONE USER
+                    // ----------------------------------
+
+                    if (subcommand === "check") {
+                        const cooldown =
+                            await checkMysteryCooldown(
+                                user.id
+                            );
+
+                        if (Number(cooldown) <= 0) {
+                            await interaction.editReply({
+                                content:
+                                    `🔮 <@${user.id}> has **no active Mystery cooldown**.`,
+                            });
+
+                            return;
+                        }
+
+                        const expiresAt =
+                            Date.now() +
+                            Number(cooldown) * 1000;
+
+                        await interaction.editReply({
+                            content:
+                                `🔮 **Mystery Cooldown Check**\
+\
+` +
+                                `👤 User: <@${user.id}>\
+` +
+                                `⏳ Remaining: **${cooldown}s**\
+` +
+                                `🕐 Expires: <t:${Math.floor(expiresAt / 1000)}:F>`,
+                        });
+
+                        return;
+                    }
+
+                    // ----------------------------------
+                    // SET ONE USER
+                    // ----------------------------------
+
+                    if (subcommand === "set") {
+                        const hours =
+                            interaction.options.getNumber(
+                                "hours"
+                            );
+
+                        const result =
+                            await setMysteryUserCooldown(
+                                user.id,
+                                hours
+                            );
+
+                        const expiresAt =
+                            Date.now() +
+                            Number(result.cooldownSeconds) * 1000;
+
+                        await interaction.editReply({
+                            content:
+                                `🔮 **Mystery Cooldown Set**\
+\
+` +
+                                `👤 User: <@${user.id}>\
+` +
+                                `⏳ Duration: **${hours} hour(s)**\
+` +
+                                `🕐 Expires: <t:${Math.floor(expiresAt / 1000)}:F>`,
+                        });
+
+                        return;
+                    }
+
+                    // ----------------------------------
+                    // CLEAR ONE / ALL
+                    // ----------------------------------
+
+                    if (subcommand === "clear") {
+                        const clearAll =
+                            interaction.options.getBoolean(
+                                "all"
+                            ) || false;
+
+                        if (clearAll) {
+                            const deleted =
+                                await clearAllMysteryUserCooldowns();
+
+                            await interaction.editReply({
+                                content:
+                                    `🧹 **MYSTERY COOLDOWNS CLEARED**\
+\
+` +
+                                    `🗑️ Removed **${deleted}** cooldown(s).`,
+                            });
+
+                            return;
+                        }
+
+                        if (!user) {
+                            await interaction.editReply({
+                                content:
+                                    "❌ Select a user or enable **all**.",
+                            });
+
+                            return;
+                        }
+
+                        const deleted =
+                            await clearMysteryUserCooldown(
+                                user.id
+                            );
+
+                        await interaction.editReply({
+                            content:
+                                deleted
+                                    ? `🧹 Cleared Mystery cooldown for <@${user.id}>.`
+                                    : `ℹ️ <@${user.id}> did not have an active Mystery cooldown.`,
+                        });
+
+                        return;
+                    }
+
+                } catch (error) {
+                    console.error(
+                        "❌ Mystery cooldown command failed:",
+                        error
+                    );
+
+                    await interaction.editReply({
+                        content:
+                            "❌ Failed to process the Mystery cooldown command.",
+                    });
+                }
 
                 return;
             }
 
-            await interaction.editReply({
-                content:
-                    "🔮 **Mystery Event activated!**\n\n" +
-                    "The Daily World Mystery Drop is now live.",
-            });
+            // ==========================================
+            // /mysteryevent
+            // ==========================================
 
-        } catch (error) {
-            console.error(
-                "❌ Mystery Event start failed:",
-                error
-            );
+            if (
+                !subcommandGroup &&
+                !subcommand
+            ) {
+                try {
+                    await interaction.deferReply({
+                        flags: MessageFlags.Ephemeral,
+                    });
 
-            await interaction.editReply({
-                content:
-                    "❌ Failed to start the Mystery Event.",
-            });
+                    const result =
+                        await startMysteryEvent({
+                            channel:
+                                interaction.channel,
+                        });
+
+                    if (
+                        !result.success &&
+                        result.reason === "already_active"
+                    ) {
+                        await interaction.editReply({
+                            content:
+                                "⚠️ A Mystery Event is already active.",
+                        });
+
+                        return;
+                    }
+
+                    await interaction.editReply({
+                        content:
+                            "🔮 **Mystery Event activated!**\n\n" +
+                            "The Daily World Mystery Drop is now live.",
+                    });
+
+                } catch (error) {
+                    console.error(
+                        "❌ Mystery Event start failed:",
+                        error
+                    );
+
+                    await interaction.editReply({
+                        content:
+                            "❌ Failed to start the Mystery Event.",
+                    });
+                }
+
+                return;
+            }
         }
-
-        return;
-    }
-}
 
         // ==========================================
         // /testdm @username COMMAND
@@ -1139,43 +1148,58 @@ ${line}`
     // BUTTON INTERACTION
     // ==========================================
 
-    if (interaction.isButton()) {
+    if (interaction.isButton() ||
+        interaction.isStringSelectMenu() ||
+        interaction.isModalSubmit()) {
+
+
+    // ==========================================
+    // KAHOOT BUTTON INTERACTION
+    // ==========================================
+        const isKahootInteraction =
+            interaction.customId?.startsWith("kahoot:");
+
+        if (isKahootInteraction) {
+            await handleKahootInteraction(interaction);
+            return;
+        }
+
         // ------------------------------------------
-// MYSTERY EVENT
-// ------------------------------------------
+        // MYSTERY EVENT
+        // ------------------------------------------
 
-if (
-    interaction.customId.startsWith("stats_")
-) {
-    await handleStatsButton(
-        interaction
-    );
+        if (
+            interaction.customId.startsWith("stats_")
+        ) {
+            await handleStatsButton(
+                interaction
+            );
 
-    return;
-}
+            return;
+        }
 
-if (
-    interaction.customId ===
-    "mysteryevent_reveal"
-) {
-    await handleMysteryReveal(
-        interaction
-    );
+        if (
+            interaction.customId ===
+            "mysteryevent_reveal"
+        ) {
+            await handleMysteryReveal(
+                interaction
+            );
 
-    return;
-}
+            return;
+        }
 
-if (
-    interaction.customId.startsWith(
-        "mysteryevent_answer:"
-    )
-) {
-    await handleMysteryAnswer(
-        interaction
-    );
+        if (
+            interaction.customId.startsWith(
+                "mysteryevent_answer:"
+            )
+        ) {
+            await handleMysteryAnswer(
+                interaction
+            );
 
-    return;
-}
+            return;
+        }
         // ------------------------------------------
         // Payment BUTTON
         // ------------------------------------------        

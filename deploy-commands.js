@@ -406,6 +406,16 @@ const commands = [
                 )
         )
         .toJSON(),
+    // ==========================================
+    // KAHOOT
+    // ==========================================
+
+    new SlashCommandBuilder()
+        .setName("kahoot")
+        .setDescription(
+            "Manage World Adventure Club Kahoot quizzes"
+        )
+        .toJSON(),
 ];
 
 // ==========================================
