@@ -17,8 +17,8 @@ const PREFIX = "wac:mysteryevent:";
 const EVENT_TTL_SECONDS = 7 * 24 * 60 * 60;
 
 // Random player cooldown: 3–5 hours.
-const MIN_COOLDOWN_SECONDS = 3 * 60 * 60;
-const MAX_COOLDOWN_SECONDS = 5 * 60 * 60;
+const MIN_COOLDOWN_SECONDS = 10 * 60 * 60;
+const MAX_COOLDOWN_SECONDS = 14 * 60 * 60;
 
 // Question pool.
 const QUESTION_POOL_TARGET = 20;

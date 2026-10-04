@@ -130,7 +130,7 @@ function buildMysteryEventEmbed() {
         )
         .setFooter({
             text:
-                "Reveal your own mystery • Hidden reward • Hidden cooldown",
+                "Reveal your own mystery • Hidden reward • Hidden Cooldown",
         });
 }
 
@@ -219,7 +219,7 @@ function buildCorrectEmbed(
                 "📖 **Did you know?**",
                 attempt.explanation,
                 "",
-                "Your next mystery will appear after your hidden cooldown (3-5 hours).<:1EmojiCatSalute:936530415177576458>",
+                "Your next mystery will appear after your hidden cooldown (10-14 hours).<:1EmojiCatSalute:936530415177576458>",
             ].join("\n")
         );
 }
