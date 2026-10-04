@@ -53,7 +53,6 @@ const ALLOWED_CATEGORIES = [
     "Nature & Wildlife",
     "Languages",
     "Culture",
-    "Interesting World Facts",
 ];
 
 // ==========================================
@@ -687,7 +686,6 @@ Use a mixture of:
 - Languages
 - Culture
 - World Sports
-- Interesting World Facts
 
 Avoid making every question about
 countries and capitals.
