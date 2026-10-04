@@ -518,8 +518,7 @@ async function handleDailyQuizAnswer(interaction) {
         try {
             await interaction.followUp({
                 content:
-                    `🌟 <@${interaction.user.id}> Great try! Keep going next win could be yours! 💗\n` +
-                    `🌍 See you in the next Daily Event!`,
+                    `🌟 <@${interaction.user.id}> Great try!💗\n`,
                 allowedMentions: {
                     users: [interaction.user.id],
                 },

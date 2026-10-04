@@ -300,14 +300,6 @@ function buildPublicIncorrectMessage(
     ].join("\n");
 }
 
-function buildPaymentStaffMessage(
-    reward
-) {
-    return [
-        `Please wait the payment will be processed. You will receive your reward soon! Congratulations on earning **${reward} ${MORA_EMOJI}**!`,
-    ].join("\n");
-}
-
 // ============================================================
 // DISABLED ANSWER BUTTONS
 // ============================================================
@@ -1127,9 +1119,7 @@ async function handleMysteryAnswer(
 
             await interaction.followUp({
                 content:
-                    `🎉 **Congratulations** <@${userId}>! ` +
-                    `You successfully solved the mystery and earned ` +
-                    `**${reward} ${MORA_EMOJI}**! 🔮`,
+                    `🎉 <@${userId}> solved it! **+${reward} ${MORA_EMOJI}**`,
 
                 allowedMentions: {
                     users: [userId],
@@ -1140,14 +1130,12 @@ async function handleMysteryAnswer(
 
             await interaction.followUp({
                 content:
-                    `🌟 <@${userId}> Great try! ` +
-                    `Keep going — your next mystery could be a win! 💗\n` +
-                    `🔮 See you in the next mystery!`,
+                    `🌟 <@${userId}> Great try!💗`,
 
                 allowedMentions: {
                     users: [userId],
                 },
-            });
+            })
         }
 
 
@@ -1318,15 +1306,10 @@ async function processMysteryAnswerAfterResponse({
 
                 await interaction.followUp({
                     content:
-                     
-                        `Please wait the payment will be processed. You will receive your reward soon! Congratulations on earning **${reward} ${MORA_EMOJI}**!`,
-
-                    flags:
-                        MessageFlags.Ephemeral,
-
-                    allowedMentions: {
-                        users: [PAYMENT_STAFF_ID],
-                    },
+                        `📖 **Did you know?**\n` +
+                        `\`\`\`\n${attempt.explanation}\n\`\`\`\n\n` +
+                        `-# 📢 Copy the fact above and share it in the chat! Let everyone know what you learned!`,
+                    flags: MessageFlags.Ephemeral,
                 });
 
             } catch (error) {

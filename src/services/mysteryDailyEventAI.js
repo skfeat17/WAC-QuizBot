@@ -816,8 +816,36 @@ QUALITY RULES
 - Prefer globally diverse topics.
 - Do not focus heavily on one country.
 - Do not make all questions geography.
-- Mix easy, medium, and harder questions.
-- Avoid extremely obscure facts.
+- Keep EVERY question very easy.
+- Questions should be answerable by a general audience.
+- Prefer common, well-known world facts.
+- Avoid difficult trivia.
+- Avoid obscure facts.
+- Avoid niche knowledge.
+- Avoid complicated historical details.
+- Avoid difficult geography.
+- Avoid uncommon names or places.
+- Avoid questions requiring specialist knowledge.
+- The correct answer should usually be recognizable to most people.
+- If a question feels medium or hard, replace it with an easier one.
+
+The goal is:
+EASY → VERY EASY
+
+Examples of suitable difficulty:
+
+- Famous landmarks
+- Common foods
+- Well-known countries
+- Famous animals
+- Basic geography
+- Popular cultural facts
+- Famous languages
+- Simple historical facts
+- Common world traditions
+- Easily recognizable places
+
+Do NOT generate intentionally difficult questions.
 - Avoid disputed historical claims.
 - Avoid current political questions.
 - Avoid political persuasion.
@@ -842,6 +870,9 @@ Before returning the JSON:
 9. Explanations are accurate.
 10. Categories are varied.
 11. Questions are suitable for Discord.
+12. Every question is EASY or VERY EASY.
+13. No question requires niche or specialist knowledge.
+14. A typical Discord user should be able to reasonably answer it.
 
 Return ONLY:
 

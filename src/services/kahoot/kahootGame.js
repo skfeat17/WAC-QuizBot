@@ -193,7 +193,7 @@ async function presentQuestion(
         Number(
             kahoot.settings.questionTimer
         ) *
-            1000;
+        1000;
 
     await saveKahoot(kahoot);
 
@@ -319,7 +319,7 @@ async function closeQuestion(
         !kahoot ||
         kahoot.status !== "running" ||
         Number(kahoot.currentQuestionId) !==
-            Number(questionId) ||
+        Number(questionId) ||
         (runId &&
             kahoot.runId !== runId)
     ) {
@@ -393,6 +393,12 @@ async function closeQuestion(
             interaction,
             kahoot.currentMessageId,
             {
+                content: players
+                    .filter((player) => !player.isTestBot)
+                    .slice(0, 5)
+                    .map((player) => `<@${player.id}>`)
+                    .join("\n"),
+
                 embeds: [
                     leaderboardEmbed(
                         kahoot,
@@ -434,9 +440,9 @@ async function closeQuestion(
                     if (
                         !latest ||
                         latest.status !==
-                            "running" ||
+                        "running" ||
                         latest.runId !==
-                            kahoot.runId
+                        kahoot.runId
                     ) {
                         return;
                     }
@@ -574,7 +580,8 @@ async function startKahoot(
             interaction,
             {
                 content:
-                    `🎮 **${kahoot.name}** has successfully started!\n`
+                    `🎮 **${kahoot.name}** has successfully started!\n` +
+                    `Get ready — the first question is coming up.`,
             }
         );
 
@@ -606,9 +613,27 @@ async function startKahoot(
     };
 }
 
+async function safeAnswerEdit(interaction, content) {
+    try {
+        if (!interaction.deferred && !interaction.replied) {
+            return false;
+        }
+
+        await interaction.editReply(content);
+        return true;
+    } catch (error) {
+        console.error(
+            "⚠️ Could not send Kahoot answer result:",
+            error.message || error
+        );
+        return false;
+    }
+}
+
 async function submitAnswer(
     client,
-    interaction
+    interaction,
+    alreadyDeferred = false
 ) {
     const parts =
         interaction.customId.split(":");
@@ -630,10 +655,12 @@ async function submitAnswer(
      * show "Interaction failed".
      */
     try {
-        await interaction.deferReply({
-            flags:
-                MessageFlags.Ephemeral,
-        });
+        if (!alreadyDeferred && !interaction.deferred && !interaction.replied) {
+            await interaction.deferReply({
+                flags:
+                    MessageFlags.Ephemeral,
+            });
+        }
     } catch (error) {
         console.error(
             "❌ Failed to acknowledge Kahoot answer interaction:",
@@ -649,7 +676,7 @@ async function submitAnswer(
         !kahoot ||
         kahoot.status !== "running"
     ) {
-        await interaction.editReply(
+        await safeAnswerEdit(interaction,
             "❌ This Kahoot is not currently running."
         );
         return;
@@ -660,7 +687,7 @@ async function submitAnswer(
             kahoot.currentQuestionId
         ) !== Number(questionId)
     ) {
-        await interaction.editReply(
+        await safeAnswerEdit(interaction,
             "❌ This question is no longer active."
         );
         return;
@@ -674,7 +701,7 @@ async function submitAnswer(
             kahoot.currentQuestionEndsAt
         )
     ) {
-        await interaction.editReply(
+        await safeAnswerEdit(interaction,
             "⏱️ Time is up!"
         );
         return;
@@ -691,7 +718,7 @@ async function submitAnswer(
         );
 
     if (!question) {
-        await interaction.editReply(
+        await safeAnswerEdit(interaction,
             "❌ Question no longer exists."
         );
         return;
@@ -718,14 +745,14 @@ async function submitAnswer(
             error.message || error
         );
 
-        await interaction.editReply(
+        await safeAnswerEdit(interaction,
             "❌ Your answer could not be recorded. Please try again."
         );
         return;
     }
 
     if (!claimed) {
-        await interaction.editReply(
+        await safeAnswerEdit(interaction,
             "⚠️ You have already answered this question."
         );
         return;
@@ -759,12 +786,12 @@ async function submitAnswer(
      */
     const resultMessage = correct
         ? `✅ Correct! **+${points.toFixed(
-              2
-          )} points**`
+            2
+        )} points**`
         : `❌ Incorrect! **0.00 points**`;
 
     try {
-        await interaction.editReply(
+        await safeAnswerEdit(interaction,
             resultMessage
         );
     } finally {
