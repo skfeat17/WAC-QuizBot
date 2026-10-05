@@ -77,16 +77,16 @@ const ANSWER_BUTTON_PREFIX =
 function generateReward() {
     const roll = Math.random() * 100;
 
-    if (roll < 92) {
-        return Math.floor(Math.random() * 6) + 10; // 10-15 | 92%
+    if (roll < 75) {
+        return Math.floor(Math.random() * 6) + 10; // 10-15 | 75%
     }
 
-    if (roll < 97) {
-        return Math.floor(Math.random() * 5) + 16; // 16-20 | 5%
+    if (roll < 95) {
+        return Math.floor(Math.random() * 6) + 15; // 15-20 | 20%
     }
 
     if (roll < 99) {
-        return Math.floor(Math.random() * 5) + 21; // 21-25 | 2%
+        return Math.floor(Math.random() * 5) + 21; // 21-25 | 4%
     }
 
     return Math.floor(Math.random() * 5) + 26; // 26-30 | 1%
@@ -219,7 +219,7 @@ function buildCorrectEmbed(
                 "📖 **Did you know?**",
                 attempt.explanation,
                 "",
-                "Your next mystery will appear after your hidden cooldown (12-16) hours).<:1EmojiCatSalute:936530415177576458>",
+                "Your next mystery will appear after your hidden cooldown (16-24) hours).<:1EmojiCatSalute:936530415177576458>",
             ].join("\n")
         );
 }
