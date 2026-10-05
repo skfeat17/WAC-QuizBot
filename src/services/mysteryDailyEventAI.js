@@ -120,7 +120,7 @@ function isModelBusyError(error) {
 }
 
 // ==========================================
-// GENERATE WITH TWO MODELS
+// TWO-MODEL AI GENERATOR
 // ==========================================
 
 async function generateWithFallback(
@@ -128,7 +128,7 @@ async function generateWithFallback(
     responseSchema
 ) {
     // ==========================================
-    // PRIMARY MODEL
+    // TRY PRIMARY MODEL
     // ==========================================
 
     try {
@@ -168,14 +168,13 @@ async function generateWithFallback(
         return response;
 
     } catch (error) {
-
         console.warn(
             `⚠️ Mystery AI | ${PRIMARY_MODEL} failed:`,
             error.message
         );
 
         // ==========================================
-        // ONLY FALL BACK FOR TEMPORARY MODEL ISSUES
+        // ONLY FALL BACK FOR TEMPORARY AI ERRORS
         // ==========================================
 
         if (!isModelBusyError(error)) {
@@ -224,7 +223,7 @@ async function generateWithFallback(
 }
 
 // ==========================================
-// RESPONSE SCHEMA
+// GEMINI RESPONSE SCHEMA
 // ==========================================
 
 const mysteryResponseSchema = {
@@ -309,6 +308,10 @@ async function generateMysteryQuestionBatch() {
         `🤖 Starting Mystery Event generation | Target: ${QUESTIONS_PER_BATCH}`
     );
 
+    // ==========================================
+    // LOAD PREVIOUS QUESTION HISTORY
+    // ==========================================
+
     let previousContexts = [];
 
     try {
@@ -318,6 +321,7 @@ async function generateMysteryQuestionBatch() {
         console.log(
             `📚 Loaded ${previousContexts.length} previous Mystery question context(s).`
         );
+
     } catch (error) {
         console.error(
             "⚠️ Could not load Mystery Event history:",
@@ -325,21 +329,26 @@ async function generateMysteryQuestionBatch() {
         );
     }
 
-    const previousSubjects = new Set();
+    // ==========================================
+    // CURRENT GENERATION STATE
+    // ==========================================
 
-    /*
-     * We don't need to reconstruct subjects from
-     * old contexts here because subject history is
-     * checked directly through Redis.
-     */
+    const previousSubjects =
+        new Set();
 
     const acceptedQuestions = [];
 
-    const acceptedContexts = new Set();
+    const acceptedContexts =
+        new Set();
 
-    const acceptedSubjects = new Set();
+    const acceptedSubjects =
+        new Set();
 
     let generationAttempt = 0;
+
+    // ==========================================
+    // GENERATION LOOP
+    // ==========================================
 
     while (
         acceptedQuestions.length <
@@ -351,8 +360,26 @@ async function generateMysteryQuestionBatch() {
             generationAttempt >
             MAX_GENERATION_ATTEMPTS
         ) {
+            console.error(
+                `❌ Mystery generation stopped after ${MAX_GENERATION_ATTEMPTS} attempts.`
+            );
+
+            console.error(
+                `📦 Questions successfully saved: ${acceptedQuestions.length}/${QUESTIONS_PER_BATCH}`
+            );
+
+            /*
+             * IMPORTANT:
+             *
+             * We DO NOT delete or undo anything.
+             *
+             * Every question was already saved
+             * immediately after validation.
+             */
+
             throw new Error(
-                `Could not generate ${QUESTIONS_PER_BATCH} fresh Mystery questions after ${MAX_GENERATION_ATTEMPTS} attempts.`
+                `Could not generate ${QUESTIONS_PER_BATCH} fresh Mystery questions after ${MAX_GENERATION_ATTEMPTS} attempts. ` +
+                `${acceptedQuestions.length} question(s) were successfully saved.`
             );
         }
 
@@ -360,26 +387,33 @@ async function generateMysteryQuestionBatch() {
             QUESTIONS_PER_BATCH -
             acceptedQuestions.length;
 
-        const requestCount = Math.min(
-            QUESTIONS_PER_AI_REQUEST,
-            remaining + 5
-        );
+        const requestCount =
+            Math.min(
+                QUESTIONS_PER_AI_REQUEST,
+                remaining + 5
+            );
 
         console.log(
             `🤖 AI batch ${generationAttempt} | ` +
-            `Need ${remaining} | Requesting ${requestCount}`
+            `Need ${remaining} | ` +
+            `Requesting ${requestCount}`
         );
 
         try {
-            const prompt = getPrompt(
-                previousContexts,
-                previousSubjects,
-                acceptedQuestions,
-                requestCount
-            );
+            // ==========================================
+            // BUILD PROMPT
+            // ==========================================
+
+            const prompt =
+                getPrompt(
+                    previousContexts,
+                    previousSubjects,
+                    acceptedQuestions,
+                    requestCount
+                );
 
             // ==========================================
-            // TWO-MODEL GENERATION
+            // AI GENERATION
             // ==========================================
 
             const response =
@@ -389,7 +423,7 @@ async function generateMysteryQuestionBatch() {
                 );
 
             // ==========================================
-            // RESPONSE VALIDATION
+            // RESPONSE CHECK
             // ==========================================
 
             if (!response.text) {
@@ -405,11 +439,16 @@ async function generateMysteryQuestionBatch() {
                     JSON.parse(
                         response.text
                     );
+
             } catch {
                 throw new Error(
                     "Gemini returned invalid JSON."
                 );
             }
+
+            // ==========================================
+            // ZOD VALIDATION
+            // ==========================================
 
             const result =
                 mysteryBatchSchema.parse(
@@ -422,6 +461,10 @@ async function generateMysteryQuestionBatch() {
 
             let acceptedThisBatch = 0;
 
+            // ==========================================
+            // PROCESS EACH QUESTION
+            // ==========================================
+
             for (
                 const item of result.questions
             ) {
@@ -431,6 +474,10 @@ async function generateMysteryQuestionBatch() {
                 ) {
                     break;
                 }
+
+                // ==========================================
+                // VALIDATE QUESTION
+                // ==========================================
 
                 const validated =
                     await validateQuestion(
@@ -442,6 +489,10 @@ async function generateMysteryQuestionBatch() {
                 if (!validated) {
                     continue;
                 }
+
+                // ==========================================
+                // ADD TO CURRENT MEMORY
+                // ==========================================
 
                 acceptedQuestions.push(
                     validated.question
@@ -463,76 +514,110 @@ async function generateMysteryQuestionBatch() {
                     validated.subjectKey
                 );
 
-                acceptedThisBatch++;
+                // ==========================================
+                // SAVE IMMEDIATELY
+                // ==========================================
 
-                console.log(
-                    `✅ Mystery accepted ` +
-                    `| ${acceptedQuestions.length}/${QUESTIONS_PER_BATCH}` +
-                    ` | ${validated.question.category}` +
-                    ` | ${validated.question.subject}`
-                );
+                try {
+                    // Save question context
+                    await saveQuestionContexts([
+                        validated.context,
+                    ]);
+
+                    // Save subject history
+                    await saveQuestionSubjects([
+                        validated.subjectKey,
+                    ]);
+
+                    // Add question directly to pool
+                    await addMysteryQuestionsToPool([
+                        validated.question,
+                    ]);
+
+                    acceptedThisBatch++;
+
+                    console.log(
+                        `💾 Mystery saved immediately | ` +
+                        `${acceptedQuestions.length}/${QUESTIONS_PER_BATCH} | ` +
+                        `${validated.question.category} | ` +
+                        `${validated.question.subject}`
+                    );
+
+                } catch (saveError) {
+                    // ==========================================
+                    // SAVE FAILED
+                    // ==========================================
+
+                    console.error(
+                        `❌ Failed to save Mystery question | ` +
+                        `${validated.question.subject}:`,
+                        saveError.message
+                    );
+
+                    /*
+                     * Remove it from memory because
+                     * persistence failed.
+                     */
+
+                    acceptedQuestions.pop();
+
+                    acceptedContexts.delete(
+                        validated.context
+                    );
+
+                    acceptedSubjects.delete(
+                        validated.subjectKey
+                    );
+
+                    previousContexts.pop();
+
+                    previousSubjects.delete(
+                        validated.subjectKey
+                    );
+                }
             }
 
+            // ==========================================
+            // BATCH SUMMARY
+            // ==========================================
+
             console.log(
-                `📊 Batch result | Accepted: ${acceptedThisBatch} | ` +
+                `📊 Batch result | ` +
+                `Accepted: ${acceptedThisBatch} | ` +
                 `Total: ${acceptedQuestions.length}/${QUESTIONS_PER_BATCH}`
             );
 
         } catch (error) {
+            // ==========================================
+            // AI BATCH FAILED
+            // ==========================================
+
             console.error(
                 `❌ Mystery AI batch ${generationAttempt} failed:`,
                 error.message
             );
+
+            /*
+             * DO NOT clear acceptedQuestions.
+             *
+             * Questions from previous batches have
+             * already been saved to Redis.
+             *
+             * Simply continue to another attempt.
+             */
+
+            continue;
         }
     }
 
     // ==========================================
-    // SAVE HISTORY
+    // GENERATION COMPLETE
     // ==========================================
 
-    try {
-        await saveQuestionContexts(
-            [...acceptedContexts]
-        );
-
-        await saveQuestionSubjects(
-            [...acceptedSubjects]
-        );
-
-        console.log(
-            `💾 Saved ${acceptedQuestions.length} question history entries.`
-        );
-
-    } catch (error) {
-        console.error(
-            "❌ Failed to save Mystery question history:",
-            error.message
-        );
-
-        throw error;
-    }
-
-    // ==========================================
-    // SAVE TO POOL
-    // ==========================================
-
-    try {
-        await addMysteryQuestionsToPool(
-            acceptedQuestions
-        );
-
-        console.log(
-            `📦 Mystery pool replenished with ${acceptedQuestions.length} question(s).`
-        );
-
-    } catch (error) {
-        console.error(
-            "❌ Failed to add Mystery questions to pool:",
-            error.message
-        );
-
-        throw error;
-    }
+    console.log(
+        `🎉 Mystery generation completed successfully | ` +
+        `${acceptedQuestions.length}/${QUESTIONS_PER_BATCH} questions saved.`
+    );
 
     return acceptedQuestions;
 }
@@ -588,7 +673,7 @@ async function validateQuestion(
         }
 
         // ==========================================
-        // BASIC TEXT VALIDATION
+        // QUESTION LENGTH
         // ==========================================
 
         if (
@@ -601,6 +686,10 @@ async function validateQuestion(
 
             return null;
         }
+
+        // ==========================================
+        // EXPLANATION LENGTH
+        // ==========================================
 
         if (
             explanation.length < 10 ||
@@ -675,7 +764,10 @@ async function validateQuestion(
                 subject
             );
 
-        // Duplicate inside current batch.
+        // ==========================================
+        // CURRENT BATCH SUBJECT CHECK
+        // ==========================================
+
         if (
             acceptedSubjects.has(
                 subjectKey
@@ -716,7 +808,7 @@ async function validateQuestion(
         }
 
         // ==========================================
-        // QUESTION CONTEXT
+        // CREATE QUESTION CONTEXT
         // ==========================================
 
         const context =
@@ -732,7 +824,7 @@ async function validateQuestion(
             });
 
         // ==========================================
-        // CURRENT BATCH DUPLICATE
+        // CURRENT BATCH QUESTION CHECK
         // ==========================================
 
         if (
@@ -748,7 +840,7 @@ async function validateQuestion(
         }
 
         // ==========================================
-        // HISTORICAL DUPLICATE
+        // REDIS QUESTION CHECK
         // ==========================================
 
         try {
