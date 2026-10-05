@@ -19,20 +19,43 @@ const ai = new GoogleGenAI({
 });
 
 // ==========================================
+// AI MODELS
+// ==========================================
+
+const PRIMARY_MODEL =
+    "gemini-3.1-flash-lite";
+
+const FALLBACK_MODEL =
+    "gemini-3.5-flash-lite";
+
+// ==========================================
 // SCHEMA
 // ==========================================
 
 const mysteryQuestionSchema = z.object({
     category: z.string().min(1),
+
     subject: z.string().min(1),
+
     question: z.string().min(1),
-    answers: z.array(z.string().min(1)).length(4),
-    correctAnswer: z.number().int().min(0).max(3),
+
+    answers: z
+        .array(z.string().min(1))
+        .length(4),
+
+    correctAnswer: z
+        .number()
+        .int()
+        .min(0)
+        .max(3),
+
     explanation: z.string().min(1),
 });
 
 const mysteryBatchSchema = z.object({
-    questions: z.array(mysteryQuestionSchema),
+    questions: z.array(
+        mysteryQuestionSchema
+    ),
 });
 
 // ==========================================
@@ -54,6 +77,228 @@ const ALLOWED_CATEGORIES = [
     "Languages",
     "Culture",
 ];
+
+// ==========================================
+// AI ERROR DETECTION
+// ==========================================
+
+function isModelBusyError(error) {
+    const message = String(
+        error?.message ||
+        error?.status ||
+        error?.code ||
+        error?.response?.data ||
+        ""
+    ).toLowerCase();
+
+    const status = Number(
+        error?.status ||
+        error?.code ||
+        error?.response?.status
+    );
+
+    return (
+        status === 429 ||
+        status === 500 ||
+        status === 502 ||
+        status === 503 ||
+        status === 504 ||
+
+        message.includes("429") ||
+        message.includes("rate limit") ||
+        message.includes("rate_limit") ||
+        message.includes("quota") ||
+        message.includes("resource exhausted") ||
+        message.includes("resource_exhausted") ||
+        message.includes("overloaded") ||
+        message.includes("unavailable") ||
+        message.includes("timeout") ||
+        message.includes("timed out") ||
+        message.includes("temporarily unavailable") ||
+        message.includes("too many requests")
+    );
+}
+
+// ==========================================
+// GENERATE WITH TWO MODELS
+// ==========================================
+
+async function generateWithFallback(
+    prompt,
+    responseSchema
+) {
+    // ==========================================
+    // PRIMARY MODEL
+    // ==========================================
+
+    try {
+        console.log(
+            `🤖 Mystery AI | Trying ${PRIMARY_MODEL}`
+        );
+
+        const response =
+            await ai.models.generateContent({
+                model: PRIMARY_MODEL,
+
+                contents: prompt,
+
+                config: {
+                    responseMimeType:
+                        "application/json",
+
+                    responseSchema,
+
+                    maxOutputTokens: 10000,
+                },
+            });
+
+        if (
+            !response ||
+            !response.text
+        ) {
+            throw new Error(
+                `${PRIMARY_MODEL} returned an empty response.`
+            );
+        }
+
+        console.log(
+            `✅ Mystery AI | ${PRIMARY_MODEL} responded`
+        );
+
+        return response;
+
+    } catch (error) {
+
+        console.warn(
+            `⚠️ Mystery AI | ${PRIMARY_MODEL} failed:`,
+            error.message
+        );
+
+        // ==========================================
+        // ONLY FALL BACK FOR TEMPORARY MODEL ISSUES
+        // ==========================================
+
+        if (!isModelBusyError(error)) {
+            throw error;
+        }
+
+        console.warn(
+            `🔄 Mystery AI | Switching to ${FALLBACK_MODEL}`
+        );
+
+        // ==========================================
+        // FALLBACK MODEL
+        // ==========================================
+
+        const response =
+            await ai.models.generateContent({
+                model: FALLBACK_MODEL,
+
+                contents: prompt,
+
+                config: {
+                    responseMimeType:
+                        "application/json",
+
+                    responseSchema,
+
+                    maxOutputTokens: 10000,
+                },
+            });
+
+        if (
+            !response ||
+            !response.text
+        ) {
+            throw new Error(
+                `${FALLBACK_MODEL} returned an empty response.`
+            );
+        }
+
+        console.log(
+            `✅ Mystery AI | ${FALLBACK_MODEL} responded`
+        );
+
+        return response;
+    }
+}
+
+// ==========================================
+// RESPONSE SCHEMA
+// ==========================================
+
+const mysteryResponseSchema = {
+    type: "object",
+
+    properties: {
+        questions: {
+            type: "array",
+
+            minItems: 1,
+
+            maxItems: 20,
+
+            items: {
+                type: "object",
+
+                properties: {
+                    category: {
+                        type: "string",
+                    },
+
+                    subject: {
+                        type: "string",
+                    },
+
+                    question: {
+                        type: "string",
+                    },
+
+                    answers: {
+                        type: "array",
+
+                        minItems: 4,
+
+                        maxItems: 4,
+
+                        items: {
+                            type: "string",
+                        },
+                    },
+
+                    correctAnswer: {
+                        type: "integer",
+
+                        minimum: 0,
+
+                        maximum: 3,
+                    },
+
+                    explanation: {
+                        type: "string",
+                    },
+                },
+
+                required: [
+                    "category",
+                    "subject",
+                    "question",
+                    "answers",
+                    "correctAnswer",
+                    "explanation",
+                ],
+
+                additionalProperties: false,
+            },
+        },
+    },
+
+    required: [
+        "questions",
+    ],
+
+    additionalProperties: false,
+};
 
 // ==========================================
 // MAIN GENERATOR
@@ -91,6 +336,7 @@ async function generateMysteryQuestionBatch() {
     const acceptedQuestions = [];
 
     const acceptedContexts = new Set();
+
     const acceptedSubjects = new Set();
 
     let generationAttempt = 0;
@@ -132,87 +378,19 @@ async function generateMysteryQuestionBatch() {
                 requestCount
             );
 
+            // ==========================================
+            // TWO-MODEL GENERATION
+            // ==========================================
+
             const response =
-                await ai.models.generateContent({
-                    model: "gemini-3.1-flash-lite",
-                    contents: prompt,
+                await generateWithFallback(
+                    prompt,
+                    mysteryResponseSchema
+                );
 
-                    config: {
-                        responseMimeType:
-                            "application/json",
-
-                        responseSchema: {
-                            type: "object",
-
-                            properties: {
-                                questions: {
-                                    type: "array",
-                                    minItems: 1,
-                                    maxItems: 20,
-
-                                    items: {
-                                        type: "object",
-
-                                        properties: {
-                                            category: {
-                                                type: "string",
-                                            },
-
-                                            subject: {
-                                                type: "string",
-                                            },
-
-                                            question: {
-                                                type: "string",
-                                            },
-
-                                            answers: {
-                                                type: "array",
-                                                minItems: 4,
-                                                maxItems: 4,
-
-                                                items: {
-                                                    type: "string",
-                                                },
-                                            },
-
-                                            correctAnswer: {
-                                                type: "integer",
-                                                minimum: 0,
-                                                maximum: 3,
-                                            },
-
-                                            explanation: {
-                                                type: "string",
-                                            },
-                                        },
-
-                                        required: [
-                                            "category",
-                                            "subject",
-                                            "question",
-                                            "answers",
-                                            "correctAnswer",
-                                            "explanation",
-                                        ],
-
-                                        additionalProperties:
-                                            false,
-                                    },
-                                },
-                            },
-
-                            required: [
-                                "questions",
-                            ],
-
-                            additionalProperties:
-                                false,
-                        },
-
-                        maxOutputTokens: 10000,
-                    },
-                });
+            // ==========================================
+            // RESPONSE VALIDATION
+            // ==========================================
 
             if (!response.text) {
                 throw new Error(
@@ -223,9 +401,10 @@ async function generateMysteryQuestionBatch() {
             let parsed;
 
             try {
-                parsed = JSON.parse(
-                    response.text
-                );
+                parsed =
+                    JSON.parse(
+                        response.text
+                    );
             } catch {
                 throw new Error(
                     "Gemini returned invalid JSON."
@@ -298,6 +477,7 @@ async function generateMysteryQuestionBatch() {
                 `📊 Batch result | Accepted: ${acceptedThisBatch} | ` +
                 `Total: ${acceptedQuestions.length}/${QUESTIONS_PER_BATCH}`
             );
+
         } catch (error) {
             console.error(
                 `❌ Mystery AI batch ${generationAttempt} failed:`,
@@ -322,6 +502,7 @@ async function generateMysteryQuestionBatch() {
         console.log(
             `💾 Saved ${acceptedQuestions.length} question history entries.`
         );
+
     } catch (error) {
         console.error(
             "❌ Failed to save Mystery question history:",
@@ -343,6 +524,7 @@ async function generateMysteryQuestionBatch() {
         console.log(
             `📦 Mystery pool replenished with ${acceptedQuestions.length} question(s).`
         );
+
     } catch (error) {
         console.error(
             "❌ Failed to add Mystery questions to pool:",
@@ -375,8 +557,9 @@ async function validateQuestion(
             item.question.trim();
 
         const answers =
-            item.answers.map((answer) =>
-                answer.trim()
+            item.answers.map(
+                (answer) =>
+                    answer.trim()
             );
 
         const explanation =
@@ -435,7 +618,9 @@ async function validateQuestion(
         // ==========================================
 
         const normalizedAnswers =
-            answers.map(normalize);
+            answers.map(
+                normalize
+            );
 
         if (
             new Set(
@@ -468,7 +653,9 @@ async function validateQuestion(
         }
 
         const correctAnswer =
-            answers[item.correctAnswer];
+            answers[
+                item.correctAnswer
+            ];
 
         if (!correctAnswer) {
             console.log(
@@ -501,7 +688,10 @@ async function validateQuestion(
             return null;
         }
 
-        // Direct Redis subject check.
+        // ==========================================
+        // REDIS SUBJECT CHECK
+        // ==========================================
+
         try {
             const alreadyUsed =
                 await hasQuestionSubjectBeenUsed(
@@ -515,6 +705,7 @@ async function validateQuestion(
 
                 return null;
             }
+
         } catch (error) {
             console.error(
                 "⚠️ Subject history check failed:",
@@ -532,12 +723,18 @@ async function validateQuestion(
             createQuestionContext({
                 category:
                     officialCategory,
+
                 question,
+
                 answers,
+
                 correctAnswer,
             });
 
-        // Current batch duplicate.
+        // ==========================================
+        // CURRENT BATCH DUPLICATE
+        // ==========================================
+
         if (
             acceptedContexts.has(
                 context
@@ -550,7 +747,10 @@ async function validateQuestion(
             return null;
         }
 
-        // Historical duplicate.
+        // ==========================================
+        // HISTORICAL DUPLICATE
+        // ==========================================
+
         try {
             const alreadyUsed =
                 await hasQuestionBeenUsed(
@@ -564,6 +764,7 @@ async function validateQuestion(
 
                 return null;
             }
+
         } catch (error) {
             console.error(
                 "⚠️ Question history check failed:",
@@ -600,6 +801,7 @@ async function validateQuestion(
 
             subjectKey,
         };
+
     } catch (error) {
         console.error(
             "❌ Mystery question validation error:",
@@ -625,7 +827,10 @@ function getPrompt(
             ? previousContexts
                   .slice(-200)
                   .map(
-                      (context, index) =>
+                      (
+                          context,
+                          index
+                      ) =>
                           `${index + 1}. ${context}`
                   )
                   .join("\n")
@@ -635,7 +840,10 @@ function getPrompt(
         acceptedQuestions.length
             ? acceptedQuestions
                   .map(
-                      (item, index) =>
+                      (
+                          item,
+                          index
+                      ) =>
                           `${index + 1}. ` +
                           `${item.category} :: ` +
                           `${item.subject} :: ` +
@@ -799,11 +1007,13 @@ Do not repeat any of these.
 PREVIOUS SUBJECTS
 ==========================================
 
-${[...previousSubjects].length
+${
+    [...previousSubjects].length
         ? [...previousSubjects]
               .slice(-200)
               .join("\n")
-        : "NONE"}
+        : "NONE"
+}
 
 Do not reuse these subjects.
 
@@ -844,6 +1054,7 @@ Examples of suitable difficulty:
 - Easily recognizable places
 
 Do NOT generate intentionally difficult questions.
+
 - Avoid disputed historical claims.
 - Avoid current political questions.
 - Avoid political persuasion.
