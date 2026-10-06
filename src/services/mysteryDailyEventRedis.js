@@ -14,7 +14,7 @@ const redis = new Redis({
 
 const PREFIX = "wac:mysteryevent:";
 
-const EVENT_TTL_SECONDS = 7 * 24 * 60 * 60;
+const EVENT_TTL_SECONDS = 365 * 24 * 60 * 60;
 
 // Random player cooldown: 12–16 hours.
 const MIN_COOLDOWN_SECONDS = 16 * 60 * 60;
