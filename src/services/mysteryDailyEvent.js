@@ -45,7 +45,7 @@ const {
 // ============================================================
 // CONFIG
 // ============================================================
-
+let formattedTime;
 const MYSTERY_EVENT_ID =
     "daily-world-mystery";
 
@@ -130,7 +130,7 @@ function buildMysteryEventEmbed() {
         )
         .setFooter({
             text:
-                "Reveal your own mystery • Hidden reward • Hidden Cooldown",
+                "Reveal your own mystery • Hidden reward",
         });
 }
 
@@ -253,6 +253,8 @@ function buildCooldownEmbed() {
                 "Your next mystery is still waiting",
                 "to be unlocked.",
                 "",
+                `⏱️ **Time Remaining:** ${formattedTime}`,
+                "",
                 "Come back later and try again! <:waiting:1505801859502178305>",
             ].join("\n")
         );
@@ -275,30 +277,6 @@ function buildNoQuestionEmbed() {
         );
 }
 
-// ============================================================
-// PUBLIC / PRIVATE ANSWER MESSAGES
-// ============================================================
-
-function buildPublicCorrectMessage(
-    userId,
-    reward
-) {
-    return [
-        `🎉 Congratulations <@${userId}>!`,
-        "",
-        `You successfully solved the mystery and earned **${reward} ${MORA_EMOJI}**! 🔮`,
-    ].join("\n");
-}
-
-function buildPublicIncorrectMessage(
-    userId
-) {
-    return [
-        `🔮 Nice try, <@${userId}>!`,
-        "",
-        "You didn't solve this mystery, but don't give up — another mystery awaits you! 💪",
-    ].join("\n");
-}
 
 // ============================================================
 // DISABLED ANSWER BUTTONS
@@ -646,8 +624,7 @@ async function handleMysteryReveal(
             const seconds =
                 remainingSeconds % 60;
 
-            const formattedTime =
-                hours > 0
+            formattedTime =hours > 0
                     ? `${hours}h ${minutes}m ${seconds}s`
                     : minutes > 0
                         ? `${minutes}m ${seconds}s`

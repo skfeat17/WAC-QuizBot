@@ -21,7 +21,7 @@ const MIN_COOLDOWN_SECONDS = 16 * 60 * 60;
 const MAX_COOLDOWN_SECONDS = 24 * 60 * 60;
 
 // Question pool.
-const QUESTION_POOL_TARGET = 20;
+const QUESTION_POOL_TARGET = 30;
 const QUESTION_POOL_MINIMUM = 5;
 
 // Users who never receive a Mystery Event cooldown.
