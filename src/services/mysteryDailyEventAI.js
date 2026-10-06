@@ -1116,21 +1116,17 @@ QUALITY RULES
 - Prefer globally diverse topics.
 - Do not focus heavily on one country.
 - Do not make all questions geography.
-- Keep EVERY question very easy.
+- Keep EVERY question moderately easy.
 - Questions should be answerable by a general audience.
 - Prefer common, well-known world facts.
-- Avoid difficult trivia.
 - Avoid obscure facts.
 - Avoid niche knowledge.
 - Avoid complicated historical details.
-- Avoid difficult geography.
 - Avoid uncommon names or places.
 - Avoid questions requiring specialist knowledge.
 - The correct answer should usually be recognizable to most people.
 - If a question feels medium or hard, replace it with an easier one.
 
-The goal is:
-EASY → VERY EASY
 
 Examples of suitable difficulty:
 
