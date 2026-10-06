@@ -219,14 +219,12 @@ function buildCorrectEmbed(
                 "📖 **Did you know?**",
                 attempt.explanation,
                 "",
-                "Your next mystery will appear after your hidden cooldown (16-24) hours).<:1EmojiCatSalute:936530415177576458>",
+                "Your next mystery will appear after your cooldown.<:1EmojiCatSalute:936530415177576458>",
             ].join("\n")
         );
 }
 
-function buildIncorrectEmbed(
-    attempt
-) {
+function buildIncorrectEmbed(attempt) {
     return new EmbedBuilder()
         .setColor(0xed4245)
         .setTitle("❌ MYSTERY NOT SOLVED")
@@ -234,12 +232,9 @@ function buildIncorrectEmbed(
             [
                 "That wasn't the correct answer.",
                 "",
-                `✅ **Correct Answer:** ${attempt.answers[attempt.correctAnswer]}`,
+                "🔮 **You can try another mystery right away!**",
                 "",
-                "📖 **Did you know?**",
-                attempt.explanation,
-                "",
-                "Your mystery cooldown has started. 🔮",
+                "Keep trying until you solve one. 💪",
             ].join("\n")
         );
 }
@@ -624,11 +619,11 @@ async function handleMysteryReveal(
             const seconds =
                 remainingSeconds % 60;
 
-            formattedTime =hours > 0
-                    ? `${hours}h ${minutes}m ${seconds}s`
-                    : minutes > 0
-                        ? `${minutes}m ${seconds}s`
-                        : `${seconds}s`;
+            formattedTime = hours > 0
+                ? `${hours}h ${minutes}m ${seconds}s`
+                : minutes > 0
+                    ? `${minutes}m ${seconds}s`
+                    : `${seconds}s`;
 
             console.log(
                 `👤 Display Name: ${interaction.member?.displayName ||
@@ -954,62 +949,82 @@ async function handleMysteryAnswer(
         return true;
     }
 
-    // --------------------------------------------------------
-    // CLAIM COOLDOWN AFTER ANSWER
-    // IMPORTANT:
-    // Revealing a question does NOT start cooldown.
-    // The cooldown starts only when the user answers.
-    // --------------------------------------------------------
-
-    const immune =
-        MYSTERY_EVENT_COOLDOWN_IMMUNE.includes(
-            userId
-        );
-
-    let cooldownSeconds =
-        attempt.cooldownSeconds ?? null;
-
-    if (!immune) {
-
-        const cooldownResult =
-            await claimMysteryCooldown(
-                userId
-            );
-
-        if (!cooldownResult.claimed) {
-
-            console.log(
-                `⏳ COOLDOWN RACE LOST | ${userId}`
-            );
-
-            return true;
-        }
-
-        cooldownSeconds =
-            cooldownResult.cooldownSeconds;
-
-        console.log(
-            `⏱️ COOLDOWN CREATED | ${cooldownSeconds}s`
-        );
-    } else {
-
-        console.log(
-            `🛡️ COOLDOWN IMMUNE | ${userId}`
-        );
-    }
-
-    // --------------------------------------------------------
+      // ========================================================
     // CHECK ANSWER
-    // --------------------------------------------------------
+    // ========================================================
 
     const isCorrect =
         selectedAnswer ===
         attempt.correctAnswer;
 
-    const reward =
-        isCorrect
-            ? generateReward()
-            : 0;
+    let cooldownSeconds = null;
+    let reward = 0;
+
+    // --------------------------------------------------------
+    // CORRECT ANSWER
+    // --------------------------------------------------------
+
+    if (isCorrect) {
+
+        const immune =
+            MYSTERY_EVENT_COOLDOWN_IMMUNE.includes(
+                userId
+            );
+
+        if (!immune) {
+
+            const cooldownResult =
+                await claimMysteryCooldown(
+                    userId
+                );
+
+            if (!cooldownResult.claimed) {
+
+                console.log(
+                    `⏳ COOLDOWN RACE LOST | ${userId}`
+                );
+
+                return true;
+            }
+
+            cooldownSeconds =
+                cooldownResult.cooldownSeconds;
+
+            console.log(
+                `⏱️ COOLDOWN CREATED | ${cooldownSeconds}s`
+            );
+
+        } else {
+
+            console.log(
+                `🛡️ COOLDOWN IMMUNE | ${userId}`
+            );
+        }
+
+        // ONLY correct answers receive Mora
+        reward = generateReward();
+
+        console.log(
+            `🎁 REWARD GENERATED | ${reward} Mora`
+        );
+
+    } else {
+
+        // ----------------------------------------------------
+        // WRONG ANSWER
+        // ----------------------------------------------------
+        // NO COOLDOWN
+        // NO REWARD
+        // USER CAN TRY ANOTHER MYSTERY IMMEDIATELY
+        // ----------------------------------------------------
+
+        cooldownSeconds = null;
+        reward = 0;
+
+        console.log(
+            `❌ INCORRECT ANSWER | NO COOLDOWN | ${userId}`
+        );
+    }
 
     // --------------------------------------------------------
     // RECORD PARTICIPATION
@@ -1018,6 +1033,7 @@ async function handleMysteryAnswer(
     // --------------------------------------------------------
 
     try {
+
         await recordParticipation(
             "mystery",
             userId
@@ -1027,12 +1043,15 @@ async function handleMysteryAnswer(
             `📊 STATS RECORDED | MYSTERY | ${userId} | ` +
             `${isCorrect ? "CORRECT" : "INCORRECT"}`
         );
+
     } catch (error) {
+
         console.error(
             "❌ MYSTERY STATS RECORD FAILED:",
             error.message
         );
     }
+   
 
     const answeredAttempt = {
         ...attempt,
