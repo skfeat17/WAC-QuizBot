@@ -74,22 +74,26 @@ const ANSWER_BUTTON_PREFIX =
 // RANDOM
 // ============================================================
 
+function randomInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
 function generateReward() {
     const roll = Math.random() * 100;
 
-    if (roll < 75) {
-        return Math.floor(Math.random() * 6) + 10; // 10-15 | 75%
+    if (roll < 85) {
+        return randomInt(15, 17); // 85%
     }
 
     if (roll < 95) {
-        return Math.floor(Math.random() * 6) + 15; // 15-20 | 20%
+        return randomInt(18, 20); // 10%
     }
 
     if (roll < 99) {
-        return Math.floor(Math.random() * 5) + 21; // 21-25 | 4%
+        return randomInt(21, 25); // 4%
     }
 
-    return Math.floor(Math.random() * 5) + 26; // 26-30 | 1%
+    return randomInt(26, 30); // 1%
 }
 
 function createAttemptId() {
