@@ -28,6 +28,7 @@ const QUESTION_POOL_MINIMUM = 5;
 const MYSTERY_EVENT_COOLDOWN_IMMUNE = [
     "1295671787375296542",
     "1242132608574292118",
+    "759810328791482428"  //kairi
 ];
 
 // ==========================================
