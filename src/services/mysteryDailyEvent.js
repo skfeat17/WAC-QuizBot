@@ -1307,7 +1307,8 @@ async function processMysteryAnswerAfterResponse({
                 await interaction.followUp({
                     content:
                         `📖 **Did you know?**\n` +
-                        `\`\`\`\n${attempt.explanation}\n\`\`\`\n\n`,
+                        `\`\`\`\n${attempt.explanation}\n\`\`\`\n\n`+
+                        "-# 💡Copy and Share to Spread Knowledge!\n\n",
                     flags: MessageFlags.Ephemeral,
                 });
 
