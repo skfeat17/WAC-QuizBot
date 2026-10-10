@@ -115,7 +115,7 @@ function createAttemptId() {
 function buildMysteryEventEmbed() {
     return new EmbedBuilder()
         .setColor(0x5865f2)
-        .setTitle("🔮 DAILY MYSTERY DROP!")
+        .setTitle("🔮 DAILY MYSTERY EVENT!")
         .setDescription(
             [
                 "━━━━━━━━━━━━━━━━━━━━",
@@ -134,7 +134,7 @@ function buildMysteryEventEmbed() {
         )
         .setFooter({
             text:
-                "Reveal your own mystery • Hidden reward",
+                "Reveal your own mystery • Hidden reward • 24 Hours Cooldown",
         });
 }
 
