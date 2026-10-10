@@ -15,14 +15,6 @@ const {
     countUsernamesCommand,
 } = require("./src/services/countUsernames");
 
-const {
-    treasureCooldownCommand,
-} = require("./src/services/treasureCooldownAdmin.js");
-
-const {
-    dailyeventCooldownCommand,
-} = require("./src/services/dailyEventCooldownAdmin");
-
 const commands = [
 
     // ==========================================
@@ -168,49 +160,6 @@ const commands = [
         .toJSON(),
 
     // ==========================================
-    // DAILY QUIZ
-    // ==========================================
-
-    new SlashCommandBuilder()
-        .setName("dailyevent")
-        .setDescription(
-            "Start the World Adventure Club Daily Event"
-        )
-
-        .addStringOption(option =>
-            option
-                .setName("type")
-                .setDescription(
-                    "Choose the Daily Quiz type"
-                )
-                .setRequired(true)
-                .addChoices(
-                    {
-                        name: "Capital",
-                        value: "capital",
-                    },
-                    {
-                        name: "Famous Food",
-                        value: "food",
-                    },
-                    {
-                        name: "Famous Monument",
-                        value: "monument",
-                    },
-                    {
-                        name: "Famous Person",
-                        value: "famousPerson",
-                    },
-                    {
-                        name: "Independence Day",
-                        value: "independence",
-                    }
-                )
-        )
-
-        .toJSON(),
-
-    // ==========================================
     // MYSTERY EVENT
     // ==========================================
 
@@ -326,59 +275,12 @@ const commands = [
         .toJSON(),
 
     // ==========================================
-    // KILL COMMANDS
-    // ==========================================
-
-    new SlashCommandBuilder()
-        .setName("kill")
-        .setDescription(
-            "Daily Quiz control commands"
-        )
-
-        .addSubcommand(subcommand =>
-            subcommand
-                .setName("dailyevent")
-                .setDescription(
-                    "Force terminate the active Daily Event"
-                )
-        )
-
-        .addSubcommand(subcommand =>
-            subcommand
-                .setName("history")
-                .setDescription(
-                    "Clear all Daily Quiz participation history"
-                )
-        )
-
-        .addSubcommand(subcommand =>
-            subcommand
-                .setName("treasure")
-                .setDescription(
-                    "Clear all Treasure Chest cooldown history"
-                )
-        )
-
-        .toJSON(),
-
-    // ==========================================
     // OTHER COMMANDS
     // ==========================================
 
     resolveCommand.toJSON(),
 
     countUsernamesCommand.toJSON(),
-
-    new SlashCommandBuilder()
-        .setName("treasure")
-        .setDescription(
-            "Discover a treasure chest washed ashore!"
-        )
-        .toJSON(),
-
-    treasureCooldownCommand.toJSON(),
-
-    dailyeventCooldownCommand.toJSON(),
 
     // ==========================================
     // STATS
@@ -393,15 +295,11 @@ const commands = [
             option
                 .setName("event")
                 .setDescription("Choose which event statistics to view")
-                .setRequired(true)
+                .setRequired(false)
                 .addChoices(
                     {
                         name: "Mystery Event",
                         value: "mystery",
-                    },
-                    {
-                        name: "Treasure Chest",
-                        value: "chest",
                     }
                 )
         )
