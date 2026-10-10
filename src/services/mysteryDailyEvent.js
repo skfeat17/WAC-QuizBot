@@ -223,7 +223,7 @@ function buildCorrectEmbed(
                 "📖 **Did you know?**",
                 attempt.explanation,
                 "",
-                "Your next mystery will appear after your cooldown.<:1EmojiCatSalute:936530415177576458>",
+                "We would love if you share the fact that you just learned! Copy and paste the Next message <:1EmojiCatSalute:936530415177576458>",
             ].join("\n")
         );
 }
@@ -1306,7 +1306,7 @@ async function processMysteryAnswerAfterResponse({
 
                 await interaction.followUp({
                     content:
-                        `📢 **Here's Something Cool I Know!**\n` +
+                        `📢 **Here's the fact, I just learned!**\n` +
                         `\`\`\`\n${attempt.explanation}\n\`\`\`\n\n` ,
                     flags: MessageFlags.Ephemeral,
                 });
