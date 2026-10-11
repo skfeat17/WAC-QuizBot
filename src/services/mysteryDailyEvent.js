@@ -1134,7 +1134,7 @@ async function handleMysteryAnswer(
 
             await interaction.followUp({
                 content:
-                    `🌟 <@${userId}> Great try!💗`,
+                    `🌟 <@${userId}> Give it another try!💗`,
 
                 allowedMentions: {
                     users: [userId],
