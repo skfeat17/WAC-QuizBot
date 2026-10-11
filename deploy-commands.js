@@ -295,7 +295,7 @@ const commands = [
             option
                 .setName("event")
                 .setDescription("Choose which event statistics to view")
-                .setRequired(false)
+                .setRequired(true)
                 .addChoices(
                     {
                         name: "Mystery Event",
