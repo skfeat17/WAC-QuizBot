@@ -78,6 +78,235 @@ const ALLOWED_CATEGORIES = [
     "Culture",
 ];
 
+
+// Every generated question must explicitly name at least one country.
+// This prevents generic trivia that has no clear country connection.
+const COUNTRY_NAMES = [
+    "Afghanistan",
+    "Albania",
+    "Algeria",
+    "Andorra",
+    "Angola",
+    "Antigua and Barbuda",
+    "Argentina",
+    "Armenia",
+    "Australia",
+    "Austria",
+    "Azerbaijan",
+    "Bahamas",
+    "Bahrain",
+    "Bangladesh",
+    "Barbados",
+    "Belarus",
+    "Belgium",
+    "Belize",
+    "Benin",
+    "Bhutan",
+    "Bolivia",
+    "Bosnia and Herzegovina",
+    "Botswana",
+    "Brazil",
+    "Brunei",
+    "Bulgaria",
+    "Burkina Faso",
+    "Burundi",
+    "Cabo Verde",
+    "Cambodia",
+    "Cameroon",
+    "Canada",
+    "Central African Republic",
+    "Chad",
+    "Chile",
+    "China",
+    "Colombia",
+    "Comoros",
+    "Costa Rica",
+    "Croatia",
+    "Cuba",
+    "Cyprus",
+    "Czechia",
+    "Democratic Republic of the Congo",
+    "Denmark",
+    "Djibouti",
+    "Dominica",
+    "Dominican Republic",
+    "Ecuador",
+    "Egypt",
+    "El Salvador",
+    "Equatorial Guinea",
+    "Eritrea",
+    "Estonia",
+    "Eswatini",
+    "Ethiopia",
+    "Fiji",
+    "Finland",
+    "France",
+    "Gabon",
+    "Gambia",
+    "Georgia",
+    "Germany",
+    "Ghana",
+    "Greece",
+    "Grenada",
+    "Guatemala",
+    "Guinea",
+    "Guinea-Bissau",
+    "Guyana",
+    "Haiti",
+    "Honduras",
+    "Hungary",
+    "Iceland",
+    "India",
+    "Indonesia",
+    "Iran",
+    "Iraq",
+    "Ireland",
+    "Israel",
+    "Italy",
+    "Jamaica",
+    "Japan",
+    "Jordan",
+    "Kazakhstan",
+    "Kenya",
+    "Kiribati",
+    "Kuwait",
+    "Kyrgyzstan",
+    "Laos",
+    "Latvia",
+    "Lebanon",
+    "Lesotho",
+    "Liberia",
+    "Libya",
+    "Liechtenstein",
+    "Lithuania",
+    "Luxembourg",
+    "Madagascar",
+    "Malawi",
+    "Malaysia",
+    "Maldives",
+    "Mali",
+    "Malta",
+    "Marshall Islands",
+    "Mauritania",
+    "Mauritius",
+    "Mexico",
+    "Micronesia",
+    "Moldova",
+    "Monaco",
+    "Mongolia",
+    "Montenegro",
+    "Morocco",
+    "Mozambique",
+    "Myanmar",
+    "Namibia",
+    "Nauru",
+    "Nepal",
+    "Netherlands",
+    "New Zealand",
+    "Nicaragua",
+    "Niger",
+    "Nigeria",
+    "North Korea",
+    "North Macedonia",
+    "Norway",
+    "Oman",
+    "Pakistan",
+    "Palau",
+    "Palestine",
+    "Panama",
+    "Papua New Guinea",
+    "Paraguay",
+    "Peru",
+    "Philippines",
+    "Poland",
+    "Portugal",
+    "Qatar",
+    "Republic of the Congo",
+    "Romania",
+    "Russia",
+    "Rwanda",
+    "Saint Kitts and Nevis",
+    "Saint Lucia",
+    "Saint Vincent and the Grenadines",
+    "Samoa",
+    "San Marino",
+    "Sao Tome and Principe",
+    "Saudi Arabia",
+    "Senegal",
+    "Serbia",
+    "Seychelles",
+    "Sierra Leone",
+    "Singapore",
+    "Slovakia",
+    "Slovenia",
+    "Solomon Islands",
+    "Somalia",
+    "South Africa",
+    "South Korea",
+    "South Sudan",
+    "Spain",
+    "Sri Lanka",
+    "Sudan",
+    "Suriname",
+    "Sweden",
+    "Switzerland",
+    "Syria",
+    "Taiwan",
+    "Tajikistan",
+    "Tanzania",
+    "Thailand",
+    "Timor-Leste",
+    "Togo",
+    "Tonga",
+    "Trinidad and Tobago",
+    "Tunisia",
+    "Turkey",
+    "Turkmenistan",
+    "Tuvalu",
+    "Uganda",
+    "Ukraine",
+    "United Arab Emirates",
+    "United Kingdom",
+    "United States",
+    "Uruguay",
+    "Uzbekistan",
+    "Vanuatu",
+    "Vatican City",
+    "Venezuela",
+    "Vietnam",
+    "Yemen",
+    "Zambia",
+    "Zimbabwe",
+    // Common short forms and alternative names
+    "USA",
+    "U.S.A.",
+    "US",
+    "U.S.",
+    "UK",
+    "U.K.",
+    "UAE",
+    "Ivory Coast",
+    "Côte d'Ivoire",
+    "Czech Republic",
+    "The Gambia",
+    "Burma",
+    "East Timor",
+    "Republic of Korea",
+    "Republic of Türkiye",
+];
+
+function questionMentionsCountry(question) {
+    const normalizedQuestion = normalize(question);
+    return COUNTRY_NAMES.some((country) => {
+        const normalizedCountry = normalize(country);
+        if (!normalizedCountry) return false;
+        const escaped = normalizedCountry.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        return new RegExp(`(?:^|\\s)${escaped}(?:$|\\s)`, "i").test(normalizedQuestion);
+    });
+}
+
+
+
 // ==========================================
 // AI ERROR DETECTION
 // ==========================================
@@ -688,6 +917,18 @@ async function validateQuestion(
         }
 
         // ==========================================
+        // COUNTRY RELEVANCE
+        // Every question must explicitly name a country.
+        // ==========================================
+
+        if (!questionMentionsCountry(question)) {
+            console.log(
+                `🚫 QUESTION DOES NOT MENTION A COUNTRY | ${question}`
+            );
+            return null;
+        }
+
+        // ==========================================
         // EXPLANATION LENGTH
         // ==========================================
 
@@ -965,6 +1206,10 @@ CORE REQUIREMENTS
 - Questions must be factually accurate.
 - Use established, reliable facts.
 - Questions must be suitable for an international audience.
+- CRITICAL: EVERY question's actual question text MUST explicitly name at least one specific country (for example, Japan, Brazil, Kenya, India, or Canada).
+- The country name must appear in the question itself, not only in the answer options, subject, or explanation.
+- The question must be meaningfully about that named country. Do not insert a country name randomly just to satisfy this rule.
+- Reject generic questions about the world, animals, food, history, languages, sports, or landmarks unless the question directly connects the fact to a specifically named country.
 - Use natural English.
 - Keep questions suitable for Discord.
 - Do not mention rewards.
@@ -1006,17 +1251,17 @@ Vary question structures.
 
 Examples:
 
-- Identify a country from an unusual clue.
-- Identify a landmark from a description.
-- Identify a food from ingredients.
-- Identify an animal from its habitat.
-- Identify a language from a linguistic clue.
-- Identify a historical event.
-- Identify a cultural tradition.
-- Identify a geographical feature.
-- Identify a famous work of art.
-- Identify a place from a distinctive characteristic.
-- Identify something from a surprising but established fact.
+- "Which Japanese city is famous for its historic Fushimi Inari shrine?"
+- "Which country in South America is home to the Christ the Redeemer statue?"
+- "Which traditional dish from Thailand is commonly made with rice noodles and tamarind?"
+- "Which animal native to Australia is known for carrying its young in a pouch?"
+- "Which language is widely spoken in Brazil?"
+- "Which ancient civilization built Machu Picchu in present-day Peru?"
+- "Which country celebrates the Hanami tradition of viewing cherry blossoms?"
+- "Which African country contains Mount Kilimanjaro?"
+- "Which country is the birthplace of the Olympic Games in ancient times?"
+- "Which island nation is associated with the Māori people and their haka tradition?"
+- "Which country is known for the historic city of Petra?"
 
 ==========================================
 ANSWER RULES
@@ -1114,6 +1359,9 @@ QUALITY RULES
 ==========================================
 
 - Prefer globally diverse topics.
+- Distribute questions across many different countries and regions; do not repeatedly use the same country.
+- Every question must name a country directly in its question sentence and be genuinely related to that country.
+- Do not generate a question that can be asked unchanged without mentioning a country.
 - Do not focus heavily on one country.
 - Do not make all questions geography.
 - Keep EVERY question moderately easy.

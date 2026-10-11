@@ -50,13 +50,13 @@ const MYSTERY_EVENT_ID =
     "daily-world-mystery";
 
 const EVENT_NAME =
-    "🔮 Daily World Mystery Drop";
+    "🌍 Daily World Event";
 
 const EVENT_TYPE =
     "Mystery Event";
 
-const REWARD_MIN = 10;
-const REWARD_MAX = 30;
+const REWARD_MIN = 20;
+const REWARD_MAX = 50;
 
 const MORA_EMOJI =
     "<:mora:1503931162525962333>";
@@ -81,19 +81,23 @@ function randomInt(min, max) {
 function generateReward() {
     const roll = Math.random() * 100;
 
-    if (roll < 85) {
-        return randomInt(15, 17); // 85%
-    }
-
     if (roll < 95) {
-        return randomInt(18, 20); // 10%
+        return randomInt(20, 25); // 95%
     }
 
-    if (roll < 99) {
-        return randomInt(21, 25); // 4%
+    if (roll < 97) {
+        return randomInt(26, 30); // 2%
     }
 
-    return randomInt(26, 30); // 1%
+    if (roll < 98.5) {
+        return randomInt(31, 35); // 1.5%
+    }
+
+    if (roll < 99.5) {
+        return randomInt(36, 40); // 1%
+    }
+
+    return randomInt(41, 50); // 0.5%
 }
 
 function createAttemptId() {
@@ -115,26 +119,26 @@ function createAttemptId() {
 function buildMysteryEventEmbed() {
     return new EmbedBuilder()
         .setColor(0x5865f2)
-        .setTitle("🔮 DAILY MYSTERY EVENT!")
+        .setTitle("🌍 DAILY WORLD EVENT!")
         .setDescription(
             [
                 "━━━━━━━━━━━━━━━━━━━━",
                 "",
-                "🌍 **World-Related Mystery Question**",
+                "🌍 **Daily World Question**",
                 "",
-                "A mystery from somewhere around the",
-                "world is waiting to be uncovered...",
+                "A question about somewhere around the",
+                "world is waiting to be answered...",
                 "",
-                `🎁 **Mystery Reward: Up to ${REWARD_MAX} ${MORA_EMOJI}**`,
+                `🎁 **Daily Reward: Up to ${REWARD_MAX} ${MORA_EMOJI}**`,
                 "",
-                "<:paimonThink:1505801467435548752> Think you can solve it?",
+                "<:paimonThink:1505801467435548752> Think you know the answer?",
                 "",
                 "━━━━━━━━━━━━━━━━━━━━",
             ].join("\n")
         )
         .setFooter({
             text:
-                "Reveal your own mystery • Hidden reward • 24 Hours Cooldown",
+                "Answer your daily question • Mora reward • 24-hour cooldown",
         });
 }
 
@@ -143,7 +147,7 @@ function buildRevealButton() {
         new ButtonBuilder()
             .setCustomId(REVEAL_BUTTON_ID)
             .setLabel(
-                "Reveal My Mystery Question"
+                "Reveal My Today's Question"
             )
             .setEmoji("🔮")
             .setStyle(ButtonStyle.Primary)
@@ -160,7 +164,7 @@ function buildQuestionEmbed(
 ) {
     return new EmbedBuilder()
         .setColor(0x5865f2)
-        .setTitle("🔮 YOUR MYSTERY QUESTION")
+        .setTitle("🌍 YOUR DAILY QUESTION")
         .setDescription(
             [
                 `**${question.question}**`,
@@ -216,14 +220,14 @@ function buildCorrectEmbed(
         .setTitle("✅ MYSTERY SOLVED!")
         .setDescription(
             [
-                "You uncovered the mystery!",
+                "You answered the daily question correctly!",
                 "",
                 `🎁 **Reward: ${attempt.reward} ${MORA_EMOJI}**`,
                 "",
                 "📖 **Did you know?**",
                 attempt.explanation,
                 "",
-                "We would love if you share the fact that you just learned! Copy and paste the Next message <:1EmojiCatSalute:936530415177576458>",
+                "Share the fact you just learned! Copy and paste the next message <:1EmojiCatSalute:936530415177576458>",
             ].join("\n")
         );
 }
@@ -231,14 +235,14 @@ function buildCorrectEmbed(
 function buildIncorrectEmbed(attempt) {
     return new EmbedBuilder()
         .setColor(0xed4245)
-        .setTitle("❌ MYSTERY NOT SOLVED")
+        .setTitle("❌ INCORRECT ANSWER")
         .setDescription(
             [
-                "That wasn't the correct answer.",
+                "That's not the correct answer.",
                 "",
-                "🔮 **You can try another mystery right away!**",
+                "🌍 **You can try another daily question right away!**",
                 "",
-                "Keep trying until you solve one. 💪",
+                "Keep trying and learn something new. 💪",
             ].join("\n")
         );
 }
@@ -249,12 +253,12 @@ function buildCooldownEmbed() {
         .setTitle("⏳ NOT YET...")
         .setDescription(
             [
-                "Your next mystery is still waiting",
-                "to be unlocked.",
+                "Your next daily question is waiting",
+                "for you.",
                 "",
                 `⏱️ **Time Remaining:** ${formattedTime}`,
                 "",
-                "Come back later and try again! <:waiting:1505801859502178305>",
+                "Come back later for your next daily question! <:waiting:1505801859502178305>",
             ].join("\n")
         );
 }
@@ -263,14 +267,14 @@ function buildNoQuestionEmbed() {
     return new EmbedBuilder()
         .setColor(0xfee75c)
         .setTitle(
-            "🔮 THE MYSTERY VAULT IS RESTOCKING..."
+            "🌍 DAILY QUESTIONS ARE RESTOCKING..."
         )
         .setDescription(
             [
-                "There are no fresh mysteries",
+                "There are no fresh questions",
                 "available right now.",
                 "",
-                "The mystery vault is being refilled.",
+                "The question pool is being refilled.",
                 "Please try again shortly!",
             ].join("\n")
         );
@@ -341,7 +345,7 @@ async function startMysteryEvent(interaction) {
     );
 
     console.log(
-        "🔮 STARTING MYSTERY EVENT"
+        "🌍 STARTING DAILY WORLD EVENT"
     );
 
     const existing =
@@ -445,7 +449,7 @@ async function startMysteryEvent(interaction) {
         );
 
         console.log(
-            "📢 Public Mystery Event embed created"
+            "📢 Public Daily World Event embed created"
         );
 
         console.log(
@@ -510,7 +514,7 @@ async function killMysteryEvent() {
     }
 
     console.log(
-        `🛑 MYSTERY EVENT KILLED | ${eventId}`
+        `🛑 DAILY WORLD EVENT STOPPED | ${eventId}`
     );
 
     console.log(
@@ -542,7 +546,7 @@ async function handleMysteryReveal(
     );
 
     console.log(
-        "🔮 MYSTERY REVEAL"
+        "🌍 DAILY QUESTION REVEAL"
     );
 
     console.log(
@@ -577,7 +581,7 @@ async function handleMysteryReveal(
 
         await interaction.editReply({
             content:
-                "❌ The Mystery Event is not currently active.",
+                "❌ The Daily World Event is not currently active.",
         });
 
         return true;
@@ -664,7 +668,7 @@ async function handleMysteryReveal(
         );
 
         console.log(
-            "🔄 GENERATING NEW BATCH..."
+            "🔄 GENERATING NEW QUESTIONS..."
         );
 
         try {
@@ -682,7 +686,7 @@ async function handleMysteryReveal(
 
     if (!question) {
         console.log(
-            `❌ NO QUESTION AVAILABLE | ${userId}`
+            `❌ NO DAILY QUESTION AVAILABLE | ${userId}`
         );
 
         await interaction.editReply({
@@ -775,7 +779,7 @@ async function handleMysteryReveal(
     // --------------------------------------------------------
 
     console.log(
-        `🎯 QUESTION CLAIMED`
+        `🎯 DAILY QUESTION SELECTED`
     );
 
     console.log(
@@ -871,7 +875,7 @@ async function handleMysteryAnswer(
     );
 
     console.log(
-        "🔮 MYSTERY ANSWER"
+        "🌍 DAILY QUESTION ANSWER"
     );
 
     console.log(
@@ -904,7 +908,7 @@ async function handleMysteryAnswer(
     if (!attempt) {
         await interaction.followUp({
             content:
-                "❌ This mystery attempt could not be found.",
+                "❌ This daily question attempt could not be found.",
             flags: MessageFlags.Ephemeral,
         });
 
@@ -920,7 +924,7 @@ async function handleMysteryAnswer(
     ) {
         await interaction.followUp({
             content:
-                "❌ This mystery belongs to another player.",
+                "❌ This question belongs to another player.",
             flags: MessageFlags.Ephemeral,
         });
 
@@ -1009,7 +1013,7 @@ async function handleMysteryAnswer(
         reward = generateReward();
 
         console.log(
-            `🎁 REWARD GENERATED | ${reward} Mora`
+            `🎁 DAILY REWARD GENERATED | ${reward} Mora`
         );
 
     } else {
@@ -1044,14 +1048,14 @@ async function handleMysteryAnswer(
         );
 
         console.log(
-            `📊 STATS RECORDED | MYSTERY | ${userId} | ` +
+            `📊 STATS RECORDED | DAILY EVENT | ${userId} | ` +
             `${isCorrect ? "CORRECT" : "INCORRECT"}`
         );
 
     } catch (error) {
 
         console.error(
-            "❌ MYSTERY STATS RECORD FAILED:",
+            "❌ DAILY EVENT STATS RECORD FAILED:",
             error.message
         );
     }
@@ -1293,7 +1297,7 @@ async function processMysteryAnswerAfterResponse({
             } catch (error) {
 
                 console.error(
-                    "❌ PAYMENT CREATION FAILED",
+                    "❌ DAILY EVENT PAYMENT CREATION FAILED",
                     error
                 );
             }
@@ -1306,7 +1310,7 @@ async function processMysteryAnswerAfterResponse({
 
                 await interaction.followUp({
                     content:
-                        `📢 **Here's the fact, I just learned!**\n` +
+                        `📢 **Here is the fact I just learned!**\n` +
                         `\`\`\`\n${attempt.explanation}\n\`\`\`\n\n` ,
                     flags: MessageFlags.Ephemeral,
                 });
@@ -1321,7 +1325,7 @@ async function processMysteryAnswerAfterResponse({
         }
 
         console.log(
-            `🏁 MYSTERY COMPLETE | ${attemptId}`
+            `🏁 DAILY QUESTION COMPLETE | ${attemptId}`
         );
 
         console.log(
