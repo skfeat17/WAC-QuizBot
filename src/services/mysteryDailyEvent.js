@@ -55,8 +55,8 @@ const EVENT_NAME =
 const EVENT_TYPE =
     "Mystery Event";
 
-const REWARD_MIN = 20;
-const REWARD_MAX = 50;
+const REWARD_MIN = 10;
+const REWARD_MAX = 20;
 
 const MORA_EMOJI =
     "<:mora:1503931162525962333>";
@@ -81,23 +81,19 @@ function randomInt(min, max) {
 function generateReward() {
     const roll = Math.random() * 100;
 
+    if (roll < 85) {
+        return randomInt(10, 13); // 85%
+    }
+
     if (roll < 95) {
-        return randomInt(20, 25); // 95%
+        return randomInt(14, 15); // 10%
     }
 
-    if (roll < 97) {
-        return randomInt(26, 30); // 2%
+    if (roll < 98) {
+        return randomInt(16, 18); // 3%
     }
 
-    if (roll < 98.5) {
-        return randomInt(31, 35); // 1.5%
-    }
-
-    if (roll < 99.5) {
-        return randomInt(36, 40); // 1%
-    }
-
-    return randomInt(41, 50); // 0.5%
+    return randomInt(19, 20); // 2%
 }
 
 function createAttemptId() {
@@ -129,7 +125,7 @@ function buildMysteryEventEmbed() {
                 "A question about somewhere around the",
                 "world is waiting to be answered...",
                 "",
-                `🎁 **Daily Reward: Up to ${REWARD_MAX} ${MORA_EMOJI}**`,
+                `🎁 ** Reward: Up to ${REWARD_MAX} ${MORA_EMOJI} Per Attempt**`,
                 "",
                 "<:paimonThink:1505801467435548752> Think you know the answer?",
                 "",
@@ -138,7 +134,7 @@ function buildMysteryEventEmbed() {
         )
         .setFooter({
             text:
-                "Answer your daily question • Mora reward • 24-hour cooldown",
+                "Answer your daily question • 8-hour cooldown per Attempt • Earn Upto 60 Mora per day",
         });
 }
 
