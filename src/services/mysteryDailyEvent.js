@@ -81,23 +81,27 @@ function randomInt(min, max) {
 function generateReward() {
     const roll = Math.random() * 100;
 
-    if (roll < 95) {
-        return randomInt(20, 25); // 95%
+    if (roll < 80) {
+        return randomInt(20, 22); // 80%
+    }
+
+    if (roll < 90) {
+        return randomInt(23, 25); // 10%
+    }
+
+    if (roll < 94) {
+        return randomInt(26, 30); // 4%
     }
 
     if (roll < 97) {
-        return randomInt(26, 30); // 2%
+        return randomInt(31, 35); // 3%
     }
 
-    if (roll < 98.5) {
-        return randomInt(31, 35); // 1.5%
+    if (roll < 99) {
+        return randomInt(36, 40); // 2%
     }
 
-    if (roll < 99.5) {
-        return randomInt(36, 40); // 1%
-    }
-
-    return randomInt(41, 50); // 0.5%
+    return randomInt(41, 50); // 1%
 }
 
 function createAttemptId() {
