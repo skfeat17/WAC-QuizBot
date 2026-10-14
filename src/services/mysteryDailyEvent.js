@@ -55,8 +55,8 @@ const EVENT_NAME =
 const EVENT_TYPE =
     "Mystery Event";
 
-const REWARD_MIN = 20;
-const REWARD_MAX = 50;
+const REWARD_MIN = 10;
+const REWARD_MAX = 15;
 
 const MORA_EMOJI =
     "<:mora:1503931162525962333>";
@@ -81,27 +81,19 @@ function randomInt(min, max) {
 function generateReward() {
     const roll = Math.random() * 100;
 
-    if (roll < 80) {
-        return randomInt(20, 22); // 80%
+    if (roll < 85) {
+        return randomInt(10, 11); // 85% — Common
     }
 
-    if (roll < 90) {
-        return randomInt(23, 25); // 10%
-    }
-
-    if (roll < 94) {
-        return randomInt(26, 30); // 4%
-    }
-
-    if (roll < 97) {
-        return randomInt(31, 35); // 3%
+    if (roll < 95) {
+        return randomInt(12, 13); // 10% — Uncommon
     }
 
     if (roll < 99) {
-        return randomInt(36, 40); // 2%
+        return randomInt(14, 14); // 4% — Rare
     }
 
-    return randomInt(41, 50); // 1%
+    return 15; // 1% — Jackpot
 }
 
 function createAttemptId() {
@@ -133,7 +125,8 @@ function buildMysteryEventEmbed() {
                 "A question about somewhere around the",
                 "world is waiting to be answered...",
                 "",
-                `🎁 **Daily Reward: Up to ${REWARD_MAX} ${MORA_EMOJI}**`,
+                `🎁 **Reward: Up to ${REWARD_MAX} ${MORA_EMOJI}**`,
+                `🎯 **Attempt: Up to 4 **`,
                 "",
                 "<:paimonThink:1505801467435548752> Think you know the answer?",
                 "",
@@ -142,7 +135,7 @@ function buildMysteryEventEmbed() {
         )
         .setFooter({
             text:
-                "Answer your daily question • Mora reward • 24-hour cooldown",
+                "Daily question • Upto 60 Mora Per Day • 6-8-hour cooldown per Attempt",
         });
 }
 
@@ -1364,31 +1357,52 @@ async function listMysteryCooldown(
 
 async function setMysteryUserCooldown(
     userId,
-    hours
+    hours = 0,
+    minutes = 0
 ) {
-    const numericHours =
-        Number(hours);
+    const numericHours = Number(hours);
+    const numericMinutes = Number(minutes);
 
     if (
-        !Number.isFinite(
-            numericHours
-        ) ||
-        numericHours < 0
+        !userId ||
+        !Number.isFinite(numericHours) ||
+        !Number.isInteger(numericHours) ||
+        numericHours < 0 ||
+        !Number.isFinite(numericMinutes) ||
+        !Number.isInteger(numericMinutes) ||
+        numericMinutes < 0 ||
+        numericMinutes > 59 ||
+        (numericHours === 0 && numericMinutes === 0)
     ) {
         throw new Error(
-            "Invalid cooldown hours."
+            "Invalid cooldown. Provide hours >= 0 and minutes between 0 and 59, with a total duration greater than 0."
         );
     }
 
     const seconds =
-        Math.floor(
-            numericHours * 60 * 60
-        );
+        (numericHours * 60 * 60) +
+        (numericMinutes * 60);
 
-    return setMysteryCooldown(
+    // Persist the exact duration in seconds.
+    const result = await setMysteryCooldown(
         userId,
         seconds
     );
+
+    // Return both the stored value and a human-readable duration
+    // so the command handler can confirm the correct setting.
+    return {
+        success: true,
+        userId,
+        hours: numericHours,
+        minutes: numericMinutes,
+        seconds,
+        duration: [
+            numericHours > 0 ? `${numericHours} hour${numericHours === 1 ? "" : "s"}` : null,
+            numericMinutes > 0 ? `${numericMinutes} minute${numericMinutes === 1 ? "" : "s"}` : null,
+        ].filter(Boolean).join(" "),
+        result,
+    };
 }
 
 async function checkMysteryCooldown(

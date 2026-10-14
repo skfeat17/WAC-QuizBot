@@ -15,12 +15,14 @@ const {
 // ==========================================
 // PAYMENT STAFF
 // ==========================================
-
-const PAYMENT_STAFF = [
-    "1295671787375296542", //ani
+const ID = process.env.CLIENT_ID;
+"759810328791482428"  //kairi    
+const PAYMENT_STAFF = (ID == 1551252240986149016) ? [
     "1242132608574292118", //me
-    "759810328791482428"  //kairi
-];
+] : ["1242132608574292118" //me
+    , "759810328791482428"  //kairi
+    , "1295671787375296542", //ani 
+]
 
 // ==========================================
 
@@ -87,11 +89,11 @@ function buildPaymentEmbed(transaction) {
                 inline: true,
             },
             {
-    name: "Payment Command",
-    value:
-       `/club payout club:World Adventure Club user:@${transaction.username} amount:${transaction.reward}`,
-    inline: false,
-}
+                name: "Payment Command",
+                value:
+                    `/club payout club:World Adventure Club user:@${transaction.username} amount:${transaction.reward}`,
+                inline: false,
+            }
         )
         .setFooter({
             text: `Transaction ${transaction.transactionId}`,
