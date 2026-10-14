@@ -10,6 +10,10 @@ const COMMAND_ACCESS =
 // ==============================
 const BLOCKED_QUIZ_USERS = new Set([]);
 const {
+    handleBanCommand,
+    isQuizBanned,
+} = require("./services/quizBan");
+const {
     handleKahootCommand,
     handleKahootInteraction,
 } = require("./services/kahoot/kahoot");
@@ -184,10 +188,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
             return;
         }
         // ==========================================
-        // /kahoot COMMAND
+        // /Moderation COMMAND
         // ==========================================
-        if (interaction.commandName === "kahoot") {
-            await handleKahootCommand(interaction);
+        if (interaction.commandName === "ban") {
+            await handleBanCommand(interaction, redis);
             return;
         }
         // ==========================================
@@ -1153,9 +1157,9 @@ ${line}`
         interaction.isModalSubmit()) {
 
 
-    // ==========================================
-    // KAHOOT BUTTON INTERACTION
-    // ==========================================
+        // ==========================================
+        // KAHOOT BUTTON INTERACTION
+        // ==========================================
         const isKahootInteraction =
             interaction.customId?.startsWith("kahoot:");
 
@@ -1375,7 +1379,29 @@ ${line}`
 
             return;
         }
+        // ==========================================
+        // REDIS QUIZ BAN CHECK
+        // ==========================================
 
+        const ban = await isQuizBanned(
+            redis,
+            interaction.user.id
+        );
+
+        if (ban.banned) {
+            const hours = Math.floor(ban.ttl / 3600);
+            const minutes = Math.floor((ban.ttl % 3600) / 60);
+            const seconds = ban.ttl % 60;
+
+            await interaction.reply({
+                content:
+                    `🚫 You are temporarily blocked from participating in quizzes.\n` +
+                    `⏳ Remaining time: **${hours}h ${minutes}m ${seconds}s**.`,
+                flags: MessageFlags.Ephemeral,
+            });
+
+            return;
+        }
         // ==========================================
         // CHECK ANSWER
         // ==========================================

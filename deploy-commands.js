@@ -1,6 +1,6 @@
 // deploy-commands.js
 require("dotenv").config();
-
+const { banCommand } = require("./src/services/quizBan");
 const {
     REST,
     Routes,
@@ -315,7 +315,7 @@ const commands = [
         )
         .toJSON(),
 ];
-
+commands.push(banCommand.toJSON());
 // ==========================================
 // REGISTER COMMANDS GLOBALLY
 // ==========================================
