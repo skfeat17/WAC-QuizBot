@@ -126,7 +126,7 @@ function buildMysteryEventEmbed() {
                 "world is waiting to be answered...",
                 "",
                 `🎁 **Reward: Up to ${REWARD_MAX} ${MORA_EMOJI}**`,
-                `🎯 **Attempt: Up to 4 **`,
+                `🎯 **One answer per question**`,
                 "",
                 "<:paimonThink:1505801467435548752> Think you know the answer?",
                 "",
@@ -135,7 +135,7 @@ function buildMysteryEventEmbed() {
         )
         .setFooter({
             text:
-                "Daily question • Upto 60 Mora Per Day • 6-8-hour cooldown per Attempt",
+                "Daily question • Up to 15 Mora per correct answer • Cooldown after every answer",
         });
 }
 
@@ -209,39 +209,49 @@ function buildAnswerButtons(
 // RESULT EMBEDS
 // ============================================================
 
-function buildCorrectEmbed(
-    attempt
-) {
+function getNextAttemptText(attempt) {
+    const cooldownSeconds = Number(attempt.cooldownSeconds) || 0;
+
+    if (cooldownSeconds <= 0) {
+        return "You can play again now.";
+    }
+
+    const nextAttemptTimestamp = Math.floor(
+        (Number(attempt.answeredAt || Date.now()) + cooldownSeconds * 1000) / 1000
+    );
+
+    return `⏳ **Next attempt:** <t:${nextAttemptTimestamp}:R>`;
+}
+
+function buildCorrectEmbed(attempt) {
     return new EmbedBuilder()
         .setColor(0x57f287)
         .setTitle("✅ MYSTERY SOLVED!")
-        .setDescription(
-            [
-                "You answered the daily question correctly!",
-                "",
-                `🎁 **Reward: ${attempt.reward} ${MORA_EMOJI}**`,
-                "",
-                "📖 **Did you know?**",
-                attempt.explanation,
-                "",
-                "Share the fact you just learned! Copy and paste the next message <:1EmojiCatSalute:936530415177576458>",
-            ].join("\n")
-        );
+        .setDescription([
+            "You answered the daily question correctly!",
+            "",
+            `🎁 **Reward: ${attempt.reward} ${MORA_EMOJI}**`,
+            "",
+            "📖 **Did you know?**",
+            attempt.explanation,
+            "",
+            getNextAttemptText(attempt),
+            "",
+            "**NOTE:** Copy and share the fact in the next message! <:1EmojiCatSalute:936530415177576458>",
+        ].join("\n"));
 }
 
 function buildIncorrectEmbed(attempt) {
     return new EmbedBuilder()
         .setColor(0xed4245)
         .setTitle("❌ INCORRECT ANSWER")
-        .setDescription(
-            [
-                "That's not the correct answer.",
-                "",
-                "🌍 **You can try another daily question right away!**",
-                "",
-                "Keep trying and learn something new. 💪",
-            ].join("\n")
-        );
+        .setDescription([
+            "That's not the correct answer.",
+            "",
+            getNextAttemptText(attempt),
+            "",
+            "📖 The fact is shared below so you can still learn something new!",
+        ].join("\n"));
 }
 
 function buildCooldownEmbed() {
@@ -954,81 +964,51 @@ async function handleMysteryAnswer(
         return true;
     }
 
-      // ========================================================
+    // ========================================================
     // CHECK ANSWER
+    // Only correct answers start a cooldown.
+    // Incorrect answers receive no cooldown and can try again.
     // ========================================================
 
-    const isCorrect =
-        selectedAnswer ===
-        attempt.correctAnswer;
-
-    let cooldownSeconds = null;
-    let reward = 0;
-
-    // --------------------------------------------------------
-    // CORRECT ANSWER
-    // --------------------------------------------------------
+    const isCorrect = selectedAnswer === attempt.correctAnswer;
+    let cooldownSeconds = 0;
 
     if (isCorrect) {
-
-        const immune =
-            MYSTERY_EVENT_COOLDOWN_IMMUNE.includes(
-                userId
-            );
+        const immune = MYSTERY_EVENT_COOLDOWN_IMMUNE.includes(userId);
 
         if (!immune) {
-
-            const cooldownResult =
-                await claimMysteryCooldown(
-                    userId
-                );
+            const cooldownResult = await claimMysteryCooldown(userId);
 
             if (!cooldownResult.claimed) {
-
-                console.log(
-                    `⏳ COOLDOWN RACE LOST | ${userId}`
+                const remaining = Math.max(
+                    0,
+                    Number(await getMysteryCooldown(userId)) || 0
                 );
+                const nextAttemptTimestamp = Math.floor(Date.now() / 1000) + remaining;
+
+                await interaction.followUp({
+                    content: remaining > 0
+                        ? `⏳ You're on cooldown. Try again <t:${nextAttemptTimestamp}:R>.`
+                        : "⏳ Your cooldown is active. Please try again shortly.",
+                    flags: MessageFlags.Ephemeral,
+                });
 
                 return true;
             }
 
-            cooldownSeconds =
-                cooldownResult.cooldownSeconds;
-
-            console.log(
-                `⏱️ COOLDOWN CREATED | ${cooldownSeconds}s`
-            );
-
+            cooldownSeconds = Number(cooldownResult.cooldownSeconds) || 0;
+            console.log(`⏱️ COOLDOWN CREATED | ${cooldownSeconds}s | ${userId}`);
         } else {
-
-            console.log(
-                `🛡️ COOLDOWN IMMUNE | ${userId}`
-            );
+            console.log(`🛡️ COOLDOWN IMMUNE | ${userId}`);
         }
+    }
 
-        // ONLY correct answers receive Mora
-        reward = generateReward();
+    const reward = isCorrect ? generateReward() : 0;
 
-        console.log(
-            `🎁 DAILY REWARD GENERATED | ${reward} Mora`
-        );
-
+    if (isCorrect) {
+        console.log(`🎁 DAILY REWARD GENERATED | ${reward} Mora`);
     } else {
-
-        // ----------------------------------------------------
-        // WRONG ANSWER
-        // ----------------------------------------------------
-        // NO COOLDOWN
-        // NO REWARD
-        // USER CAN TRY ANOTHER MYSTERY IMMEDIATELY
-        // ----------------------------------------------------
-
-        cooldownSeconds = null;
-        reward = 0;
-
-        console.log(
-            `❌ INCORRECT ANSWER | NO COOLDOWN | ${userId}`
-        );
+        console.log(`❌ INCORRECT ANSWER | NO COOLDOWN | ${userId}`);
     }
 
     // --------------------------------------------------------
@@ -1077,6 +1057,9 @@ async function handleMysteryAnswer(
             Date.now(),
     };
 
+    // Save immediately so repeated clicks cannot trigger another reward.
+    await saveMysteryAttempt(attemptId, answeredAttempt);
+
     const disabledButtons =
         buildDisabledAnswerButtons(
             answeredAttempt
@@ -1110,42 +1093,31 @@ async function handleMysteryAnswer(
 
 
     // --------------------------------------------------------
-    // PUBLIC FOLLOW-UP — SECOND
-    // Same pattern as Daily Event
+    // SHOW THE FACT IMMEDIATELY — DO NOT WAIT FOR PAYMENT
     // --------------------------------------------------------
 
     try {
-
-        if (isCorrect) {
-
-            await interaction.followUp({
-                content:
-                    `🎉 <@${userId}> answered it! **+${reward} ${MORA_EMOJI}**`,
-
-                allowedMentions: {
-                    users: [userId],
-                },
-            });
-
-        } else {
-
-            await interaction.followUp({
-                content:
-                    `🌟 <@${userId}> Give it another try!💗`,
-
-                allowedMentions: {
-                    users: [userId],
-                },
-            })
-        }
-
-
+        await interaction.followUp({
+            content: `📚 **The fact:**\n\`\`\`\n${attempt.explanation}\n\`\`\``,
+            flags: MessageFlags.Ephemeral,
+        });
     } catch (error) {
+        console.error("❌ IMMEDIATE FACT MESSAGE FAILED:", error.message);
+    }
 
-        console.error(
-            "❌ PUBLIC RESULT FAILED:",
-            error.message
-        );
+    // --------------------------------------------------------
+    // PUBLIC RESULT
+    // --------------------------------------------------------
+
+    try {
+        await interaction.followUp({
+            content: isCorrect
+                ? `🎉 <@${userId}> answered correctly! **+${reward} ${MORA_EMOJI}**`
+                : `🌟 <@${userId}> answered incorrectly!. Better luck next time!`,
+            allowedMentions: { users: [userId] },
+        });
+    } catch (error) {
+        console.error("❌ PUBLIC RESULT FAILED:", error.message);
     }
 
     // --------------------------------------------------------
@@ -1299,26 +1271,6 @@ async function processMysteryAnswerAfterResponse({
                 );
             }
 
-            // ------------------------------------------------
-            // PRIVATE PAYMENT STAFF INSTRUCTION
-            // ------------------------------------------------
-
-            try {
-
-                await interaction.followUp({
-                    content:
-                        `📢 **Here is the fact I just learned!**\n` +
-                        `\`\`\`\n${attempt.explanation}\n\`\`\`\n\n` ,
-                    flags: MessageFlags.Ephemeral,
-                });
-
-            } catch (error) {
-
-                console.error(
-                    "❌ PAYMENT STAFF MESSAGE FAILED:",
-                    error.message
-                );
-            }
         }
 
         console.log(
