@@ -56,7 +56,7 @@ const EVENT_TYPE =
     "Mystery Event";
 
 const REWARD_MIN = 10;
-const REWARD_MAX = 15;
+const REWARD_MAX = 20;
 
 const MORA_EMOJI =
     "<:mora:1503931162525962333>";
@@ -82,18 +82,18 @@ function generateReward() {
     const roll = Math.random() * 100;
 
     if (roll < 85) {
-        return randomInt(10, 11); // 85% — Common
+        return randomInt(10, 14); // 85% — Common
     }
 
     if (roll < 95) {
-        return randomInt(12, 13); // 10% — Uncommon
+        return randomInt(15, 17); // 10% — Uncommon
     }
 
     if (roll < 99) {
-        return randomInt(14, 14); // 4% — Rare
+        return randomInt(18, 19); // 4% — Rare
     }
 
-    return 15; // 1% — Jackpot
+    return 20; // 1% — Jackpot
 }
 
 function createAttemptId() {
@@ -126,7 +126,6 @@ function buildMysteryEventEmbed() {
                 "world is waiting to be answered...",
                 "",
                 `🎁 **Reward: Up to ${REWARD_MAX} ${MORA_EMOJI}**`,
-                `🎯 **One answer per question**`,
                 "",
                 "<:paimonThink:1505801467435548752> Think you know the answer?",
                 "",
@@ -135,7 +134,7 @@ function buildMysteryEventEmbed() {
         )
         .setFooter({
             text:
-                "Daily question • Up to 15 Mora per correct answer • Cooldown after every answer",
+                "Daily question • Up to 20 Mora per attempt • Certain Cooldown after every attempt • Earn upto 100 Mora",
         });
 }
 
@@ -237,7 +236,7 @@ function buildCorrectEmbed(attempt) {
             "",
             getNextAttemptText(attempt),
             "",
-            "**NOTE:** Copy and share the fact in the next message! <:1EmojiCatSalute:936530415177576458>",
+            "**NOTE:** We will appreciate if you copy and share the fact of the next message! <:1EmojiCatSalute:936530415177576458>",
         ].join("\n"));
 }
 
@@ -1113,7 +1112,7 @@ async function handleMysteryAnswer(
         await interaction.followUp({
             content: isCorrect
                 ? `🎉 <@${userId}> answered correctly! **+${reward} ${MORA_EMOJI}**`
-                : `🌟 <@${userId}> answered incorrectly!. Better luck next time!`,
+                : `🌟 <@${userId}> answered incorrectly!. Give it another try❤️!`,
             allowedMentions: { users: [userId] },
         });
     } catch (error) {
