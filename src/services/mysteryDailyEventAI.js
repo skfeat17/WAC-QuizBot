@@ -82,6 +82,7 @@ const ALLOWED_CATEGORIES = [
 // Every generated question must explicitly name at least one country.
 // This prevents generic trivia that has no clear country connection.
 const COUNTRY_NAMES = [
+    "country",
     "Afghanistan",
     "Albania",
     "Algeria",
