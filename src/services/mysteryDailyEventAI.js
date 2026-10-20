@@ -79,12 +79,10 @@ const ALLOWED_CATEGORIES = [
 ];
 
 
-// Every generated question must explicitly name at least one country.
-// This prevents generic trivia that has no clear country connection.
+// Questions may refer to a country OR a recognizable geographic place/feature.
+// Generic words such as "place", "region", or "island" are intentionally NOT
+// sufficient by themselves: the question should identify a meaningful location.
 const COUNTRY_NAMES = [
-    "place",
-    "region",
-    "country",
     "Afghanistan",
     "Albania",
     "Algeria",
@@ -298,14 +296,76 @@ const COUNTRY_NAMES = [
     "Republic of Türkiye",
 ];
 
-function questionMentionsCountry(question) {
-    const normalizedQuestion = normalize(question);
-    return COUNTRY_NAMES.some((country) => {
-        const normalizedCountry = normalize(country);
-        if (!normalizedCountry) return false;
-        const escaped = normalizedCountry.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-        return new RegExp(`(?:^|\\s)${escaped}(?:$|\\s)`, "i").test(normalizedQuestion);
-    });
+const GEOGRAPHICAL_TERMS = [
+    // Polar and broad geographic regions
+    "Arctic", "Antarctic", "Antarctica", "Arctic Circle", "Antarctic Circle",
+    "North Pole", "South Pole", "Northern Hemisphere", "Southern Hemisphere",
+    "Equator", "the Tropics", "Tropics", "Middle East", "South Asia",
+    "East Asia", "Southeast Asia", "Central Asia", "West Asia",
+    "North Africa", "West Africa", "East Africa", "Central Africa", "Southern Africa",
+    "North America", "Central America", "South America", "Latin America",
+    "Western Europe", "Eastern Europe", "Northern Europe", "Southern Europe",
+    "Scandinavia", "Balkans", "Oceania", "Caribbean", "Polynesia", "Melanesia",
+    "Micronesia", "Siberia", "Sahel", "Horn of Africa", "the Andes", "Andes",
+    "the Alps", "Alps", "Himalayas", "Himalaya", "Rocky Mountains",
+    "Great Dividing Range", "Ural Mountains", "Atlas Mountains", "Appalachian Mountains",
+
+    // Well-known islands and island groups
+    "Greenland", "Iceland", "Madagascar", "Borneo", "Sumatra", "Java",
+    "Sulawesi", "New Guinea", "Tasmania", "Honshu", "Hokkaido", "Kyushu",
+    "Shikoku", "Taiwan", "Sri Lanka", "Bali", "Kalimantan", "Luzon", "Mindanao",
+    "Sicily", "Sardinia", "Corsica", "Crete", "Cyprus", "Malta", "Cuba",
+    "Jamaica", "Hispaniola", "Puerto Rico", "Bahamas", "Falkland Islands",
+    "Galapagos Islands", "Galápagos Islands", "Canary Islands", "Azores",
+    "Hawaiian Islands", "Aleutian Islands", "Solomon Islands", "Marshall Islands",
+    "Seychelles", "Maldives", "Mauritius", "Fiji", "Samoa", "Tonga",
+    "New Zealand", "Faroe Islands", "Svalbard", "Easter Island", "Réunion",
+
+    // Well-known deserts, forests, rivers, lakes, seas and oceans
+    "Sahara", "Sahara Desert", "Gobi Desert", "Kalahari Desert", "Namib Desert",
+    "Atacama Desert", "Arabian Desert", "Thar Desert", "Mojave Desert",
+    "Amazon Rainforest", "Amazon rainforest", "Congo Rainforest", "Daintree Rainforest",
+    "Black Forest", "Bavarian Forest", "Amazon River", "Nile River", "Nile",
+    "Yangtze River", "Yellow River", "Ganges", "Ganges River", "Brahmaputra",
+    "Indus River", "Mekong River", "Danube River", "Mississippi River", "Colorado River",
+    "Volga River", "Rhine River", "Thames River", "Tigris", "Euphrates",
+    "Lake Baikal", "Lake Victoria", "Lake Superior", "Lake Titicaca", "Caspian Sea",
+    "Dead Sea", "Red Sea", "Black Sea", "Mediterranean Sea", "Arabian Sea",
+    "South China Sea", "Coral Sea", "Caribbean Sea", "North Sea", "Baltic Sea",
+    "Pacific Ocean", "Atlantic Ocean", "Indian Ocean", "Arctic Ocean", "Southern Ocean",
+
+    // Well-known mountains, landmarks and natural areas
+    "Mount Everest", "Everest", "Kilimanjaro", "Mount Kilimanjaro", "Mount Fuji",
+    "Fuji", "Matterhorn", "Mont Blanc", "Denali", "Aconcagua", "Uluru",
+    "Grand Canyon", "Great Barrier Reef", "Victoria Falls", "Niagara Falls",
+    "Iguazu Falls", "Angel Falls", "Yellowstone", "Yellowstone National Park",
+    "Serengeti", "Serengeti National Park", "Kruger National Park", "Galapagos",
+    "Great Lakes", "Lake District", "Dead Sea", "Wadi Rum", "Petra",
+    "Machu Picchu", "Stonehenge", "the Amazon", "Amazon Basin", "Okavango Delta",
+    "Everglades", "Pantanal", "Great Rift Valley", "Death Valley", "Yosemite",
+    "Yosemite National Park", "Banff National Park", "Fiordland", "Plitvice Lakes",
+
+    // Geographic names commonly used with a descriptor
+    "Arctic region", "Arctic regions", "polar region", "polar regions",
+    "tundra", "permafrost", "rainforest", "rain forests", "savanna", "savannah",
+    "wetlands", "delta", "fjord", "fiord", "atoll", "peninsula", "archipelago"
+];
+
+function containsGeographicalTerm(text, term) {
+    const normalizedText = normalize(text);
+    const normalizedTerm = normalize(term);
+
+    if (!normalizedText || !normalizedTerm) return false;
+
+    const escaped = normalizedTerm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return new RegExp(`(?:^|\\s)${escaped}(?=$|\\s)`, "i").test(normalizedText);
+}
+
+function questionMentionsGeography(question) {
+    return (
+        COUNTRY_NAMES.some((country) => containsGeographicalTerm(question, country)) ||
+        GEOGRAPHICAL_TERMS.some((term) => containsGeographicalTerm(question, term))
+    );
 }
 
 
@@ -920,13 +980,13 @@ async function validateQuestion(
         }
 
         // ==========================================
-        // COUNTRY RELEVANCE
-        // Every question must explicitly name a country.
+        // GEOGRAPHICAL RELEVANCE
+        // Accept country names and recognizable geographic locations/features.
         // ==========================================
 
-        if (!questionMentionsCountry(question)) {
+        if (!questionMentionsGeography(question)) {
             console.log(
-                `🚫 QUESTION DOES NOT MENTION A COUNTRY | ${question}`
+                `🚫 QUESTION DOES NOT MENTION A RECOGNIZED GEOGRAPHICAL LOCATION | ${question}`
             );
             return null;
         }
@@ -1209,10 +1269,12 @@ CORE REQUIREMENTS
 - Questions must be factually accurate.
 - Use established, reliable facts.
 - Questions must be suitable for an international audience.
-- CRITICAL: EVERY question's actual question text MUST explicitly name at least one specific country (for example, Japan, Brazil, Kenya, India, or Canada).
-- The country name must appear in the question itself, not only in the answer options, subject, or explanation.
-- The question must be meaningfully about that named country. Do not insert a country name randomly just to satisfy this rule.
-- Reject generic questions about the world, animals, food, history, languages, sports, or landmarks unless the question directly connects the fact to a specifically named country.
+- Every question's actual question text must identify a meaningful geographic connection.
+- Questions may refer to countries, named cities, islands, archipelagos, continents, regions, territories, provinces, states, mountains, rivers, lakes, oceans, seas, deserts, forests, landmarks, or other identifiable geographic locations/features.
+- A country name is NOT mandatory when another recognizable geographic location or feature is clearly identified.
+- The geographic reference must be meaningful to the question; do not insert a location randomly just to satisfy this rule.
+- Nature, wildlife, food, history, language, and culture questions are allowed when they clearly connect to an identifiable geographic location or feature.
+- Reject questions that have no meaningful geographic connection.
 - Use natural English.
 - Keep questions suitable for Discord.
 - Do not mention rewards.
@@ -1363,8 +1425,9 @@ QUALITY RULES
 
 - Prefer globally diverse topics.
 - Distribute questions across many different countries and regions; do not repeatedly use the same country.
-- Every question must name a country directly in its question sentence and be genuinely related to that country.
-- Do not generate a question that can be asked unchanged without mentioning a country.
+- Every question must identify a meaningful geographic location or feature in its question sentence.
+- A country name is not required when the question clearly identifies another recognizable geographic location or feature.
+- Do not add a geographic name artificially just to satisfy validation.
 - Do not focus heavily on one country.
 - Do not make all questions geography.
 - Keep EVERY question moderately easy.
