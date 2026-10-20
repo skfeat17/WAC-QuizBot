@@ -190,22 +190,45 @@ client.on(Events.InteractionCreate, async (interaction) => {
         // ==========================================
         // /ping COMMAND
         // ==========================================
+
         if (interaction.isChatInputCommand() && interaction.commandName === "ping") {
             const start = Date.now();
 
             await interaction.deferReply();
 
             const responseTime = Date.now() - start;
-            const apiLatency = client.ws.ping;
+            const apiLatency = Math.round(client.ws.ping);
 
-            await interaction.editReply(
-                `🏓 **Pong!**\\n` +
-                `⚡ Response time: **${responseTime}ms**\\n` +
-                `📡 Gateway latency: **${apiLatency}ms**`
-            );
+            const { EmbedBuilder } = require("discord.js");
+
+            const embed = new EmbedBuilder()
+                .setColor(0x5865F2)
+                .setTitle("🏓 Pong!")
+                .addFields(
+                    {
+                        name: "⚡ Response Time",
+                        value: `\`${responseTime}ms\``,
+                        inline: true
+                    },
+                    {
+                        name: "📡 Gateway Latency",
+                        value: `\`${apiLatency}ms\``,
+                        inline: true
+                    }
+                )
+                .setFooter({
+                    text: "World Adventure Club"
+                })
+                .setTimestamp();
+
+            await interaction.editReply({
+                embeds: [embed]
+            });
 
             return;
         }
+
+
         // ==========================================
         // /Moderation COMMAND
         // ==========================================
