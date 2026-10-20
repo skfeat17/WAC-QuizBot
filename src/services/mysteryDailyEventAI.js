@@ -361,9 +361,60 @@ function containsGeographicalTerm(text, term) {
     return new RegExp(`(?:^|\\s)${escaped}(?=$|\\s)`, "i").test(normalizedText);
 }
 
+// Country demonyms/adjectives are included because questions often say
+// "Indonesian islands", "Japanese cuisine", or "Brazilian wildlife" rather
+// than repeating the country's exact name. Keep alternate spellings and
+// common forms here; normalize() makes matching case- and accent-insensitive.
+const COUNTRY_ADJECTIVES = [
+    // A–C
+    "Afghan", "Albanian", "Algerian", "Andorran", "Angolan", "Antiguan", "Barbudan",
+    "Argentine", "Argentinian", "Armenian", "Australian", "Austrian", "Azerbaijani",
+    "Bahamian", "Bahraini", "Bangladeshi", "Barbadian", "Belarusian", "Belarussian",
+    "Belgian", "Belizean", "Beninese", "Bhutanese", "Bolivian", "Bosnian", "Herzegovinian",
+    "Botswanan", "Motswana", "Brazilian", "Bruneian", "Bulgarian", "Burkinabe", "Burundian",
+    "Cabo Verdean", "Cape Verdean", "Cambodian", "Cameroonian", "Canadian", "Central African",
+    "Chadian", "Chilean", "Chinese", "Colombian", "Comorian", "Congolese", "Costa Rican",
+    "Ivorian", "Croatian", "Cuban", "Cypriot", "Czech", "Czechian",
+    // D–H
+    "Danish", "Djiboutian", "Dominican", "Ecuadorian", "Egyptian", "Salvadoran", "Equatorial Guinean",
+    "Eritrean", "Estonian", "Swazi", "Eswatini", "Ethiopian", "Fijian", "Finnish", "French",
+    "Gabonese", "Gambian", "Georgian", "German", "Ghanaian", "Greek", "Grenadian", "Guatemalan",
+    "Guinean", "Bissau Guinean", "Guyanese", "Haitian", "Honduran", "Hungarian",
+    // I–M
+    "Icelandic", "Indian", "Indonesian", "Iranian", "Iraqi", "Irish", "Israeli", "Italian",
+    "Jamaican", "Japanese", "Jordanian", "Kazakh", "Kazakhstani", "Kenyan", "Kiribati",
+    "Kuwaiti", "Kyrgyz", "Kyrgyzstani", "Lao", "Laotian", "Latvian", "Lebanese", "Basotho",
+    "Lesotho", "Liberian", "Libyan", "Liechtensteiner", "Lithuanian", "Luxembourgish",
+    "Malagasy", "Malawian", "Malaysian", "Maldivian", "Malian", "Maltese", "Marshallese",
+    "Mauritanian", "Mauritian", "Mexican", "Micronesian", "Moldovan", "Monegasque", "Mongolian",
+    "Montenegrin", "Moroccan", "Mozambican", "Burmese", "Myanmar", // Myanmar/Burma variants
+    // N–R
+    "Namibian", "Nauruan", "Nepalese", "Nepali", "Dutch", "New Zealander", "Nicaraguan",
+    "Nigerien", "Nigerian", "North Korean", "Macedonian", "Norwegian", "Omani", "Pakistani",
+    "Palauan", "Palestinian", "Panamanian", "Papua New Guinean", "Paraguayan", "Peruvian",
+    "Filipino", "Philippine", "Polish", "Portuguese", "Qatari", "Romanian", "Russian", "Rwandan",
+    // S–Z
+    "Kittitian", "Nevisian", "Saint Lucian", "Vincentian", "Samoan", "San Marinese", "Sao Tomean",
+    "Saudi", "Saudi Arabian", "Senegalese", "Serbian", "Seychellois", "Sierra Leonean", "Singaporean",
+    "Slovak", "Slovenian", "Solomon Islander", "Somali", "South African", "South Korean", "South Sudanese",
+    "Spanish", "Sri Lankan", "Sudanese", "Surinamese", "Swedish", "Swiss", "Syrian", "Taiwanese",
+    "Tajik", "Tanzanian", "Thai", "Timorese", "Togolese", "Tongan", "Trinidadian", "Tobagonian",
+    "Tunisian", "Turkish", "Turkmen", "Tuvaluan", "Ugandan", "Ukrainian", "Emirati", "British",
+    "American", "Uruguayan", "Uzbek", "Vanuatuan", "Vatican", "Venezuelan", "Vietnamese", "Yemeni",
+    "Zambian", "Zimbabwean",
+    // Common adjective forms and geographic/cultural spellings
+    "Austronesian", "Balkan", "Caribbean", "Central Asian", "East Asian", "South Asian",
+    "Southeast Asian", "West Asian", "North African", "West African", "East African",
+    "Central African", "Southern African", "Latin American", "North American", "Central American",
+    "South American", "Western European", "Eastern European", "Northern European", "Southern European",
+];
+
 function questionMentionsGeography(question) {
+    if (!question || typeof question !== "string") return false;
+
     return (
         COUNTRY_NAMES.some((country) => containsGeographicalTerm(question, country)) ||
+        COUNTRY_ADJECTIVES.some((adjective) => containsGeographicalTerm(question, adjective)) ||
         GEOGRAPHICAL_TERMS.some((term) => containsGeographicalTerm(question, term))
     );
 }
@@ -986,7 +1037,7 @@ async function validateQuestion(
 
         if (!questionMentionsGeography(question)) {
             console.log(
-                `🚫 QUESTION DOES NOT MENTION A RECOGNIZED GEOGRAPHICAL LOCATION | ${question}`
+                `🚫 QUESTION DOES NOT MENTION A RECOGNIZED COUNTRY, DEMONYM, OR GEOGRAPHICAL LOCATION | ${question}`
             );
             return null;
         }
