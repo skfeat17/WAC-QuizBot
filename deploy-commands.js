@@ -18,6 +18,16 @@ const {
 const commands = [
 
     // ==========================================
+    // PING
+    // ==========================================
+
+    new SlashCommandBuilder()
+        .setName("ping")
+        .setDescription("Check the bot's response time")
+        .toJSON(),
+
+
+    // ==========================================
     // NORMAL QUIZ
     // ==========================================
 

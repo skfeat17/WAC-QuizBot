@@ -188,6 +188,25 @@ client.on(Events.InteractionCreate, async (interaction) => {
             return;
         }
         // ==========================================
+        // /ping COMMAND
+        // ==========================================
+        if (interaction.isChatInputCommand() && interaction.commandName === "ping") {
+            const start = Date.now();
+
+            await interaction.deferReply();
+
+            const responseTime = Date.now() - start;
+            const apiLatency = client.ws.ping;
+
+            await interaction.editReply(
+                `🏓 **Pong!**\\n` +
+                `⚡ Response time: **${responseTime}ms**\\n` +
+                `📡 Gateway latency: **${apiLatency}ms**`
+            );
+
+            return;
+        }
+        // ==========================================
         // /Moderation COMMAND
         // ==========================================
         if (interaction.commandName === "ban") {
