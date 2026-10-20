@@ -28,6 +28,36 @@ const redis = new Redis({
     url: process.env.UPSTASH_REDIS_REST_URL,
     token: process.env.UPSTASH_REDIS_REST_TOKEN,
 });
+
+// ==========================================
+// QUIZ BAN RESPONSE EMBED
+// ==========================================
+function createQuizBanNoticeEmbed(ban, eventLabel = "quiz") {
+    const hours = Math.floor((ban.ttl || 0) / 3600);
+    const minutes = Math.floor(((ban.ttl || 0) % 3600) / 60);
+    const seconds = (ban.ttl || 0) % 60;
+
+    return new EmbedBuilder()
+        .setColor(0xE74C3C)
+        .setTitle("🚫 Participation Restricted")
+        .setDescription(
+            `You are temporarily blocked from participating in the **${eventLabel}**.`
+        )
+        .addFields(
+            {
+                name: "⏳ Time Remaining",
+                value: `**${hours}h ${minutes}m ${seconds}s**`,
+                inline: true,
+            },
+            {
+                name: "📝 Ban Reason",
+                value: ban.reason || "No reason provided.",
+                inline: false,
+            }
+        )
+        .setFooter({ text: "World Adventure Club • Quiz Moderation" })
+        .setTimestamp();
+}
 const http = require("http");
 
 const PORT = process.env.PORT || 3000;
@@ -1228,10 +1258,16 @@ ${line}`
             interaction.customId ===
             "mysteryevent_reveal"
         ) {
-            await handleMysteryReveal(
-                interaction
-            );
+            const ban = await isQuizBanned(redis, interaction.user.id);
+            if (ban.banned) {
+                await interaction.reply({
+                    embeds: [createQuizBanNoticeEmbed(ban, "Mystery Event")],
+                    flags: MessageFlags.Ephemeral,
+                });
+                return;
+            }
 
+            await handleMysteryReveal(interaction);
             return;
         }
 
@@ -1240,10 +1276,16 @@ ${line}`
                 "mysteryevent_answer:"
             )
         ) {
-            await handleMysteryAnswer(
-                interaction
-            );
+            const ban = await isQuizBanned(redis, interaction.user.id);
+            if (ban.banned) {
+                await interaction.reply({
+                    embeds: [createQuizBanNoticeEmbed(ban, "Mystery Event")],
+                    flags: MessageFlags.Ephemeral,
+                });
+                return;
+            }
 
+            await handleMysteryAnswer(interaction);
             return;
         }
         // ------------------------------------------
@@ -1431,14 +1473,8 @@ ${line}`
         );
 
         if (ban.banned) {
-            const hours = Math.floor(ban.ttl / 3600);
-            const minutes = Math.floor((ban.ttl % 3600) / 60);
-            const seconds = ban.ttl % 60;
-
             await interaction.reply({
-                content:
-                    `🚫 You are temporarily blocked from participating in quizzes.\n` +
-                    `⏳ Remaining time: **${hours}h ${minutes}m ${seconds}s**.`,
+                embeds: [createQuizBanNoticeEmbed(ban, "quizzes")],
                 flags: MessageFlags.Ephemeral,
             });
 
