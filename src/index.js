@@ -191,42 +191,106 @@ client.on(Events.InteractionCreate, async (interaction) => {
         // /ping COMMAND
         // ==========================================
 
-        if (interaction.isChatInputCommand() && interaction.commandName === "ping") {
-            const start = Date.now();
 
-            await interaction.deferReply();
+if (interaction.isChatInputCommand() && interaction.commandName === "ping") {
+    const { EmbedBuilder } = require("discord.js");
 
-            const responseTime = Date.now() - start;
-            const apiLatency = Math.round(client.ws.ping);
+    const start = Date.now();
 
-            const { EmbedBuilder } = require("discord.js");
+    // Acknowledge the interaction
+    await interaction.deferReply();
 
-            const embed = new EmbedBuilder()
-                .setColor(0x5865F2)
-                .setTitle("🏓 Pong!")
-                .addFields(
-                    {
-                        name: "⚡ Response Time",
-                        value: `\`${responseTime}ms\``,
-                        inline: true
-                    },
-                    {
-                        name: "📡 Gateway Latency",
-                        value: `\`${apiLatency}ms\``,
-                        inline: true
-                    }
-                )
-                .setFooter({
-                    text: "World Adventure Club"
-                })
-                .setTimestamp();
+    const responseTime = Date.now() - start;
+    const gatewayLatency = Math.round(client.ws.ping);
 
-            await interaction.editReply({
-                embeds: [embed]
-            });
+    // WebSocket connection status
+    const wsStatus = {
+        0: "🟢 Ready",
+        1: "🟡 Connecting",
+        2: "🟠 Reconnecting",
+        3: "🔴 Disconnected",
+        4: "🟠 Waiting for Guilds",
+        5: "🟠 Identifying",
+        6: "🟠 Resuming"
+    };
 
-            return;
-        }
+    const connectionStatus =
+        wsStatus[client.ws.status] ?? "⚪ Unknown";
+
+    // Bot uptime
+    const uptimeSeconds = Math.floor(client.uptime / 1000);
+
+    const days = Math.floor(uptimeSeconds / 86400);
+    const hours = Math.floor((uptimeSeconds % 86400) / 3600);
+    const minutes = Math.floor((uptimeSeconds % 3600) / 60);
+    const seconds = uptimeSeconds % 60;
+
+    const uptime = `${days}d ${hours}h ${minutes}m ${seconds}s`;
+
+    // Gateway latency interpretation
+    let latencyStatus;
+
+    if (gatewayLatency < 0) {
+        latencyStatus = "⚪ Unavailable";
+    } else if (gatewayLatency < 50) {
+        latencyStatus = "🟢 Excellent";
+    } else if (gatewayLatency < 100) {
+        latencyStatus = "🟢 Very Good";
+    } else if (gatewayLatency < 200) {
+        latencyStatus = "🟡 Good";
+    } else if (gatewayLatency < 400) {
+        latencyStatus = "🟠 High";
+    } else {
+        latencyStatus = "🔴 Very High";
+    }
+
+    const embed = new EmbedBuilder()
+        .setColor(0x5865F2)
+        .setTitle("🏓 Pong!")
+        .setDescription(
+            "Here is the current performance status of **World Adventure Club**."
+        )
+        .addFields(
+            {
+                name: "⚡ Response Time",
+                value: `\`${responseTime} ms\`\nTime taken to acknowledge the Discord interaction.`,
+                inline: true
+            },
+            {
+                name: "📡 Gateway Latency",
+                value: `\`${gatewayLatency >= 0 ? `${gatewayLatency} ms` : "Unavailable"}\`\n${latencyStatus}`,
+                inline: true
+            },
+            {
+                name: "🔌 WebSocket Status",
+                value: connectionStatus,
+                inline: true
+            },
+            {
+                name: "⏱️ Bot Uptime",
+                value: `\`${uptime}\``,
+                inline: true
+            },
+            {
+                name: "🌐 Gateway Connection",
+                value: gatewayLatency >= 0
+                    ? "Connected to Discord Gateway"
+                    : "Latency unavailable or not yet measured",
+                inline: true
+            }
+        )
+        .setFooter({
+            text: "World Adventure Club • Bot Diagnostics"
+        })
+        .setTimestamp();
+
+    await interaction.editReply({
+        embeds: [embed]
+    });
+
+    return;
+}
+
 
 
         // ==========================================
