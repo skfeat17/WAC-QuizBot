@@ -9,6 +9,7 @@ const {
     hasQuestionBeenUsed,
     hasQuestionSubjectBeenUsed,
     getStoredQuestionContexts,
+    getStoredQuestionSubjects,
     saveQuestionContexts,
     saveQuestionSubjects,
     addMysteryQuestionsToPool,
@@ -66,7 +67,7 @@ const QUESTIONS_PER_BATCH = 30;
 
 const QUESTIONS_PER_AI_REQUEST = 20;
 
-const MAX_GENERATION_ATTEMPTS = 5;
+const MAX_GENERATION_ATTEMPTS = 10;
 
 const ALLOWED_CATEGORIES = [
     "Geography",
@@ -300,6 +301,11 @@ const COUNTRY_NAMES = [
 // This keeps valid questions about rivers, oceans, mountains, islands, etc.
 const GEOGRAPHICAL_TERMS = [
     "Arctic", "Antarctic", "Antarctica", "Arctic Circle", "Antarctic Circle",
+    "Africa", "African", "Europe", "European", "Asia", "Asian",
+    "Northern Africa", "Northeastern Africa", "Northwestern Africa",
+    "Eastern Africa", "Western Africa", "New York", "New York Harbor",
+    "Liberty Island", "Statue of Liberty", "Giza", "Giza Plateau",
+    "Mediterranean", "Athens",
     "North Pole", "South Pole", "Northern Hemisphere", "Southern Hemisphere", "Equator",
     "Tropics", "Middle East", "South Asia", "East Asia", "Southeast Asia", "Central Asia",
     "West Asia", "North Africa", "West Africa", "East Africa", "Central Africa", "Southern Africa",
@@ -615,8 +621,24 @@ async function generateMysteryQuestionBatch() {
     // CURRENT GENERATION STATE
     // ==========================================
 
-    const previousSubjects =
-        new Set();
+    const previousSubjects = new Set();
+
+    try {
+        const storedSubjects = await getStoredQuestionSubjects();
+
+        for (const subject of storedSubjects) {
+            previousSubjects.add(subject);
+        }
+
+        console.log(
+            `📚 Loaded ${previousSubjects.size} previously used Mystery subject(s).`
+        );
+    } catch (error) {
+        console.error(
+            "⚠️ Could not load Mystery subject history:",
+            error.message
+        );
+    }
 
     const acceptedQuestions = [];
 
@@ -976,7 +998,7 @@ async function validateQuestion(
 
         if (!questionMentionsGeography(question)) {
             console.log(
-                `🚫 QUESTION DOES NOT MENTION A RECOGNIZED COUNTRY, DEMONYM, OR GEOGRAPHICAL LOCATION | ${question}`
+                `🚫 QUESTION HAS NO RECOGNIZED GEOGRAPHIC REFERENCE | ${question}`
             );
             return null;
         }
@@ -1259,10 +1281,10 @@ CORE REQUIREMENTS
 - Questions must be factually accurate.
 - Use established, reliable facts.
 - Questions must be suitable for an international audience.
-- CRITICAL: EVERY question's actual question text MUST explicitly name at least one specific country (for example, Japan, Brazil, Kenya, India, or Canada).
-- The country name must appear in the question itself, not only in the answer options, subject, or explanation.
-- The question must be meaningfully about that named country. Do not insert a country name randomly just to satisfy this rule.
-- Reject generic questions about the world, animals, food, history, languages, sports, or landmarks unless the question directly connects the fact to a specifically named country.
+- CRITICAL: EVERY question's actual question text MUST identify a meaningful geographic connection.
+- The geographic reference must appear in the question itself, not only in the answer options, subject, or explanation.
+- The question must be meaningfully about that location. Do not insert a geographic name randomly just to satisfy this rule.
+- Reject generic questions unless the question directly connects the fact to an identifiable geographic location or feature.
 - Use natural English.
 - Keep questions suitable for Discord.
 - Do not mention rewards.
@@ -1413,8 +1435,8 @@ QUALITY RULES
 
 - Prefer globally diverse topics.
 - Distribute questions across many different countries and regions; do not repeatedly use the same country.
-- Every question must name a country directly in its question sentence and be genuinely related to that country.
-- Do not generate a question that can be asked unchanged without mentioning a country.
+- Every question must name an identifiable geographic location or feature directly in its question sentence.
+- A country name is not mandatory if a clearly identifiable city, island, continent, region, river, mountain, desert, ocean, or landmark is named.
 - Do not focus heavily on one country.
 - Do not make all questions geography.
 - Keep EVERY question moderately easy.
