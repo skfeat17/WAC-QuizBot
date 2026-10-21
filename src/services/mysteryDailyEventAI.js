@@ -578,7 +578,7 @@ const mysteryResponseSchema = {
 
             minItems: 1,
 
-            maxItems: 20,
+            maxItems: 50,
 
             items: {
                 type: "object",
