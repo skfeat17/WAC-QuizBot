@@ -18,7 +18,7 @@ const EVENT_TTL_SECONDS = 365 * 24 * 60 * 60;
 
 // Random player cooldown: 12–16 hours.
 const MIN_COOLDOWN_SECONDS = 4 * 60 * 60;
-const MAX_COOLDOWN_SECONDS = 5 * 60 * 60;
+const MAX_COOLDOWN_SECONDS = 6 * 60 * 60;
 
 // Question pool.
 const QUESTION_POOL_TARGET = 30;
