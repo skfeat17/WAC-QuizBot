@@ -62,9 +62,9 @@ const mysteryBatchSchema = z.object({
 // SETTINGS
 // ==========================================
 
-const QUESTIONS_PER_BATCH = 40;
+const QUESTIONS_PER_BATCH = 20;
 
-const QUESTIONS_PER_AI_REQUEST = 50;
+const QUESTIONS_PER_AI_REQUEST = 30;
 
 const MAX_GENERATION_ATTEMPTS = 15;
 
@@ -578,7 +578,7 @@ const mysteryResponseSchema = {
 
             minItems: 1,
 
-            maxItems: 50,
+            maxItems: 30,
 
             items: {
                 type: "object",
