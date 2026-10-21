@@ -26,7 +26,7 @@ const PRIMARY_MODEL =
     "gemini-3.1-flash-lite";
 
 const FALLBACK_MODEL =
-    "gemini-3.5-flash-lite";
+    "gemini-2.5-flash-lite";
 
 // ==========================================
 // SCHEMA
@@ -66,7 +66,7 @@ const QUESTIONS_PER_BATCH = 30;
 
 const QUESTIONS_PER_AI_REQUEST = 20;
 
-const MAX_GENERATION_ATTEMPTS = 15;
+const MAX_GENERATION_ATTEMPTS = 5;
 
 const ALLOWED_CATEGORIES = [
     "Geography",
@@ -76,12 +76,12 @@ const ALLOWED_CATEGORIES = [
     "Nature & Wildlife",
     "Languages",
     "Culture",
+    "World Sports",
 ];
 
 
-// Questions may refer to a country OR a recognizable geographic place/feature.
-// Generic words such as "place", "region", or "island" are intentionally NOT
-// sufficient by themselves: the question should identify a meaningful location.
+// Every generated question must explicitly name at least one country.
+// This prevents generic trivia that has no clear country connection.
 const COUNTRY_NAMES = [
     "Afghanistan",
     "Albania",
@@ -296,129 +296,91 @@ const COUNTRY_NAMES = [
     "Republic of Türkiye",
 ];
 
+// Named geographic features and regions accepted in world-related questions.
+// This keeps valid questions about rivers, oceans, mountains, islands, etc.
 const GEOGRAPHICAL_TERMS = [
-    // Polar and broad geographic regions
     "Arctic", "Antarctic", "Antarctica", "Arctic Circle", "Antarctic Circle",
-    "North Pole", "South Pole", "Northern Hemisphere", "Southern Hemisphere",
-    "Equator", "the Tropics", "Tropics", "Middle East", "South Asia",
-    "East Asia", "Southeast Asia", "Central Asia", "West Asia",
-    "North Africa", "West Africa", "East Africa", "Central Africa", "Southern Africa",
-    "North America", "Central America", "South America", "Latin America",
-    "Western Europe", "Eastern Europe", "Northern Europe", "Southern Europe",
-    "Scandinavia", "Balkans", "Oceania", "Caribbean", "Polynesia", "Melanesia",
-    "Micronesia", "Siberia", "Sahel", "Horn of Africa", "the Andes", "Andes",
-    "the Alps", "Alps", "Himalayas", "Himalaya", "Rocky Mountains",
-    "Great Dividing Range", "Ural Mountains", "Atlas Mountains", "Appalachian Mountains",
+    "North Pole", "South Pole", "Northern Hemisphere", "Southern Hemisphere", "Equator",
+    "Tropics", "Middle East", "South Asia", "East Asia", "Southeast Asia", "Central Asia",
+    "West Asia", "North Africa", "West Africa", "East Africa", "Central Africa", "Southern Africa",
+    "North America", "Central America", "South America", "Latin America", "Western Europe",
+    "Eastern Europe", "Northern Europe", "Southern Europe", "Scandinavia", "Balkans", "Oceania",
+    "Caribbean", "Polynesia", "Melanesia", "Micronesia", "Siberia", "Sahel", "Horn of Africa",
+    "Andes", "Alps", "Himalayas", "Himalaya", "Rocky Mountains", "Great Dividing Range",
+    "Ural Mountains", "Atlas Mountains", "Appalachian Mountains", "Greenland", "Borneo", "Sumatra",
+    "Java", "Sulawesi", "New Guinea", "Tasmania", "Honshu", "Hokkaido", "Kyushu", "Shikoku",
+    "Bali", "Kalimantan", "Luzon", "Mindanao", "Sicily", "Sardinia", "Corsica", "Crete",
+    "Hispaniola", "Puerto Rico", "Falkland Islands", "Galapagos Islands", "Galápagos Islands",
+    "Canary Islands", "Azores", "Hawaiian Islands", "Aleutian Islands", "Faroe Islands", "Svalbard",
+    "Easter Island", "Réunion", "Sahara", "Sahara Desert", "Gobi Desert", "Kalahari Desert",
+    "Namib Desert", "Atacama Desert", "Arabian Desert", "Thar Desert", "Mojave Desert",
+    "Amazon Rainforest", "Congo Rainforest", "Daintree Rainforest", "Black Forest", "Bavarian Forest",
+    "Amazon River", "Nile River", "Nile", "Yangtze River", "Yellow River", "Ganges", "Ganges River",
+    "Brahmaputra", "Indus River", "Mekong River", "Danube River", "Mississippi River", "Colorado River",
+    "Volga River", "Rhine River", "Thames River", "Tigris", "Euphrates", "Lake Baikal", "Lake Victoria",
+    "Lake Superior", "Lake Titicaca", "Caspian Sea", "Dead Sea", "Red Sea", "Black Sea",
+    "Mediterranean Sea", "Arabian Sea", "South China Sea", "Coral Sea", "Caribbean Sea", "North Sea",
+    "Baltic Sea", "Pacific Ocean", "Atlantic Ocean", "Indian Ocean", "Arctic Ocean", "Southern Ocean",
+    "Mount Everest", "Everest", "Kilimanjaro", "Mount Kilimanjaro", "Mount Fuji", "Fuji", "Matterhorn",
+    "Mont Blanc", "Denali", "Aconcagua", "Uluru", "Grand Canyon", "Great Barrier Reef", "Victoria Falls",
+    "Niagara Falls", "Iguazu Falls", "Angel Falls", "Yellowstone", "Yellowstone National Park", "Serengeti",
+    "Serengeti National Park", "Kruger National Park", "Great Lakes", "Lake District", "Wadi Rum", "Petra",
+    "Machu Picchu", "Stonehenge", "Amazon Basin", "Okavango Delta", "Everglades", "Pantanal",
+    "Great Rift Valley", "Death Valley", "Yosemite", "Yosemite National Park", "Banff National Park",
+    "Fiordland", "Plitvice Lakes", "tundra", "permafrost", "rainforest", "rain forests", "savanna",
+    "savannah", "wetlands", "fjord", "fiord", "atoll", "peninsula", "archipelago",
+];
 
-    // Well-known islands and island groups
-    "Greenland", "Iceland", "Madagascar", "Borneo", "Sumatra", "Java",
-    "Sulawesi", "New Guinea", "Tasmania", "Honshu", "Hokkaido", "Kyushu",
-    "Shikoku", "Taiwan", "Sri Lanka", "Bali", "Kalimantan", "Luzon", "Mindanao",
-    "Sicily", "Sardinia", "Corsica", "Crete", "Cyprus", "Malta", "Cuba",
-    "Jamaica", "Hispaniola", "Puerto Rico", "Bahamas", "Falkland Islands",
-    "Galapagos Islands", "Galápagos Islands", "Canary Islands", "Azores",
-    "Hawaiian Islands", "Aleutian Islands", "Solomon Islands", "Marshall Islands",
-    "Seychelles", "Maldives", "Mauritius", "Fiji", "Samoa", "Tonga",
-    "New Zealand", "Faroe Islands", "Svalbard", "Easter Island", "Réunion",
-
-    // Well-known deserts, forests, rivers, lakes, seas and oceans
-    "Sahara", "Sahara Desert", "Gobi Desert", "Kalahari Desert", "Namib Desert",
-    "Atacama Desert", "Arabian Desert", "Thar Desert", "Mojave Desert",
-    "Amazon Rainforest", "Amazon rainforest", "Congo Rainforest", "Daintree Rainforest",
-    "Black Forest", "Bavarian Forest", "Amazon River", "Nile River", "Nile",
-    "Yangtze River", "Yellow River", "Ganges", "Ganges River", "Brahmaputra",
-    "Indus River", "Mekong River", "Danube River", "Mississippi River", "Colorado River",
-    "Volga River", "Rhine River", "Thames River", "Tigris", "Euphrates",
-    "Lake Baikal", "Lake Victoria", "Lake Superior", "Lake Titicaca", "Caspian Sea",
-    "Dead Sea", "Red Sea", "Black Sea", "Mediterranean Sea", "Arabian Sea",
-    "South China Sea", "Coral Sea", "Caribbean Sea", "North Sea", "Baltic Sea",
-    "Pacific Ocean", "Atlantic Ocean", "Indian Ocean", "Arctic Ocean", "Southern Ocean",
-
-    // Well-known mountains, landmarks and natural areas
-    "Mount Everest", "Everest", "Kilimanjaro", "Mount Kilimanjaro", "Mount Fuji",
-    "Fuji", "Matterhorn", "Mont Blanc", "Denali", "Aconcagua", "Uluru",
-    "Grand Canyon", "Great Barrier Reef", "Victoria Falls", "Niagara Falls",
-    "Iguazu Falls", "Angel Falls", "Yellowstone", "Yellowstone National Park",
-    "Serengeti", "Serengeti National Park", "Kruger National Park", "Galapagos",
-    "Great Lakes", "Lake District", "Dead Sea", "Wadi Rum", "Petra",
-    "Machu Picchu", "Stonehenge", "the Amazon", "Amazon Basin", "Okavango Delta",
-    "Everglades", "Pantanal", "Great Rift Valley", "Death Valley", "Yosemite",
-    "Yosemite National Park", "Banff National Park", "Fiordland", "Plitvice Lakes",
-
-    // Geographic names commonly used with a descriptor
-    "Arctic region", "Arctic regions", "polar region", "polar regions",
-    "tundra", "permafrost", "rainforest", "rain forests", "savanna", "savannah",
-    "wetlands", "delta", "fjord", "fiord", "atoll", "peninsula", "archipelago"
+const COUNTRY_ADJECTIVES = [
+    "Afghan", "Albanian", "Algerian", "Andorran", "Angolan", "Antiguan", "Barbudan", "Argentine",
+    "Argentinian", "Armenian", "Australian", "Austrian", "Azerbaijani", "Bahamian", "Bahraini",
+    "Bangladeshi", "Barbadian", "Belarusian", "Belarussian", "Belgian", "Belizean", "Beninese",
+    "Bhutanese", "Bolivian", "Bosnian", "Herzegovinian", "Botswanan", "Motswana", "Brazilian",
+    "Bruneian", "Bulgarian", "Burkinabe", "Burundian", "Cabo Verdean", "Cape Verdean", "Cambodian",
+    "Cameroonian", "Canadian", "Central African", "Chadian", "Chilean", "Chinese", "Colombian",
+    "Comorian", "Congolese", "Costa Rican", "Ivorian", "Croatian", "Cuban", "Cypriot", "Czech",
+    "Czechian", "Danish", "Djiboutian", "Dominican", "Ecuadorian", "Egyptian", "Salvadoran",
+    "Equatorial Guinean", "Eritrean", "Estonian", "Swazi", "Eswatini", "Ethiopian", "Fijian", "Finnish",
+    "French", "Gabonese", "Gambian", "Georgian", "German", "Ghanaian", "Greek", "Grenadian",
+    "Guatemalan", "Guinean", "Bissau Guinean", "Guyanese", "Haitian", "Honduran", "Hungarian",
+    "Icelandic", "Indian", "Indonesian", "Iranian", "Iraqi", "Irish", "Israeli", "Italian", "Jamaican",
+    "Japanese", "Jordanian", "Kazakh", "Kazakhstani", "Kenyan", "Kiribati", "Kuwaiti", "Kyrgyz",
+    "Kyrgyzstani", "Lao", "Laotian", "Latvian", "Lebanese", "Basotho", "Lesotho", "Liberian", "Libyan",
+    "Liechtensteiner", "Lithuanian", "Luxembourgish", "Malagasy", "Malawian", "Malaysian", "Maldivian",
+    "Malian", "Maltese", "Marshallese", "Mauritanian", "Mauritian", "Mexican", "Micronesian", "Moldovan",
+    "Monegasque", "Mongolian", "Montenegrin", "Moroccan", "Mozambican", "Burmese", "Myanmar", "Namibian",
+    "Nauruan", "Nepalese", "Nepali", "Dutch", "New Zealander", "Nicaraguan", "Nigerien", "Nigerian",
+    "North Korean", "Macedonian", "Norwegian", "Omani", "Pakistani", "Palauan", "Palestinian", "Panamanian",
+    "Papua New Guinean", "Paraguayan", "Peruvian", "Filipino", "Philippine", "Polish", "Portuguese", "Qatari",
+    "Romanian", "Russian", "Rwandan", "Kittitian", "Nevisian", "Saint Lucian", "Vincentian", "Samoan",
+    "San Marinese", "Sao Tomean", "Saudi", "Saudi Arabian", "Senegalese", "Serbian", "Seychellois",
+    "Sierra Leonean", "Singaporean", "Slovak", "Slovenian", "Solomon Islander", "Somali", "South African",
+    "South Korean", "South Sudanese", "Spanish", "Sri Lankan", "Sudanese", "Surinamese", "Swedish", "Swiss",
+    "Syrian", "Taiwanese", "Tajik", "Tanzanian", "Thai", "Timorese", "Togolese", "Tongan", "Trinidadian",
+    "Tobagonian", "Tunisian", "Turkish", "Turkmen", "Tuvaluan", "Ugandan", "Ukrainian", "Emirati", "British",
+    "American", "Uruguayan", "Uzbek", "Vanuatuan", "Vatican", "Venezuelan", "Vietnamese", "Yemeni", "Zambian",
+    "Zimbabwean", "Austronesian", "Balkan", "Caribbean", "Central Asian", "East Asian", "South Asian",
+    "Southeast Asian", "West Asian", "North African", "West African", "East African", "Central African",
+    "Southern African", "Latin American", "North American", "Central American", "South American",
+    "Western European", "Eastern European", "Northern European", "Southern European",
 ];
 
 function containsGeographicalTerm(text, term) {
     const normalizedText = normalize(text);
     const normalizedTerm = normalize(term);
-
     if (!normalizedText || !normalizedTerm) return false;
-
     const escaped = normalizedTerm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     return new RegExp(`(?:^|\\s)${escaped}(?=$|\\s)`, "i").test(normalizedText);
 }
 
-// Country demonyms/adjectives are included because questions often say
-// "Indonesian islands", "Japanese cuisine", or "Brazilian wildlife" rather
-// than repeating the country's exact name. Keep alternate spellings and
-// common forms here; normalize() makes matching case- and accent-insensitive.
-const COUNTRY_ADJECTIVES = [
-    // A–C
-    "Afghan", "Albanian", "Algerian", "Andorran", "Angolan", "Antiguan", "Barbudan",
-    "Argentine", "Argentinian", "Armenian", "Australian", "Austrian", "Azerbaijani",
-    "Bahamian", "Bahraini", "Bangladeshi", "Barbadian", "Belarusian", "Belarussian",
-    "Belgian", "Belizean", "Beninese", "Bhutanese", "Bolivian", "Bosnian", "Herzegovinian",
-    "Botswanan", "Motswana", "Brazilian", "Bruneian", "Bulgarian", "Burkinabe", "Burundian",
-    "Cabo Verdean", "Cape Verdean", "Cambodian", "Cameroonian", "Canadian", "Central African",
-    "Chadian", "Chilean", "Chinese", "Colombian", "Comorian", "Congolese", "Costa Rican",
-    "Ivorian", "Croatian", "Cuban", "Cypriot", "Czech", "Czechian",
-    // D–H
-    "Danish", "Djiboutian", "Dominican", "Ecuadorian", "Egyptian", "Salvadoran", "Equatorial Guinean",
-    "Eritrean", "Estonian", "Swazi", "Eswatini", "Ethiopian", "Fijian", "Finnish", "French",
-    "Gabonese", "Gambian", "Georgian", "German", "Ghanaian", "Greek", "Grenadian", "Guatemalan",
-    "Guinean", "Bissau Guinean", "Guyanese", "Haitian", "Honduran", "Hungarian",
-    // I–M
-    "Icelandic", "Indian", "Indonesian", "Iranian", "Iraqi", "Irish", "Israeli", "Italian",
-    "Jamaican", "Japanese", "Jordanian", "Kazakh", "Kazakhstani", "Kenyan", "Kiribati",
-    "Kuwaiti", "Kyrgyz", "Kyrgyzstani", "Lao", "Laotian", "Latvian", "Lebanese", "Basotho",
-    "Lesotho", "Liberian", "Libyan", "Liechtensteiner", "Lithuanian", "Luxembourgish",
-    "Malagasy", "Malawian", "Malaysian", "Maldivian", "Malian", "Maltese", "Marshallese",
-    "Mauritanian", "Mauritian", "Mexican", "Micronesian", "Moldovan", "Monegasque", "Mongolian",
-    "Montenegrin", "Moroccan", "Mozambican", "Burmese", "Myanmar", // Myanmar/Burma variants
-    // N–R
-    "Namibian", "Nauruan", "Nepalese", "Nepali", "Dutch", "New Zealander", "Nicaraguan",
-    "Nigerien", "Nigerian", "North Korean", "Macedonian", "Norwegian", "Omani", "Pakistani",
-    "Palauan", "Palestinian", "Panamanian", "Papua New Guinean", "Paraguayan", "Peruvian",
-    "Filipino", "Philippine", "Polish", "Portuguese", "Qatari", "Romanian", "Russian", "Rwandan",
-    // S–Z
-    "Kittitian", "Nevisian", "Saint Lucian", "Vincentian", "Samoan", "San Marinese", "Sao Tomean",
-    "Saudi", "Saudi Arabian", "Senegalese", "Serbian", "Seychellois", "Sierra Leonean", "Singaporean",
-    "Slovak", "Slovenian", "Solomon Islander", "Somali", "South African", "South Korean", "South Sudanese",
-    "Spanish", "Sri Lankan", "Sudanese", "Surinamese", "Swedish", "Swiss", "Syrian", "Taiwanese",
-    "Tajik", "Tanzanian", "Thai", "Timorese", "Togolese", "Tongan", "Trinidadian", "Tobagonian",
-    "Tunisian", "Turkish", "Turkmen", "Tuvaluan", "Ugandan", "Ukrainian", "Emirati", "British",
-    "American", "Uruguayan", "Uzbek", "Vanuatuan", "Vatican", "Venezuelan", "Vietnamese", "Yemeni",
-    "Zambian", "Zimbabwean",
-    // Common adjective forms and geographic/cultural spellings
-    "Austronesian", "Balkan", "Caribbean", "Central Asian", "East Asian", "South Asian",
-    "Southeast Asian", "West Asian", "North African", "West African", "East African",
-    "Central African", "Southern African", "Latin American", "North American", "Central American",
-    "South American", "Western European", "Eastern European", "Northern European", "Southern European",
-];
-
 function questionMentionsGeography(question) {
     if (!question || typeof question !== "string") return false;
-
     return (
         COUNTRY_NAMES.some((country) => containsGeographicalTerm(question, country)) ||
         COUNTRY_ADJECTIVES.some((adjective) => containsGeographicalTerm(question, adjective)) ||
         GEOGRAPHICAL_TERMS.some((term) => containsGeographicalTerm(question, term))
     );
 }
-
 
 
 // ==========================================
@@ -532,21 +494,30 @@ async function generateWithFallback(
         // FALLBACK MODEL
         // ==========================================
 
-        const response =
-            await ai.models.generateContent({
+        let response;
+
+        try {
+            response = await ai.models.generateContent({
                 model: FALLBACK_MODEL,
-
                 contents: prompt,
-
                 config: {
-                    responseMimeType:
-                        "application/json",
-
+                    responseMimeType: "application/json",
                     responseSchema,
-
                     maxOutputTokens: 10000,
                 },
             });
+        } catch (fallbackError) {
+            console.error(
+                `❌ Mystery AI | ${FALLBACK_MODEL} failed:`,
+                JSON.stringify({
+                    message: fallbackError?.message,
+                    status: fallbackError?.status,
+                    code: fallbackError?.code,
+                    details: fallbackError?.error,
+                }, null, 2)
+            );
+            throw fallbackError;
+        }
 
         if (
             !response ||
@@ -570,57 +541,23 @@ async function generateWithFallback(
 // ==========================================
 
 const mysteryResponseSchema = {
-    type: "object",
-
+    type: "OBJECT",
     properties: {
         questions: {
-            type: "array",
-
-            minItems: 1,
-
-            maxItems: 20,
-
+            type: "ARRAY",
             items: {
-                type: "object",
-
+                type: "OBJECT",
                 properties: {
-                    category: {
-                        type: "string",
-                    },
-
-                    subject: {
-                        type: "string",
-                    },
-
-                    question: {
-                        type: "string",
-                    },
-
+                    category: { type: "STRING" },
+                    subject: { type: "STRING" },
+                    question: { type: "STRING" },
                     answers: {
-                        type: "array",
-
-                        minItems: 4,
-
-                        maxItems: 4,
-
-                        items: {
-                            type: "string",
-                        },
+                        type: "ARRAY",
+                        items: { type: "STRING" },
                     },
-
-                    correctAnswer: {
-                        type: "integer",
-
-                        minimum: 0,
-
-                        maximum: 3,
-                    },
-
-                    explanation: {
-                        type: "string",
-                    },
+                    correctAnswer: { type: "INTEGER" },
+                    explanation: { type: "STRING" },
                 },
-
                 required: [
                     "category",
                     "subject",
@@ -629,17 +566,19 @@ const mysteryResponseSchema = {
                     "correctAnswer",
                     "explanation",
                 ],
-
-                additionalProperties: false,
+                propertyOrdering: [
+                    "category",
+                    "subject",
+                    "question",
+                    "answers",
+                    "correctAnswer",
+                    "explanation",
+                ],
             },
         },
     },
-
-    required: [
-        "questions",
-    ],
-
-    additionalProperties: false,
+    required: ["questions"],
+    propertyOrdering: ["questions"],
 };
 
 // ==========================================
@@ -733,7 +672,7 @@ async function generateMysteryQuestionBatch() {
         const requestCount =
             Math.min(
                 QUESTIONS_PER_AI_REQUEST,
-                remaining + 5
+                remaining
             );
 
         console.log(
@@ -1031,8 +970,8 @@ async function validateQuestion(
         }
 
         // ==========================================
-        // GEOGRAPHICAL RELEVANCE
-        // Accept country names and recognizable geographic locations/features.
+        // COUNTRY RELEVANCE
+        // Every question must explicitly name a country.
         // ==========================================
 
         if (!questionMentionsGeography(question)) {
@@ -1320,12 +1259,10 @@ CORE REQUIREMENTS
 - Questions must be factually accurate.
 - Use established, reliable facts.
 - Questions must be suitable for an international audience.
-- Every question's actual question text must identify a meaningful geographic connection.
-- Questions may refer to countries, named cities, islands, archipelagos, continents, regions, territories, provinces, states, mountains, rivers, lakes, oceans, seas, deserts, forests, landmarks, or other identifiable geographic locations/features.
-- A country name is NOT mandatory when another recognizable geographic location or feature is clearly identified.
-- The geographic reference must be meaningful to the question; do not insert a location randomly just to satisfy this rule.
-- Nature, wildlife, food, history, language, and culture questions are allowed when they clearly connect to an identifiable geographic location or feature.
-- Reject questions that have no meaningful geographic connection.
+- CRITICAL: EVERY question's actual question text MUST explicitly name at least one specific country (for example, Japan, Brazil, Kenya, India, or Canada).
+- The country name must appear in the question itself, not only in the answer options, subject, or explanation.
+- The question must be meaningfully about that named country. Do not insert a country name randomly just to satisfy this rule.
+- Reject generic questions about the world, animals, food, history, languages, sports, or landmarks unless the question directly connects the fact to a specifically named country.
 - Use natural English.
 - Keep questions suitable for Discord.
 - Do not mention rewards.
@@ -1476,9 +1413,8 @@ QUALITY RULES
 
 - Prefer globally diverse topics.
 - Distribute questions across many different countries and regions; do not repeatedly use the same country.
-- Every question must identify a meaningful geographic location or feature in its question sentence.
-- A country name is not required when the question clearly identifies another recognizable geographic location or feature.
-- Do not add a geographic name artificially just to satisfy validation.
+- Every question must name a country directly in its question sentence and be genuinely related to that country.
+- Do not generate a question that can be asked unchanged without mentioning a country.
 - Do not focus heavily on one country.
 - Do not make all questions geography.
 - Keep EVERY question moderately easy.
