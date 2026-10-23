@@ -175,7 +175,7 @@ function buildQuestionEmbed(
         .setFooter({
             text:
                 `Category: ${question.category} • ` +
-                `5 Minute Cooldown for Incorrect Answers`,
+                `2 Minute Cooldown for Incorrect Answers`,
         });
 }
 
