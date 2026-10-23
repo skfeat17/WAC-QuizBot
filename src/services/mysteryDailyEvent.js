@@ -175,7 +175,7 @@ function buildQuestionEmbed(
         .setFooter({
             text:
                 `Category: ${question.category} • ` +
-                `Attempt: ${attemptId}`,
+                `5 Minute Cooldown for Incorrect Answers`,
         });
 }
 

@@ -30,7 +30,7 @@ const QUESTION_POOL_MINIMUM = 5;
 // Users who never receive a Mystery Event cooldown.
 const MYSTERY_EVENT_COOLDOWN_IMMUNE = [
     "1295671787375296542",
-    // "1242132608574292118",
+    "1242132608574292118",
     // "759810328791482428"  //kairi
 ];
 
