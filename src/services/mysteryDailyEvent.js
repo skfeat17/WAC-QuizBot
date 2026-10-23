@@ -14,6 +14,9 @@ const {
     getMysteryEvent,
 
     getMysteryCooldown,
+    getIncorrectAnswerCooldown,
+    claimIncorrectAnswerCooldown,
+    Incorrect_Answer_Cooldown,
     listAllMysteryCooldowns,
     claimMysteryCooldown,
     setMysteryCooldown,
@@ -126,6 +129,7 @@ function buildMysteryEventEmbed() {
                 "world is waiting to be answered...",
                 "",
                 `🎁 **Reward: Up to ${REWARD_MAX} ${MORA_EMOJI}**`,
+                `⚠️ **Incorrect answer cooldown: ${Incorrect_Answer_Cooldown / 60} minutes**`,
                 "",
                 "<:paimonThink:1505801467435548752> Think you know the answer?",
                 "",
@@ -246,6 +250,8 @@ function buildIncorrectEmbed(attempt) {
         .setTitle("❌ INCORRECT ANSWER")
         .setDescription([
             "That's not the correct answer.",
+            "",
+            `⏳ A **${Incorrect_Answer_Cooldown / 60}-minute cooldown** has been applied for incorrect answers.`,
             "",
             getNextAttemptText(attempt),
             "",
@@ -588,6 +594,30 @@ async function handleMysteryReveal(
         await interaction.editReply({
             content:
                 "❌ The Daily World Event is not currently active.",
+        });
+
+        return true;
+    }
+
+    // --------------------------------------------------------
+    // INCORRECT-ANSWER COOLDOWN CHECK (SEPARATE FROM NORMAL)
+    // --------------------------------------------------------
+
+    const incorrectCooldown = await getIncorrectAnswerCooldown(userId);
+
+    if (Number(incorrectCooldown) > 0) {
+        const timestamp = Math.floor(Date.now() / 1000) + Number(incorrectCooldown);
+
+        await interaction.editReply({
+            embeds: [
+                new EmbedBuilder()
+                    .setColor(0xED4245)
+                    .setTitle("⏳ Cooldown Active")
+                    .setDescription(
+                        `You can try again <t:${timestamp}:R>.`
+                    )
+            ],
+            components: []
         });
 
         return true;
@@ -965,8 +995,8 @@ async function handleMysteryAnswer(
 
     // ========================================================
     // CHECK ANSWER
-    // Only correct answers start a cooldown.
-    // Incorrect answers receive no cooldown and can try again.
+    // Correct answers use the normal cooldown.
+    // Incorrect answers use a separate fixed cooldown.
     // ========================================================
 
     const isCorrect = selectedAnswer === attempt.correctAnswer;
@@ -1000,6 +1030,25 @@ async function handleMysteryAnswer(
         } else {
             console.log(`🛡️ COOLDOWN IMMUNE | ${userId}`);
         }
+    } else {
+        const incorrectCooldownResult = await claimIncorrectAnswerCooldown(userId);
+
+        if (!incorrectCooldownResult.claimed) {
+            const remaining = Math.max(
+                0,
+                Number(await getIncorrectAnswerCooldown(userId)) || Incorrect_Answer_Cooldown
+            );
+            const nextAttemptTimestamp = Math.floor(Date.now() / 1000) + remaining;
+
+            await interaction.followUp({
+                content: `❌ Incorrect-answer cooldown is active. You can try again <t:${nextAttemptTimestamp}:R>.`,
+                flags: MessageFlags.Ephemeral,
+            });
+            return true;
+        }
+
+        cooldownSeconds = Number(incorrectCooldownResult.cooldownSeconds) || Incorrect_Answer_Cooldown;
+        console.log(`⏱️ INCORRECT-ANSWER COOLDOWN CREATED | ${cooldownSeconds}s | ${userId}`);
     }
 
     const reward = isCorrect ? generateReward() : 0;
@@ -1007,7 +1056,7 @@ async function handleMysteryAnswer(
     if (isCorrect) {
         console.log(`🎁 DAILY REWARD GENERATED | ${reward} Mora`);
     } else {
-        console.log(`❌ INCORRECT ANSWER | NO COOLDOWN | ${userId}`);
+        console.log(`❌ INCORRECT ANSWER | ${Incorrect_Answer_Cooldown / 60}-MINUTE SEPARATE COOLDOWN | ${userId}`);
     }
 
     // --------------------------------------------------------
@@ -1035,7 +1084,7 @@ async function handleMysteryAnswer(
             error.message
         );
     }
-   
+
 
     const answeredAttempt = {
         ...attempt,

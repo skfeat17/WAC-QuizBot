@@ -17,8 +17,11 @@ const PREFIX = "wac:mysteryevent:";
 const EVENT_TTL_SECONDS = 365 * 24 * 60 * 60;
 
 // Random player cooldown: 12–16 hours.
-const MIN_COOLDOWN_SECONDS = 4 * 60 * 60;
+const MIN_COOLDOWN_SECONDS = 5 * 60 * 60;
 const MAX_COOLDOWN_SECONDS = 6 * 60 * 60;
+
+// Fixed cooldown applied after an incorrect answer (5 minutes).
+const Incorrect_Answer_Cooldown = 5 * 60;
 
 // Question pool.
 const QUESTION_POOL_TARGET = 30;
@@ -27,7 +30,7 @@ const QUESTION_POOL_MINIMUM = 5;
 // Users who never receive a Mystery Event cooldown.
 const MYSTERY_EVENT_COOLDOWN_IMMUNE = [
     "1295671787375296542",
-    "1242132608574292118",
+    // "1242132608574292118",
     // "759810328791482428"  //kairi
 ];
 
@@ -41,6 +44,10 @@ function eventKey(eventId) {
 
 function cooldownKey(userId) {
     return `${PREFIX}cooldown:${userId}`;
+}
+
+function incorrectAnswerCooldownKey(userId) {
+    return `${PREFIX}incorrect-cooldown:${userId}`;
 }
 
 function attemptKey(attemptId) {
@@ -382,6 +389,44 @@ async function clearAllMysteryCooldowns() {
             error.message
         );
 
+        throw error;
+    }
+}
+
+// ==========================================
+// INCORRECT-ANSWER COOLDOWN (SEPARATE KEY)
+// ==========================================
+
+async function getIncorrectAnswerCooldown(userId) {
+    try {
+        return await redis.ttl(incorrectAnswerCooldownKey(userId));
+    } catch (error) {
+        console.error("❌ Incorrect-answer cooldown read error:", error.message);
+        throw error;
+    }
+}
+
+async function claimIncorrectAnswerCooldown(userId) {
+    try {
+        const result = await redis.set(
+            incorrectAnswerCooldownKey(userId),
+            {
+                userId: String(userId),
+                createdAt: Date.now(),
+                cooldownSeconds: Incorrect_Answer_Cooldown,
+            },
+            {
+                nx: true,
+                ex: Incorrect_Answer_Cooldown,
+            }
+        );
+
+        return {
+            claimed: result === "OK",
+            cooldownSeconds: result === "OK" ? Incorrect_Answer_Cooldown : null,
+        };
+    } catch (error) {
+        console.error("❌ Incorrect-answer cooldown claim error:", error.message);
         throw error;
     }
 }
@@ -1008,6 +1053,7 @@ module.exports = {
 
     MIN_COOLDOWN_SECONDS,
     MAX_COOLDOWN_SECONDS,
+    Incorrect_Answer_Cooldown,
 
     QUESTION_POOL_TARGET,
     QUESTION_POOL_MINIMUM,
@@ -1017,6 +1063,8 @@ module.exports = {
     generateRandomCooldownSeconds,
 
     getMysteryCooldown,
+    getIncorrectAnswerCooldown,
+    claimIncorrectAnswerCooldown,
     listAllMysteryCooldowns,
     hasMysteryCooldown,
     claimMysteryCooldown,
