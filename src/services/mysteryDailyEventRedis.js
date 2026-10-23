@@ -21,7 +21,7 @@ const MIN_COOLDOWN_SECONDS = 5 * 60 * 60;
 const MAX_COOLDOWN_SECONDS = 6 * 60 * 60;
 
 // Fixed cooldown applied after an incorrect answer (5 minutes).
-const Incorrect_Answer_Cooldown = 5 * 60;
+const Incorrect_Answer_Cooldown = 1.5 * 60;
 
 // Question pool.
 const QUESTION_POOL_TARGET = 30;
