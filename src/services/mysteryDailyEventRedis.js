@@ -18,7 +18,7 @@ const EVENT_TTL_SECONDS = 365 * 24 * 60 * 60;
 
 // Random player cooldown: 12–16 hours.
 const MIN_COOLDOWN_SECONDS = 4 * 60 * 60;
-const MAX_COOLDOWN_SECONDS = 6 * 60 * 60;
+const MAX_COOLDOWN_SECONDS = 7 * 60 * 60;
 
 // Fixed cooldown applied after an incorrect answer (5 minutes).
 const Incorrect_Answer_Cooldown = 2 * 60;
