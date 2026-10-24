@@ -85,15 +85,15 @@ function generateReward() {
     const roll = Math.random() * 100;
 
     if (roll < 85) {
-        return randomInt(10, 14); // 85% — Common
+        return randomInt(10, 13); // 85% — Common
     }
 
     if (roll < 95) {
-        return randomInt(15, 17); // 10% — Uncommon
+        return randomInt(14, 16); // 10% — Uncommon
     }
 
     if (roll < 99) {
-        return randomInt(18, 19); // 4% — Rare
+        return randomInt(17, 19); // 4% — Rare
     }
 
     return 20; // 1% — Jackpot
