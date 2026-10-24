@@ -966,7 +966,23 @@ async function handleMysteryAnswer(
 
         return true;
     }
+    const incorrectCooldown = await getIncorrectAnswerCooldown(userId);
 
+    if (Number(incorrectCooldown) > 0) {
+        const remainingSeconds = Number(incorrectCooldown);
+
+        const embed = new EmbedBuilder()
+            .setColor(0xFF0000)
+            .setTitle("❌ Incorrect Answer Cooldown")
+            .setDescription(
+                `You cannot answer another question yet!\nTry again <t:${Math.floor(Date.now() / 1000) + remainingSeconds}:R>.`
+            );
+
+        return interaction.followUp({
+            embeds: [embed],
+            ephemeral: true
+        });
+    }
     // --------------------------------------------------------
     // ALREADY ANSWERED
     // --------------------------------------------------------
