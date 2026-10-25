@@ -17,8 +17,10 @@ function formatRemaining(milliseconds) {
 
 // Correct answers score 0–100 based on speed. Incorrect answers are handled by weekly.js.
 function scoreForAnswer(elapsedMs, limitMs = 15_000) {
-    const remaining = Math.max(0, Math.min(1, 1 - elapsedMs / limitMs));
-    return Math.round(100 * remaining);
+    const elapsed = Math.max(0, Math.min(elapsedMs, limitMs));
+    const score = 100 - Math.round((elapsed / limitMs) * 70);
+
+    return Math.max(30, Math.min(100, score));
 }
 
 function normalizeText(value) {
