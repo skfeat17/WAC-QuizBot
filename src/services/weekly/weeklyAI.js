@@ -68,8 +68,7 @@ WORLD TOPIC RULES:
 - Do NOT require every question to name a country.
 - A question may be about a country, city, capital, flag, landmark, food,
   language, festival, tradition, famous historical person, invention,
-  animal, habitat, continent, ocean, river, mountain, desert, island,
-  planet, space, world sport, art, music, or another broadly recognizable
+  animal, habitat, continent, ocean, river, mountain, desert, island, world sport, music, or another broadly recognizable
   world topic.
 - Keep every question VERY EASY and beginner-friendly.
 - Prefer common facts that a casual international audience may recognize.
