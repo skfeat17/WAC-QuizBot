@@ -1,3 +1,4 @@
+
 // All Discord embeds and interactive components used by the weekly quiz.
 // weeklyEmbeds.js
 
@@ -10,6 +11,9 @@ const {
 
 const MEDALS = ['🥇', '🥈', '🥉'];
 const PRIZES = [750, 500, 350];
+
+// Replace this with the Discord message link to your detailed guide.
+const WEEKLY_GUIDE_URL = 'https://discordapp.com/channels/1116542113274929233/1520280046001197086/1563843205470879817';
 
 function participationEmbed(state, participantCount = 0) {
     const end = Math.floor(state.endsAt / 1000);
@@ -29,7 +33,8 @@ function participationEmbed(state, participantCount = 0) {
         .setTitle('🏆 WEEKLY WORLD QUIZ CHALLENGE')
         .setDescription(
             'Think you know the world? Take the challenge and compete for Mora!\n\n' +
-            '**Click 🌎 Challenge to compete.**',
+            '**Click 🌎 Challenge to compete.**\n\n' +
+            '📖 Need help? Click **How It Works** below to learn about the competition.',
         )
         .addFields(
             {
@@ -55,6 +60,7 @@ function participationEmbed(state, participantCount = 0) {
 
 function participationComponents(disabled = false) {
     return [
+        // Row 1: Interactive quiz buttons.
         new ActionRowBuilder().addComponents(
             new ButtonBuilder()
                 .setCustomId('weekly:challenge')
@@ -76,6 +82,15 @@ function participationComponents(disabled = false) {
                 .setEmoji('🏆')
                 .setStyle(ButtonStyle.Secondary)
                 .setDisabled(disabled),
+        ),
+
+        // Row 2: Link to the detailed guide.
+        new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setLabel('How It Works')
+                .setEmoji('📖')
+                .setStyle(ButtonStyle.Link)
+                .setURL(WEEKLY_GUIDE_URL),
         ),
     ];
 }
@@ -178,3 +193,4 @@ module.exports = {
     answerRows,
     resultEmbed,
 };
+
