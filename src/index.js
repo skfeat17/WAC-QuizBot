@@ -68,7 +68,11 @@ http.createServer((req, res) => {
 }).listen(PORT, () => {
     console.log(`🌐 HTTP server running on port ${PORT}`);
 });
-
+const {
+    handleWeeklyCommand,
+    handleWeeklyButton,
+    startWeeklyScheduler,
+} = require("./services/weekly/weekly.js");
 // ==============================
 // UTILITIES FUNCTION IMPORTS
 // ==============================
@@ -160,6 +164,8 @@ const MAX_WINNERS = 5;
 
 client.once(Events.ClientReady, (client) => {
     console.log(`✅ ${client.user.tag} is online!`);
+    startWeeklyScheduler(client);
+    console.log("🌍 Weekly Quiz scheduler started!");
 });
 
 // ==============================
@@ -214,6 +220,30 @@ client.on(Events.InteractionCreate, async (interaction) => {
                     "❌ You are not authorized to use this command.",
                 flags: MessageFlags.Ephemeral,
             });
+
+            return;
+        }
+        // ==========================================
+        // WEEKLY WORLD QUIZ
+        // ==========================================
+
+        if (interaction.commandName === "weekly") {
+            try {
+                await handleWeeklyCommand(interaction, client);
+            } catch (error) {
+                console.error("[weekly] Command failed:", error);
+
+                const response = {
+                    content: "❌ The weekly command failed. Please try again.",
+                    flags: MessageFlags.Ephemeral,
+                };
+
+                if (interaction.deferred || interaction.replied) {
+                    await interaction.followUp(response).catch(console.error);
+                } else {
+                    await interaction.reply(response).catch(console.error);
+                }
+            }
 
             return;
         }
@@ -1227,7 +1257,29 @@ ${line}`
     if (interaction.isButton() ||
         interaction.isStringSelectMenu() ||
         interaction.isModalSubmit()) {
+        // ==========================================
+        // WEEKLY WORLD QUIZ BUTTONS
+        // ==========================================
 
+        if (
+            interaction.isButton() &&
+            interaction.customId?.startsWith("weekly:")
+        ) {
+            try {
+                await handleWeeklyButton(interaction, client);
+            } catch (error) {
+                console.error("[weekly] Button failed:", error);
+
+                if (!interaction.replied && !interaction.deferred) {
+                    await interaction.reply({
+                        content: "❌ Something went wrong. Please try again.",
+                        flags: MessageFlags.Ephemeral,
+                    }).catch(console.error);
+                }
+            }
+
+            return;
+        }
 
         // ==========================================
         // KAHOOT BUTTON INTERACTION

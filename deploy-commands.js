@@ -14,7 +14,7 @@ const {
 const {
     countUsernamesCommand,
 } = require("./src/services/countUsernames");
-
+const { weeklyCommand } = require("./src/services/weekly/weekly");
 const commands = [
 
     // ==========================================
@@ -324,6 +324,11 @@ const commands = [
             "Manage World Adventure Club Kahoot quizzes"
         )
         .toJSON(),
+    // ==========================================
+    // WEEKLY WORLD QUIZ
+    // ==========================================
+
+    weeklyCommand().toJSON(),
 ];
 commands.push(banCommand.toJSON());
 // ==========================================

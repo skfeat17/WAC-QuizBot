@@ -108,6 +108,9 @@ const COMMAND_ACCESS = {
         "759810328791482428"  //kairi
 
     ],
+    weekly:[
+               "1242132608574292118", // me 
+    ]
 };
 
 module.exports = {
