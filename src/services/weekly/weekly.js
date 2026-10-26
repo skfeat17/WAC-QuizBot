@@ -499,7 +499,7 @@ async function processAnswer(client, input) {
             })],
             components: [],
         }, attempt).catch(() => { });
-        await new Promise((resolve) => setTimeout(resolve, 7000));
+        await new Promise((resolve) => setTimeout(resolve, 5000));
 
         // Start the next question's timer immediately before rendering it.
         attempt.lastQuestionAt = Date.now();

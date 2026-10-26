@@ -222,7 +222,7 @@ function answerFeedbackEmbed({ correct, timeout, pointsDelta, elapsedMs, questio
             `${scoreLine}\n` +
             `**Time taken:** ${timeout ? '15.00 seconds (timeout)' : `${elapsed} seconds`}\n` +
             `**Correct answer:** ${answerLetter}. ${answerText}\n\n` +
-            '**Next question in 7 seconds…**',
+            '**Next question in 5 seconds…**',
         )
         .setFooter({
             text: `Question ${questionNumber} answered`,
