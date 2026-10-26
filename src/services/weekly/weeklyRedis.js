@@ -5,8 +5,8 @@ const { Redis } = require('@upstash/redis');
 const crypto = require('node:crypto');
 
 const redis = new Redis({
-    url: process.env.UPSTASH_REDIS_REST_URL,
-    token: process.env.UPSTASH_REDIS_REST_TOKEN,
+    url: process.env.NEW_WEEKLY_REDIS_REST_URL,
+    token: process.env.NEW_WEEKLY_REDIS_REST_TOKEN,
 });
 
 const PREFIX = 'wac:weekly:v2:';
