@@ -1,4 +1,3 @@
-
 // All Discord embeds and interactive components used by the weekly quiz.
 // weeklyEmbeds.js
 
@@ -60,7 +59,6 @@ function participationEmbed(state, participantCount = 0) {
 
 function participationComponents(disabled = false) {
     return [
-        // Row 1: Interactive quiz buttons.
         new ActionRowBuilder().addComponents(
             new ButtonBuilder()
                 .setCustomId('weekly:challenge')
@@ -84,13 +82,42 @@ function participationComponents(disabled = false) {
                 .setDisabled(disabled),
         ),
 
-        // Row 2: Link to the detailed guide.
         new ActionRowBuilder().addComponents(
             new ButtonBuilder()
                 .setLabel('How It Works')
                 .setEmoji('📖')
                 .setStyle(ButtonStyle.Link)
                 .setURL(WEEKLY_GUIDE_URL),
+        ),
+    ];
+}
+
+function challengeReadyEmbed() {
+    return new EmbedBuilder()
+        .setColor(0x5865F2)
+        .setTitle('⚔️ READY FOR TODAY’S CHALLENGE?')
+        .setDescription(
+            'Are you ready to take **today’s Weekly World Quiz Challenge**?\n\n' +
+            '📝 **5 questions**\n' +
+            '⏱️ **15 seconds per question**\n' +
+            '⚡ Correct answers earn points based on your answering speed.\n' +
+            '❌ Incorrect answers: **−15 points**\n' +
+            '⏰ Timeout: **0 points**\n\n' +
+            'You can attempt the challenge once per UTC day. Ready to begin?',
+        )
+        .setFooter({
+            text: 'Your weekly score updates as you answer.',
+        });
+}
+
+function challengeReadyComponents() {
+    return [
+        new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setCustomId('weekly:ready')
+                .setLabel('I’m Ready — Start!')
+                .setEmoji('🚀')
+                .setStyle(ButtonStyle.Success),
         ),
     ];
 }
@@ -141,11 +168,10 @@ function questionEmbed(question, index, total, deadlineMs) {
             `⏳ **Time remaining:** <t:${deadline}:R>`,
         )
         .setFooter({
-            text: '⏱️ 15 seconds • Correct: 0–100 points • Incorrect: −15',
+            text: '⏱️ 15 seconds • Correct: 0–100 points • Incorrect: −15 • Timeout: 0',
         });
 }
 
-// The question index in the button ID rejects stale answer buttons.
 function answerRows(attemptId, question, questionIndex, disabled = false) {
     const letters = ['A', 'B', 'C', 'D'];
 
@@ -164,6 +190,45 @@ function answerRows(attemptId, question, questionIndex, disabled = false) {
     ];
 }
 
+function answerFeedbackEmbed({ correct, timeout, pointsDelta, elapsedMs, question, questionNumber }) {
+    const letters = ['A', 'B', 'C', 'D'];
+    const answerIndex = Number(question.correctAnswer);
+    const answerText = question.options?.[answerIndex] ?? 'Answer unavailable';
+    const answerLetter = letters[answerIndex] || '?';
+    const elapsed = (Math.max(0, elapsedMs) / 1000).toFixed(2);
+
+    let title;
+    let color;
+    let scoreLine;
+
+    if (timeout) {
+        title = '⏰ TIME’S UP!';
+        color = 0xE67E22;
+        scoreLine = '**Points earned:** 0';
+    } else if (correct) {
+        title = '✅ CORRECT!';
+        color = 0x57F287;
+        scoreLine = `**You scored:** +${pointsDelta} points`;
+    } else {
+        title = '❌ INCORRECT!';
+        color = 0xED4245;
+        scoreLine = '**Penalty:** −15 points';
+    }
+
+    return new EmbedBuilder()
+        .setColor(color)
+        .setTitle(title)
+        .setDescription(
+            `${scoreLine}\n` +
+            `**Time taken:** ${timeout ? '15.00 seconds (timeout)' : `${elapsed} seconds`}\n` +
+            `**Correct answer:** ${answerLetter}. ${answerText}\n\n` +
+            '**Next question in 7 seconds…**',
+        )
+        .setFooter({
+            text: `Question ${questionNumber} answered`,
+        });
+}
+
 function resultEmbed(attempt, participant, rank) {
     return new EmbedBuilder()
         .setColor(0x57F287)
@@ -177,7 +242,6 @@ function resultEmbed(attempt, participant, rank) {
             `**Your Ranking:** ${rank ? `#${rank}` : 'Unranked'}`,
             `**Weekly Total:** ${Number(participant?.points) || 0} points`,
             '',
-            '✨ **Scoring:** Correct answers earn 0–100 points based on speed; incorrect answers cost −15; timeout earns 0.',
         ].join('\n'))
         .setFooter({
             text: 'Your score stays saved until the admin clears the weekly event.',
@@ -192,5 +256,7 @@ module.exports = {
     questionEmbed,
     answerRows,
     resultEmbed,
+    challengeReadyEmbed,
+    challengeReadyComponents,
+    answerFeedbackEmbed,
 };
-

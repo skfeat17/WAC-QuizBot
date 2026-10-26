@@ -13,6 +13,9 @@ const {
     questionEmbed,
     answerRows,
     resultEmbed,
+    challengeReadyEmbed,
+    challengeReadyComponents,
+    answerFeedbackEmbed,
 } = require('./weeklyEmbeds');
 const { startWeeklyScheduler } = require('./weeklyScheduler');
 const { utcDateKey, scoreForAnswer, hashQuestion, hashSubject } = require('./weeklyUtils');
@@ -479,7 +482,26 @@ async function processAnswer(client, input) {
             return true;
         }
 
-        // Set the next question's clock before rendering it; its timeout cannot affect this old question.
+        // Show answer feedback for three seconds before moving to the next question.
+        await Promise.all([
+            persistAttemptInBackground(attempt),
+            updatedParticipant ? saveParticipantInBackground(updatedParticipant) : Promise.resolve(),
+        ]);
+        await updateOriginal(attemptId, interaction, {
+            content: '',
+            embeds: [answerFeedbackEmbed({
+                correct: isCorrect,
+                timeout,
+                pointsDelta,
+                elapsedMs,
+                question: currentQuestion,
+                questionNumber: attempt.questionIndex,
+            })],
+            components: [],
+        }, attempt).catch(() => { });
+        await new Promise((resolve) => setTimeout(resolve, 7000));
+
+        // Start the next question's timer immediately before rendering it.
         attempt.lastQuestionAt = Date.now();
         let nextQuestion;
         try {
@@ -552,13 +574,62 @@ async function handleWeeklyButton(interaction, client) {
     const customId = interaction.customId;
 
     if (customId === 'weekly:participate' || customId === 'weekly:challenge') {
-        // Defer immediately so even a slow Redis read cannot expire the component interaction.
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+        try {
+            const state = await R.getState();
+            if (!state || state.status !== 'active' || Date.now() >= state.endsAt) {
+                await interaction.editReply({
+                    content: '❌ There is no active weekly competition right now.',
+                    embeds: [],
+                    components: [],
+                });
+                return true;
+            }
+
+            const existingAttempt = await R.getAttempt(interaction.user.id, getDayKey(state));
+            if (existingAttempt?.status === 'completed') {
+                await interaction.editReply({
+                    content: '✅ You have already completed today’s challenge. Come back tomorrow!',
+                    embeds: [],
+                    components: [],
+                });
+                return true;
+            }
+            if (existingAttempt?.status === 'active' && existingAttempt.questions?.length) {
+                await interaction.editReply({
+                    content: '⚠️ You already have a challenge in progress. Use your existing challenge message. If it was interrupted, wait for the current question timer to finish.',
+                    embeds: [],
+                    components: [],
+                });
+                return true;
+            }
+
+            await interaction.editReply({
+                embeds: [challengeReadyEmbed()],
+                components: challengeReadyComponents(),
+            });
+        } catch (error) {
+            console.error('[weekly] challenge ready screen failed:', error.message || error);
+            await interaction.editReply({
+                content: '❌ Could not prepare the challenge. Please try again shortly.',
+                embeds: [],
+                components: [],
+            }).catch(() => { });
+        }
+        return true;
+    }
+
+    if (customId === 'weekly:ready') {
         await interaction.deferReply({ flags: MessageFlags.Ephemeral });
         try {
             await beginAttempt(interaction);
         } catch (error) {
-            console.error('[weekly] participate failed:', error.message || error);
-            await interaction.editReply({ content: '❌ Could not start the challenge. Please try again shortly.', embeds: [], components: [] }).catch(() => { });
+            console.error('[weekly] ready challenge start failed:', error.message || error);
+            await interaction.editReply({
+                content: '❌ Could not start the challenge. Please try again shortly.',
+                embeds: [],
+                components: [],
+            }).catch(() => { });
         }
         return true;
     }
