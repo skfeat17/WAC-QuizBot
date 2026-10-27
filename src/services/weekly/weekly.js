@@ -32,24 +32,53 @@ const participantWriteChains = new Map();
 const attemptWriteChains = new Map();
 let stateCache = null;
 const emergencyQuestions = Array.isArray(emergencyData.questions) ? emergencyData.questions : [];
+const questionById = new Map(emergencyQuestions.map((question) => [String(question.id), question]));
+const questionCategories = [...new Set(emergencyQuestions.map((question) => question.category).filter(Boolean))];
 
 function attemptCacheKey(userId, dayKey) { return `${userId}:${dayKey}`; }
 function webhookDetails(interaction) { return { id: interaction.applicationId, token: interaction.token }; }
 
 /**
- * Weekly questions come only from emergency_with_ids.json.
- * Each player's permanent Redis history is updated before the question is returned,
+ * Returns categories already answered in this attempt, using saved question IDs.
+ * This also works when an interrupted attempt is resumed.
+ */
+function getAttemptCategories(attempt) {
+    const categories = new Set();
+    for (const answer of attempt?.answers || []) {
+        const question = questionById.get(String(answer.questionId));
+        if (question?.category) categories.add(question.category);
+    }
+    for (const question of attempt?.questions || []) {
+        if (question?.category) categories.add(question.category);
+    }
+    return categories;
+}
+
+/**
+ * Select exactly one random question from each category per attempt.
+ * A player's permanent Redis history is updated before the question is returned,
  * so an assigned question stays used even if the attempt is abandoned.
  */
-async function takeReadyQuestion(userId) {
+async function takeReadyQuestion(userId, usedCategories = new Set()) {
     if (!emergencyQuestions.length) throw new Error('The weekly question bank is empty.');
 
     const usedIds = new Set(await R.getUsedQuestionIds(userId));
+    const remainingCategories = questionCategories.filter((category) => !usedCategories.has(category));
+
+    if (!remainingCategories.length) {
+        throw new Error('Every question category has already been used in this attempt.');
+    }
+
+    // Pick a random remaining category, then a random unused question in that category.
+    const category = remainingCategories[crypto.randomInt(0, remainingCategories.length)];
     const available = emergencyQuestions.filter((question) =>
-        question?.id && !usedIds.has(String(question.id))
+        question?.id &&
+        question.category === category &&
+        !usedIds.has(String(question.id))
     );
+
     if (!available.length) {
-        throw new Error('You have used every question currently available in the Weekly question bank.');
+        throw new Error(`You have used every available question in the ${category} category.`);
     }
 
     const question = available[crypto.randomInt(0, available.length)];
@@ -228,7 +257,7 @@ async function beginAttempt(interaction) {
         let attempt = existingAttempt;
         let question;
         try {
-            question = await takeReadyQuestion(userId);
+            question = await takeReadyQuestion(userId, getAttemptCategories(attempt));
         } catch (error) {
             console.error('[weekly] question unavailable while starting/resuming:', error.message || error);
             const exhausted = String(error.message || '').includes('used every question');
@@ -462,7 +491,7 @@ return true;
         attempt.lastQuestionAt = Date.now();
         let nextQuestion;
         try {
-            nextQuestion = await takeReadyQuestion(userId);
+            nextQuestion = await takeReadyQuestion(userId, getAttemptCategories(attempt));
         } catch (error) {
             // If generation is temporarily unavailable, keep the current answer
             // recorded and show a retry message rather than silently ending early.
