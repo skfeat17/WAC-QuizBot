@@ -92,7 +92,7 @@ function weeklyCommand() {
                 // { name: 'Start', value: 'start' },
                 // { name: 'End', value: 'end' },
                 { name: 'Leader', value: 'leader' },
-                { name: 'Reset a user', value: 'reset' },
+                // { name: 'Reset a user', value: 'reset' },
             ))
         .addUserOption((option) => option
             .setName('user')
