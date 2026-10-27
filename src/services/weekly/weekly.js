@@ -214,6 +214,7 @@ async function beginAttempt(interaction) {
         }
         const existingAttempt = await R.getAttempt(userId, dayKey);
         if (existingAttempt?.status === 'completed') {
+            
             weeklyLogs.blocked(interaction.user, 'daily challenge already completed', `dayKey=${dayKey}`);
             attemptCache.set(cacheKey, existingAttempt);
             return interaction.editReply({ content: '✅ You have already completed today’s challenge. Come back tomorrow!', embeds: [], components: [] });
@@ -550,6 +551,12 @@ async function handleWeeklyButton(interaction, client) {
 
             const existingAttempt = await R.getAttempt(interaction.user.id, getDayKey(state));
             if (existingAttempt?.status === 'completed') {
+                    weeklyLogs.blocked(
+        interaction.user,
+        'daily challenge already completed',
+        `dayKey=${getDayKey(state)}`
+    );
+
                 await interaction.editReply({
                     content: '✅ You have already completed today’s challenge. Come back tomorrow!',
                     embeds: [],
