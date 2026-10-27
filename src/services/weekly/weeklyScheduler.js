@@ -37,7 +37,7 @@ function startWeeklyScheduler(client = null, recoverExpired = null) {
         }
     };
     tick();
-    schedulerTimer = setInterval(tick, 10 * 1000);
+    schedulerTimer = setInterval(tick, 60 * 1000);
     schedulerTimer.unref?.();
 }
 

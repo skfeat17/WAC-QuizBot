@@ -19,6 +19,9 @@ const keys = {
     participant: (id) => `${PREFIX}participant:${id}`,
     attempt: (id, day) => `${PREFIX}attempt:${id}:${day}`,
     attempts: () => `${PREFIX}attempt-keys`,
+    activeAttempts: () => `${PREFIX}active-attempt-keys`,
+    activeAttemptsMigrated: () => `${PREFIX}active-attempts-migrated`,
+    activeAttemptsMigrationLock: () => `${PREFIX}active-attempts-migration-lock`,
     operationLock: (id, day) => `${PREFIX}operation-lock:${id}:${day}`,
     usedQuestions: () => `${PREFIX}question-hashes`,
     usedSubjects: () => `${PREFIX}used-subject-hashes`,
@@ -86,20 +89,76 @@ async function getLeaderboard(limit = 1000) {
     }));
     return players.filter(Boolean);
 }
+
 async function setAttempt(userId, day, attempt) {
     const key = keys.attempt(userId, day);
-    await Promise.all([redis.set(key, attempt), redis.sadd(keys.attempts(), key)]);
+    // Save the authoritative attempt first; index updates never delete the attempt.
+    await redis.set(key, attempt);
+    const indexUpdates = [redis.sadd(keys.attempts(), key)];
+    if (attempt?.status === 'active') {
+        indexUpdates.push(redis.sadd(keys.activeAttempts(), key));
+    } else {
+        indexUpdates.push(redis.srem(keys.activeAttempts(), key));
+    }
+    await Promise.all(indexUpdates);
 }
+
 async function deleteAttempt(userId, day) {
     const key = keys.attempt(userId, day);
-    await Promise.all([redis.del(key), redis.srem(keys.attempts(), key)]);
+    await Promise.all([
+        redis.del(key),
+        redis.srem(keys.attempts(), key),
+        redis.srem(keys.activeAttempts(), key),
+    ]);
 }
+
 async function getTrackedAttempts() {
     const attemptKeys = await redis.smembers(keys.attempts());
     const rows = await Promise.all((attemptKeys || []).map(async (key) => {
         const attempt = await redis.get(key);
         if (!attempt) await redis.srem(keys.attempts(), key);
         return attempt || null;
+    }));
+    return rows.filter(Boolean);
+}
+
+// One-time, non-destructive migration: index currently active attempts that predate this optimization.
+// Existing attempt records and question history are read only, never deleted by migration.
+async function ensureActiveAttemptsMigrated() {
+    if (await redis.get(keys.activeAttemptsMigrated())) return;
+
+    const lock = await acquireLock(keys.activeAttemptsMigrationLock(), 60);
+    if (!lock) return; // Another process is migrating; retry on the next scheduler tick.
+
+    try {
+        if (await redis.get(keys.activeAttemptsMigrated())) return;
+        const attemptKeys = await redis.smembers(keys.attempts());
+        const activeKeys = [];
+
+        for (const key of (attemptKeys || [])) {
+            const attempt = await redis.get(key);
+            if (attempt?.status === 'active') activeKeys.push(key);
+        }
+
+        if (activeKeys.length) {
+            await redis.sadd(keys.activeAttempts(), ...activeKeys);
+        }
+        await redis.set(keys.activeAttemptsMigrated(), '1');
+    } finally {
+        await releaseLock(keys.activeAttemptsMigrationLock(), lock).catch(() => {});
+    }
+}
+
+async function getActiveAttempts() {
+    await ensureActiveAttemptsMigrated();
+    const attemptKeys = await redis.smembers(keys.activeAttempts());
+    const rows = await Promise.all((attemptKeys || []).map(async (key) => {
+        const attempt = await redis.get(key);
+        if (!attempt || attempt.status !== 'active') {
+            await redis.srem(keys.activeAttempts(), key);
+            return null;
+        }
+        return attempt;
     }));
     return rows.filter(Boolean);
 }
@@ -124,26 +183,28 @@ async function markQuestionsAndSubjectsUsed(questions) {
         redis.sadd(keys.usedSubjectNames(), ...questions.map((q) => q.subject)),
     ]);
 }
+
 async function clearWeeklyData() {
-    // Deletes event/session data only. It preserves per-player question history and
-    // the legacy used-question/subject history, plus any active data not listed here.
+    // Deletes event/session data only. Per-player and legacy question history survive.
     const [participantIds, attemptKeys] = await Promise.all([
         redis.smembers(keys.participants()),
         redis.smembers(keys.attempts()),
     ]);
     const toDelete = [
         keys.state(), keys.pool(), keys.poolQueue(), keys.leaderboard(), keys.participants(), keys.attempts(),
+        keys.activeAttempts(),
         ...(participantIds || []).map((id) => keys.participant(id)),
         ...(attemptKeys || []),
     ];
     if (toDelete.length) await redis.del(...toDelete);
 }
+
 module.exports = {
     redis, keys, getState, setState, getPool, setPool, getQuestionPoolSize,
     addQuestionsToPool, takeQuestionFromPool, nextEmergencyQuestionIndex, join,
     getParticipant, saveParticipant, getLeaderboard, getAttempt, setAttempt,
-    deleteAttempt, getTrackedAttempts, acquireLock, releaseLock, hasQuestionBeenUsed,
-    hasSubjectBeenUsed, getUsedSubjectNames, getUsedQuestionTexts,
+    deleteAttempt, getTrackedAttempts, getActiveAttempts, acquireLock, releaseLock,
+    hasQuestionBeenUsed, hasSubjectBeenUsed, getUsedSubjectNames, getUsedQuestionTexts,
     markQuestionsAndSubjectsUsed, getUsedQuestionIds, hasPlayerUsedQuestion,
     markQuestionUsed, clearWeeklyData,
 };

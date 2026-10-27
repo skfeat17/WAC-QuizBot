@@ -510,7 +510,7 @@ return true;
 
 async function recoverExpiredAttempts(client) {
     try {
-        const attempts = await R.getTrackedAttempts();
+        const attempts = await R.getActiveAttempts();
         const now = Date.now();
         for (const attempt of attempts) {
             if (!attempt || attempt.status !== 'active' || !attempt.questions?.length) continue;
