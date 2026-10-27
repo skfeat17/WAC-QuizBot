@@ -1,5 +1,5 @@
 // Redis persistence for the weekly competition.
-// Used-question and used-subject history deliberately survives /weekly action:end.
+// Per-player question history deliberately survives /weekly action:end.
 require('dotenv').config();
 const { Redis } = require('@upstash/redis');
 const crypto = require('node:crypto');
@@ -24,6 +24,7 @@ const keys = {
     usedSubjects: () => `${PREFIX}used-subject-hashes`,
     usedSubjectNames: () => `${PREFIX}used-subject-names`,
     emergencyIndex: () => `${PREFIX}emergency-question-index`,
+    playerQuestionHistory: (userId) => `${PREFIX}player-question-history:${userId}`,
 };
 
 const getState = () => redis.get(keys.state());
@@ -38,29 +39,22 @@ async function acquireLock(key, ttlSeconds = 30) {
     const result = await redis.set(key, token, { nx: true, ex: ttlSeconds });
     return result ? token : null;
 }
-
 async function releaseLock(key, token) {
     if (!token) return 0;
-    // Compare-and-delete ensures an expired lock's successor is never deleted by its predecessor.
     return redis.eval(
         "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end",
-        [key],
-        [token],
+        [key], [token],
     );
 }
-
 async function addQuestionsToPool(questions) {
     if (!questions?.length) return;
     await redis.rpush(keys.poolQueue(), ...questions.map((question) => JSON.stringify(question)));
 }
-
 async function takeQuestionFromPool() {
     const raw = await redis.lpop(keys.poolQueue());
     if (!raw) return null;
-    try { return typeof raw === 'string' ? JSON.parse(raw) : raw; }
-    catch { return null; }
+    try { return typeof raw === 'string' ? JSON.parse(raw) : raw; } catch { return null; }
 }
-
 const getParticipant = (id) => redis.get(keys.participant(id));
 const getAttempt = (id, day) => redis.get(keys.attempt(id, day));
 
@@ -77,17 +71,12 @@ async function join(userId, displayName) {
     ]);
     return { joined: true, participant };
 }
-
 async function saveParticipant(participant) {
     await Promise.all([
         redis.set(keys.participant(participant.userId), participant),
-        redis.zadd(keys.leaderboard(), {
-            score: Number(participant.points) || 0,
-            member: participant.userId,
-        }),
+        redis.zadd(keys.leaderboard(), { score: Number(participant.points) || 0, member: participant.userId }),
     ]);
 }
-
 async function getLeaderboard(limit = 1000) {
     const ids = await redis.zrange(keys.leaderboard(), 0, limit - 1, { rev: true });
     const players = await Promise.all(ids.map(async (row) => {
@@ -97,17 +86,14 @@ async function getLeaderboard(limit = 1000) {
     }));
     return players.filter(Boolean);
 }
-
 async function setAttempt(userId, day, attempt) {
     const key = keys.attempt(userId, day);
     await Promise.all([redis.set(key, attempt), redis.sadd(keys.attempts(), key)]);
 }
-
 async function deleteAttempt(userId, day) {
     const key = keys.attempt(userId, day);
     await Promise.all([redis.del(key), redis.srem(keys.attempts(), key)]);
 }
-
 async function getTrackedAttempts() {
     const attemptKeys = await redis.smembers(keys.attempts());
     const rows = await Promise.all((attemptKeys || []).map(async (key) => {
@@ -118,11 +104,18 @@ async function getTrackedAttempts() {
     return rows.filter(Boolean);
 }
 
+// Permanent per-player history. clearWeeklyData intentionally never deletes these sets.
+const getUsedQuestionIds = async (userId) =>
+    (await redis.smembers(keys.playerQuestionHistory(userId)) || []).map(String);
+const hasPlayerUsedQuestion = async (userId, questionId) =>
+    Boolean(await redis.sismember(keys.playerQuestionHistory(userId), String(questionId)));
+const markQuestionUsed = async (userId, questionId) =>
+    redis.sadd(keys.playerQuestionHistory(userId), String(questionId));
+
 const hasQuestionBeenUsed = async (hash) => Boolean(await redis.sismember(keys.usedQuestions(), hash));
 const hasSubjectBeenUsed = async (hash) => Boolean(await redis.sismember(keys.usedSubjects(), hash));
 const getUsedSubjectNames = async () => redis.smembers(keys.usedSubjectNames());
 const getUsedQuestionTexts = async () => redis.smembers(keys.usedQuestions());
-
 async function markQuestionsAndSubjectsUsed(questions) {
     if (!questions.length) return;
     await Promise.all([
@@ -131,8 +124,9 @@ async function markQuestionsAndSubjectsUsed(questions) {
         redis.sadd(keys.usedSubjectNames(), ...questions.map((q) => q.subject)),
     ]);
 }
-
 async function clearWeeklyData() {
+    // Deletes event/session data only. It preserves per-player question history and
+    // the legacy used-question/subject history, plus any active data not listed here.
     const [participantIds, attemptKeys] = await Promise.all([
         redis.smembers(keys.participants()),
         redis.smembers(keys.attempts()),
@@ -144,12 +138,12 @@ async function clearWeeklyData() {
     ];
     if (toDelete.length) await redis.del(...toDelete);
 }
-
 module.exports = {
     redis, keys, getState, setState, getPool, setPool, getQuestionPoolSize,
     addQuestionsToPool, takeQuestionFromPool, nextEmergencyQuestionIndex, join,
     getParticipant, saveParticipant, getLeaderboard, getAttempt, setAttempt,
     deleteAttempt, getTrackedAttempts, acquireLock, releaseLock, hasQuestionBeenUsed,
     hasSubjectBeenUsed, getUsedSubjectNames, getUsedQuestionTexts,
-    markQuestionsAndSubjectsUsed, clearWeeklyData,
+    markQuestionsAndSubjectsUsed, getUsedQuestionIds, hasPlayerUsedQuestion,
+    markQuestionUsed, clearWeeklyData,
 };

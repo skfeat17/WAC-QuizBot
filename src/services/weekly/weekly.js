@@ -1,11 +1,10 @@
 // Command handlers and quiz state machine for WAC Weekly World Quiz Champion.
 //weekly.js
 const crypto = require('node:crypto');
-const emergencyData = require('./emergency.json');
+const emergencyData = require('./emergency_with_ids.json');
 const { SlashCommandBuilder, EmbedBuilder, MessageFlags, WebhookClient } = require('discord.js');
 const R = require('./weeklyRedis');
 const weeklyLogs = require('./weeklyLogs');
-const { buildWeeklyPool } = require('./weeklyAI');
 const {
     participationEmbed,
     participationComponents,
@@ -18,7 +17,7 @@ const {
     answerFeedbackEmbed,
 } = require('./weeklyEmbeds');
 const { startWeeklyScheduler } = require('./weeklyScheduler');
-const { utcDateKey, scoreForAnswer, hashQuestion, hashSubject } = require('./weeklyUtils');
+const { utcDateKey, scoreForAnswer } = require('./weeklyUtils');
 const { COMMAND_ACCESS } = require('../COMMAND_ACCESS');
 
 const ADMIN_IDS = COMMAND_ACCESS.weekly || COMMAND_ACCESS.dailyevent || [];
@@ -32,69 +31,30 @@ const participantCache = new Map();
 const participantWriteChains = new Map();
 const attemptWriteChains = new Map();
 let stateCache = null;
-let poolGenerationPromise = null;
-const POOL_LOW_WATERMARK = 5;
-const POOL_BATCH_SIZE = 20;
 const emergencyQuestions = Array.isArray(emergencyData.questions) ? emergencyData.questions : [];
 
 function attemptCacheKey(userId, dayKey) { return `${userId}:${dayKey}`; }
 function webhookDetails(interaction) { return { id: interaction.applicationId, token: interaction.token }; }
 
 /**
- * Keep a shared reservoir of questions ready for everyone in the competition.
- * When fewer than five remain, generate the next batch in the background so
- * answering a question normally does not wait for Gemini.
+ * Weekly questions come only from emergency_with_ids.json.
+ * Each player's permanent Redis history is updated before the question is returned,
+ * so an assigned question stays used even if the attempt is abandoned.
  */
-function replenishQuestionPool({ waitForQuestions = false } = {}) {
-    if (poolGenerationPromise) return poolGenerationPromise;
+async function takeReadyQuestion(userId) {
+    if (!emergencyQuestions.length) throw new Error('The weekly question bank is empty.');
 
-    const generation = (async () => {
-        const count = await R.getQuestionPoolSize();
-        if (count >= POOL_LOW_WATERMARK && !waitForQuestions) return;
-
-        const questions = await buildWeeklyPool(POOL_BATCH_SIZE);
-        await R.addQuestionsToPool(questions);
-        console.log(`[weekly] Added ${questions.length} questions to the shared queue.`);
-    })();
-
-    poolGenerationPromise = generation;
-    generation.catch((error) => {
-        console.error('[weekly] Background question generation failed:', error.message || error);
-    }).finally(() => {
-        if (poolGenerationPromise === generation) poolGenerationPromise = null;
-    });
-
-    return generation;
-}
-
-async function takeReadyQuestion() {
-    // Redis is always the first choice. LPOP assigns a shared question atomically.
-    const pooledQuestion = await R.takeQuestionFromPool();
-    if (pooledQuestion) return pooledQuestion;
-
-    // Never wait for Gemini while a player is trying to participate or answer.
-    // The bundled JSON is the instant offline fallback when the shared pool is empty.
-    if (!emergencyQuestions.length) {
-        throw new Error('The shared pool and emergency question file are both empty.');
+    const usedIds = new Set(await R.getUsedQuestionIds(userId));
+    const available = emergencyQuestions.filter((question) =>
+        question?.id && !usedIds.has(String(question.id))
+    );
+    if (!available.length) {
+        throw new Error('You have used every question currently available in the Weekly question bank.');
     }
 
-    // Pick a random fallback question instead of walking through the JSON in order.
-    // crypto.randomInt avoids predictable Math.random-based indexing.
-    const emergencyIndex = crypto.randomInt(0, emergencyQuestions.length);
-    const question = emergencyQuestions[emergencyIndex];
-
-    // Record fallback usage in the same long-term history so AI does not immediately
-    // regenerate the same question/subject. This write must never delay the player.
-    const tracked = [{
-        ...question,
-        questionHash: hashQuestion(question.question),
-        subjectHash: hashSubject(question.subject || question.category || question.question),
-    }];
-    R.markQuestionsAndSubjectsUsed(tracked).catch((error) => {
-        console.error('[weekly] emergency history save failed:', error.message || error);
-    });
-
-    console.warn(`[weekly] Shared pool empty; using a random emergency JSON question (index ${emergencyIndex}).`);
+    const question = available[crypto.randomInt(0, available.length)];
+    // Await persistence before displaying; abandoned attempts still consume the question.
+    await R.markQuestionUsed(userId, String(question.id));
     return question;
 }
 
@@ -155,7 +115,7 @@ async function startWeekly(interaction) {
         });
     }
 
-    // Acknowledge before Redis or Gemini work; AI generation can take longer than 3 seconds.
+    // Acknowledge before Redis work.
     await interaction.deferReply();
 
     try {
@@ -168,8 +128,7 @@ async function startWeekly(interaction) {
             return interaction.editReply({ content: message, embeds: [], components: [] });
         }
 
-        // Starting the event is fast. Participants receive five easy questions
-        // each, drawn one at a time from the private shared queue.
+        // Participants receive questions from the local JSON bank, tracked per player.
         const startedAt = Date.now();
         const state = {
             competitionId: crypto.randomUUID(),
@@ -268,10 +227,16 @@ async function beginAttempt(interaction) {
         let attempt = existingAttempt;
         let question;
         try {
-            question = await takeReadyQuestion();
+            question = await takeReadyQuestion(userId);
         } catch (error) {
             console.error('[weekly] question unavailable while starting/resuming:', error.message || error);
-            return interaction.editReply({ content: '⚠️ Questions are temporarily unavailable. Your progress is safe; please try again shortly.', embeds: [], components: [] });
+            const exhausted = String(error.message || '').includes('used every question');
+            return interaction.editReply({
+                content: exhausted
+                    ? '🏁 You have used every available Weekly question. No questions were repeated.'
+                    : '⚠️ Questions are temporarily unavailable. Your progress is safe; please try again shortly.',
+                embeds: [], components: [],
+            });
         }
 
         const now = Date.now();
@@ -409,8 +374,7 @@ async function processAnswer(client, input) {
             return false;
         }
 
-        // The current question was atomically removed from the shared queue when
-        // assigned, so it cannot be handed to another participant.
+        // The current question was recorded in this player's permanent history when assigned.
         const questions = Array.isArray(attempt.questions) ? attempt.questions : [];
         const currentQuestion = questions[0];
         if (!currentQuestion) return false;
@@ -471,15 +435,7 @@ async function processAnswer(client, input) {
                 components: [],
             }, attempt);
             liveResponses.delete(attemptId);
-
-            // Start replenishment only after the final score is visible. It is fire-and-
-            // forget, so Gemini latency cannot block this result or other bot activities.
-            setImmediate(() => {
-                replenishQuestionPool().catch((error) => {
-                    console.error('[weekly] Post-quiz replenishment failed:', error.message || error);
-                });
-            });
-            return true;
+return true;
         }
 
         // Show answer feedback for three seconds before moving to the next question.
@@ -505,7 +461,7 @@ async function processAnswer(client, input) {
         attempt.lastQuestionAt = Date.now();
         let nextQuestion;
         try {
-            nextQuestion = await takeReadyQuestion();
+            nextQuestion = await takeReadyQuestion(userId);
         } catch (error) {
             // If generation is temporarily unavailable, keep the current answer
             // recorded and show a retry message rather than silently ending early.
@@ -516,7 +472,13 @@ async function processAnswer(client, input) {
                 persistAttemptInBackground(attempt),
                 updatedParticipant ? saveParticipantInBackground(updatedParticipant) : Promise.resolve(),
             ]);
-            await updateOriginal(attemptId, interaction, { content: '⚠️ The next question is temporarily unavailable. Your progress is saved. Press **Participate** again to resume.', embeds: [], components: [] }, attempt).catch(() => { });
+            const exhausted = String(error.message || '').includes('used every question');
+            await updateOriginal(attemptId, interaction, {
+                content: exhausted
+                    ? '🏁 You have used every available Weekly question. Your progress is saved; no question was repeated.'
+                    : '⚠️ The next question is temporarily unavailable. Your progress is saved. Press **Participate** again to resume.',
+                embeds: [], components: [],
+            }, attempt).catch(() => { });
             liveResponses.delete(attemptId);
             return false;
         }
@@ -620,7 +582,7 @@ async function handleWeeklyButton(interaction, client) {
     }
 
     if (customId === 'weekly:ready') {
-        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+            await interaction.deferUpdate();
         try {
             await beginAttempt(interaction);
         } catch (error) {

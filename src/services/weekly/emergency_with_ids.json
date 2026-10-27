@@ -1,0 +1,2806 @@
+{
+  "version": 2,
+  "description": "Concise, country-anchored world trivia covering geography, famous landmarks, history, food, and language. Each question has four options and a zero-based correctAnswer index.",
+  "questions": [
+    {
+      "id": "GEOGRAPHY_001",
+      "question": "What is France's capital?",
+      "options": [
+        "Kyiv",
+        "Paris",
+        "Reykjavík",
+        "Amsterdam"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Paris is the capital of France.",
+      "category": "Geography",
+      "subject": "France"
+    },
+    {
+      "id": "GEOGRAPHY_002",
+      "question": "What is Japan's capital?",
+      "options": [
+        "Kingston",
+        "Brasília",
+        "Dodoma",
+        "Tokyo"
+      ],
+      "correctAnswer": 3,
+      "explanation": "Tokyo is the capital of Japan.",
+      "category": "Geography",
+      "subject": "Japan"
+    },
+    {
+      "id": "GEOGRAPHY_003",
+      "question": "What is India's capital?",
+      "options": [
+        "Ottawa",
+        "Montevideo",
+        "New Delhi",
+        "Sucre"
+      ],
+      "correctAnswer": 2,
+      "explanation": "New Delhi is the capital of India.",
+      "category": "Geography",
+      "subject": "India"
+    },
+    {
+      "id": "GEOGRAPHY_004",
+      "question": "What is Italy's capital?",
+      "options": [
+        "New Delhi",
+        "Bogotá",
+        "Rome",
+        "Bratislava"
+      ],
+      "correctAnswer": 2,
+      "explanation": "Rome is the capital of Italy.",
+      "category": "Geography",
+      "subject": "Italy"
+    },
+    {
+      "id": "GEOGRAPHY_005",
+      "question": "What is Egypt's capital?",
+      "options": [
+        "Cairo",
+        "Dakar",
+        "San Salvador",
+        "Brasília"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Cairo is the capital of Egypt.",
+      "category": "Geography",
+      "subject": "Egypt"
+    },
+    {
+      "id": "GEOGRAPHY_006",
+      "question": "What is Australia's capital?",
+      "options": [
+        "Ulaanbaatar",
+        "Accra",
+        "Canberra",
+        "Prague"
+      ],
+      "correctAnswer": 2,
+      "explanation": "Canberra is the capital of Australia.",
+      "category": "Geography",
+      "subject": "Australia"
+    },
+    {
+      "id": "GEOGRAPHY_007",
+      "question": "What is Canada's capital?",
+      "options": [
+        "Ottawa",
+        "Kathmandu",
+        "Amsterdam",
+        "Madrid"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Ottawa is the capital of Canada.",
+      "category": "Geography",
+      "subject": "Canada"
+    },
+    {
+      "id": "GEOGRAPHY_008",
+      "question": "What is Brazil's capital?",
+      "options": [
+        "Brasília",
+        "Madrid",
+        "Ljubljana",
+        "Helsinki"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Brasília is the capital of Brazil.",
+      "category": "Geography",
+      "subject": "Brazil"
+    },
+    {
+      "id": "GEOGRAPHY_009",
+      "question": "What is China's capital?",
+      "options": [
+        "Beijing",
+        "Amman",
+        "Rabat",
+        "Guatemala City"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Beijing is the capital of China.",
+      "category": "Geography",
+      "subject": "China"
+    },
+    {
+      "id": "GEOGRAPHY_010",
+      "question": "What is Thailand's capital?",
+      "options": [
+        "San José",
+        "Hanoi",
+        "Bangkok",
+        "Vilnius"
+      ],
+      "correctAnswer": 2,
+      "explanation": "Bangkok is the capital of Thailand.",
+      "category": "Geography",
+      "subject": "Thailand"
+    },
+    {
+      "id": "GEOGRAPHY_011",
+      "question": "What is South Korea's capital?",
+      "options": [
+        "Amman",
+        "Thimphu",
+        "Seoul",
+        "San José"
+      ],
+      "correctAnswer": 2,
+      "explanation": "Seoul is the capital of South Korea.",
+      "category": "Geography",
+      "subject": "South Korea"
+    },
+    {
+      "id": "GEOGRAPHY_012",
+      "question": "What is Spain's capital?",
+      "options": [
+        "Madrid",
+        "Dublin",
+        "Dodoma",
+        "Hanoi"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Madrid is the capital of Spain.",
+      "category": "Geography",
+      "subject": "Spain"
+    },
+    {
+      "id": "GEOGRAPHY_013",
+      "question": "What is Germany's capital?",
+      "options": [
+        "Santiago",
+        "Berlin",
+        "Sofia",
+        "Wellington"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Berlin is the capital of Germany.",
+      "category": "Geography",
+      "subject": "Germany"
+    },
+    {
+      "id": "GEOGRAPHY_014",
+      "question": "What is Greece's capital?",
+      "options": [
+        "Athens",
+        "Budapest",
+        "Helsinki",
+        "Wellington"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Athens is the capital of Greece.",
+      "category": "Geography",
+      "subject": "Greece"
+    },
+    {
+      "id": "GEOGRAPHY_015",
+      "question": "What is Kenya's capital?",
+      "options": [
+        "Nairobi",
+        "Ankara",
+        "Belgrade",
+        "Manama"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Nairobi is the capital of Kenya.",
+      "category": "Geography",
+      "subject": "Kenya"
+    },
+    {
+      "id": "GEOGRAPHY_016",
+      "question": "What is Mexico's capital?",
+      "options": [
+        "Mexico City",
+        "Buenos Aires",
+        "Nairobi",
+        "Port Louis"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Mexico City is the capital of Mexico.",
+      "category": "Geography",
+      "subject": "Mexico"
+    },
+    {
+      "id": "GEOGRAPHY_017",
+      "question": "What is Argentina's capital?",
+      "options": [
+        "Buenos Aires",
+        "Algiers",
+        "Mexico City",
+        "Sri Jayawardenepura Kotte"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Buenos Aires is the capital of Argentina.",
+      "category": "Geography",
+      "subject": "Argentina"
+    },
+    {
+      "id": "GEOGRAPHY_018",
+      "question": "What is Portugal's capital?",
+      "options": [
+        "Manila",
+        "Thimphu",
+        "Lisbon",
+        "Naypyidaw"
+      ],
+      "correctAnswer": 2,
+      "explanation": "Lisbon is the capital of Portugal.",
+      "category": "Geography",
+      "subject": "Portugal"
+    },
+    {
+      "id": "GEOGRAPHY_019",
+      "question": "What is Norway's capital?",
+      "options": [
+        "Sri Jayawardenepura Kotte",
+        "Belgrade",
+        "Oslo",
+        "Vientiane"
+      ],
+      "correctAnswer": 2,
+      "explanation": "Oslo is the capital of Norway.",
+      "category": "Geography",
+      "subject": "Norway"
+    },
+    {
+      "id": "GEOGRAPHY_020",
+      "question": "What is Sweden's capital?",
+      "options": [
+        "Cairo",
+        "Stockholm",
+        "Luxembourg",
+        "Copenhagen"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Stockholm is the capital of Sweden.",
+      "category": "Geography",
+      "subject": "Sweden"
+    },
+    {
+      "id": "GEOGRAPHY_021",
+      "question": "What is Nepal's capital?",
+      "options": [
+        "Riyadh",
+        "Manama",
+        "Dakar",
+        "Kathmandu"
+      ],
+      "correctAnswer": 3,
+      "explanation": "Kathmandu is the capital of Nepal.",
+      "category": "Geography",
+      "subject": "Nepal"
+    },
+    {
+      "id": "GEOGRAPHY_022",
+      "question": "What is Bhutan's capital?",
+      "options": [
+        "Vilnius",
+        "Stockholm",
+        "Wellington",
+        "Thimphu"
+      ],
+      "correctAnswer": 3,
+      "explanation": "Thimphu is the capital of Bhutan.",
+      "category": "Geography",
+      "subject": "Bhutan"
+    },
+    {
+      "id": "GEOGRAPHY_023",
+      "question": "What is Bangladesh's capital?",
+      "options": [
+        "Brasília",
+        "Mexico City",
+        "Asunción",
+        "Dhaka"
+      ],
+      "correctAnswer": 3,
+      "explanation": "Dhaka is the capital of Bangladesh.",
+      "category": "Geography",
+      "subject": "Bangladesh"
+    },
+    {
+      "id": "GEOGRAPHY_024",
+      "question": "What is Pakistan's capital?",
+      "options": [
+        "Kuala Lumpur",
+        "Zagreb",
+        "Islamabad",
+        "Amman"
+      ],
+      "correctAnswer": 2,
+      "explanation": "Islamabad is the capital of Pakistan.",
+      "category": "Geography",
+      "subject": "Pakistan"
+    },
+    {
+      "id": "GEOGRAPHY_025",
+      "question": "What is Sri Lanka's capital?",
+      "options": [
+        "Sri Jayawardenepura Kotte",
+        "Cairo",
+        "Kabul",
+        "Thimphu"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Sri Jayawardenepura Kotte is the capital of Sri Lanka.",
+      "category": "Geography",
+      "subject": "Sri Lanka"
+    },
+    {
+      "id": "GEOGRAPHY_026",
+      "question": "What is New Zealand's capital?",
+      "options": [
+        "Wellington",
+        "Copenhagen",
+        "Lisbon",
+        "Ljubljana"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Wellington is the capital of New Zealand.",
+      "category": "Geography",
+      "subject": "New Zealand"
+    },
+    {
+      "id": "GEOGRAPHY_027",
+      "question": "What is Turkey's capital?",
+      "options": [
+        "Berlin",
+        "Ankara",
+        "Kingston",
+        "Islamabad"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Ankara is the capital of Turkey.",
+      "category": "Geography",
+      "subject": "Turkey"
+    },
+    {
+      "id": "GEOGRAPHY_028",
+      "question": "What is Russia's capital?",
+      "options": [
+        "Kuala Lumpur",
+        "Accra",
+        "Moscow",
+        "Naypyidaw"
+      ],
+      "correctAnswer": 2,
+      "explanation": "Moscow is the capital of Russia.",
+      "category": "Geography",
+      "subject": "Russia"
+    },
+    {
+      "id": "GEOGRAPHY_029",
+      "question": "What is Ireland's capital?",
+      "options": [
+        "Kyiv",
+        "Nicosia",
+        "Dublin",
+        "Vienna"
+      ],
+      "correctAnswer": 2,
+      "explanation": "Dublin is the capital of Ireland.",
+      "category": "Geography",
+      "subject": "Ireland"
+    },
+    {
+      "id": "GEOGRAPHY_030",
+      "question": "What is Iceland's capital?",
+      "options": [
+        "Ulaanbaatar",
+        "Reykjavík",
+        "Luxembourg",
+        "Nicosia"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Reykjavík is the capital of Iceland.",
+      "category": "Geography",
+      "subject": "Iceland"
+    },
+    {
+      "id": "GEOGRAPHY_031",
+      "question": "What is Indonesia's capital?",
+      "options": [
+        "Berlin",
+        "Jakarta",
+        "Tegucigalpa",
+        "Zagreb"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Jakarta is the capital of Indonesia.",
+      "category": "Geography",
+      "subject": "Indonesia"
+    },
+    {
+      "id": "GEOGRAPHY_032",
+      "question": "What is Malaysia's capital?",
+      "options": [
+        "Nicosia",
+        "Kuala Lumpur",
+        "Baghdad",
+        "Kyiv"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Kuala Lumpur is the capital of Malaysia.",
+      "category": "Geography",
+      "subject": "Malaysia"
+    },
+    {
+      "id": "GEOGRAPHY_033",
+      "question": "What is Vietnam's capital?",
+      "options": [
+        "Hanoi",
+        "Montevideo",
+        "Kuwait City",
+        "Zagreb"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Hanoi is the capital of Vietnam.",
+      "category": "Geography",
+      "subject": "Vietnam"
+    },
+    {
+      "id": "GEOGRAPHY_034",
+      "question": "What is Philippines's capital?",
+      "options": [
+        "Madrid",
+        "Manila",
+        "Lima",
+        "Naypyidaw"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Manila is the capital of Philippines.",
+      "category": "Geography",
+      "subject": "Philippines"
+    },
+    {
+      "id": "GEOGRAPHY_035",
+      "question": "What is Singapore's capital?",
+      "options": [
+        "Santiago",
+        "Prague",
+        "Abuja",
+        "Singapore"
+      ],
+      "correctAnswer": 3,
+      "explanation": "Singapore is the capital of Singapore.",
+      "category": "Geography",
+      "subject": "Singapore"
+    },
+    {
+      "id": "GEOGRAPHY_036",
+      "question": "What is Saudi Arabia's capital?",
+      "options": [
+        "Riyadh",
+        "Bogotá",
+        "Ulaanbaatar",
+        "Rome"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Riyadh is the capital of Saudi Arabia.",
+      "category": "Geography",
+      "subject": "Saudi Arabia"
+    },
+    {
+      "id": "GEOGRAPHY_037",
+      "question": "What is United Arab Emirates's capital?",
+      "options": [
+        "Manama",
+        "Abu Dhabi",
+        "Nairobi",
+        "Hanoi"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Abu Dhabi is the capital of United Arab Emirates.",
+      "category": "Geography",
+      "subject": "United Arab Emirates"
+    },
+    {
+      "id": "GEOGRAPHY_038",
+      "question": "What is Morocco's capital?",
+      "options": [
+        "Ljubljana",
+        "Baghdad",
+        "Kuwait City",
+        "Rabat"
+      ],
+      "correctAnswer": 3,
+      "explanation": "Rabat is the capital of Morocco.",
+      "category": "Geography",
+      "subject": "Morocco"
+    },
+    {
+      "id": "GEOGRAPHY_039",
+      "question": "What is Nigeria's capital?",
+      "options": [
+        "Islamabad",
+        "Havana",
+        "Lisbon",
+        "Abuja"
+      ],
+      "correctAnswer": 3,
+      "explanation": "Abuja is the capital of Nigeria.",
+      "category": "Geography",
+      "subject": "Nigeria"
+    },
+    {
+      "id": "GEOGRAPHY_040",
+      "question": "What is Ghana's capital?",
+      "options": [
+        "Accra",
+        "Sucre",
+        "Addis Ababa",
+        "Kuala Lumpur"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Accra is the capital of Ghana.",
+      "category": "Geography",
+      "subject": "Ghana"
+    },
+    {
+      "id": "GEOGRAPHY_041",
+      "question": "What is Peru's capital?",
+      "options": [
+        "Tokyo",
+        "Kathmandu",
+        "Ljubljana",
+        "Lima"
+      ],
+      "correctAnswer": 3,
+      "explanation": "Lima is the capital of Peru.",
+      "category": "Geography",
+      "subject": "Peru"
+    },
+    {
+      "id": "GEOGRAPHY_042",
+      "question": "What is Chile's capital?",
+      "options": [
+        "Kathmandu",
+        "Oslo",
+        "Thimphu",
+        "Santiago"
+      ],
+      "correctAnswer": 3,
+      "explanation": "Santiago is the capital of Chile.",
+      "category": "Geography",
+      "subject": "Chile"
+    },
+    {
+      "id": "GEOGRAPHY_043",
+      "question": "What is Colombia's capital?",
+      "options": [
+        "Nicosia",
+        "Bogotá",
+        "Tallinn",
+        "Ulaanbaatar"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Bogotá is the capital of Colombia.",
+      "category": "Geography",
+      "subject": "Colombia"
+    },
+    {
+      "id": "GEOGRAPHY_044",
+      "question": "What is Cuba's capital?",
+      "options": [
+        "Berlin",
+        "Amsterdam",
+        "Antananarivo",
+        "Havana"
+      ],
+      "correctAnswer": 3,
+      "explanation": "Havana is the capital of Cuba.",
+      "category": "Geography",
+      "subject": "Cuba"
+    },
+    {
+      "id": "GEOGRAPHY_045",
+      "question": "What is Jamaica's capital?",
+      "options": [
+        "Stockholm",
+        "Islamabad",
+        "Lima",
+        "Kingston"
+      ],
+      "correctAnswer": 3,
+      "explanation": "Kingston is the capital of Jamaica.",
+      "category": "Geography",
+      "subject": "Jamaica"
+    },
+    {
+      "id": "GEOGRAPHY_046",
+      "question": "What is Poland's capital?",
+      "options": [
+        "Prague",
+        "Warsaw",
+        "Riyadh",
+        "Riga"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Warsaw is the capital of Poland.",
+      "category": "Geography",
+      "subject": "Poland"
+    },
+    {
+      "id": "GEOGRAPHY_047",
+      "question": "What is Austria's capital?",
+      "options": [
+        "Thimphu",
+        "Algiers",
+        "Moscow",
+        "Vienna"
+      ],
+      "correctAnswer": 3,
+      "explanation": "Vienna is the capital of Austria.",
+      "category": "Geography",
+      "subject": "Austria"
+    },
+    {
+      "id": "GEOGRAPHY_048",
+      "question": "What is Switzerland's capital?",
+      "options": [
+        "Manila",
+        "Bern",
+        "Beirut",
+        "Copenhagen"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Bern is the capital of Switzerland.",
+      "category": "Geography",
+      "subject": "Switzerland"
+    },
+    {
+      "id": "GEOGRAPHY_049",
+      "question": "What is Belgium's capital?",
+      "options": [
+        "Muscat",
+        "Lisbon",
+        "Rabat",
+        "Brussels"
+      ],
+      "correctAnswer": 3,
+      "explanation": "Brussels is the capital of Belgium.",
+      "category": "Geography",
+      "subject": "Belgium"
+    },
+    {
+      "id": "GEOGRAPHY_050",
+      "question": "What is Netherlands's capital?",
+      "options": [
+        "Amsterdam",
+        "Kuala Lumpur",
+        "Algiers",
+        "Riga"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Amsterdam is the capital of Netherlands.",
+      "category": "Geography",
+      "subject": "Netherlands"
+    },
+    {
+      "id": "GEOGRAPHY_051",
+      "question": "What is Finland's capital?",
+      "options": [
+        "Helsinki",
+        "Sucre",
+        "Riga",
+        "Abuja"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Helsinki is the capital of Finland.",
+      "category": "Geography",
+      "subject": "Finland"
+    },
+    {
+      "id": "GEOGRAPHY_052",
+      "question": "What is Denmark's capital?",
+      "options": [
+        "Riga",
+        "Baghdad",
+        "Helsinki",
+        "Copenhagen"
+      ],
+      "correctAnswer": 3,
+      "explanation": "Copenhagen is the capital of Denmark.",
+      "category": "Geography",
+      "subject": "Denmark"
+    },
+    {
+      "id": "GEOGRAPHY_053",
+      "question": "What is Czechia's capital?",
+      "options": [
+        "Naypyidaw",
+        "Bogotá",
+        "Prague",
+        "Copenhagen"
+      ],
+      "correctAnswer": 2,
+      "explanation": "Prague is the capital of Czechia.",
+      "category": "Geography",
+      "subject": "Czechia"
+    },
+    {
+      "id": "GEOGRAPHY_054",
+      "question": "What is Hungary's capital?",
+      "options": [
+        "Budapest",
+        "New Delhi",
+        "Oslo",
+        "Sucre"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Budapest is the capital of Hungary.",
+      "category": "Geography",
+      "subject": "Hungary"
+    },
+    {
+      "id": "GEOGRAPHY_055",
+      "question": "What is Romania's capital?",
+      "options": [
+        "Rome",
+        "Bucharest",
+        "Dhaka",
+        "Sofia"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Bucharest is the capital of Romania.",
+      "category": "Geography",
+      "subject": "Romania"
+    },
+    {
+      "id": "GEOGRAPHY_056",
+      "question": "What is Ukraine's capital?",
+      "options": [
+        "Beijing",
+        "Bucharest",
+        "Kyiv",
+        "Oslo"
+      ],
+      "correctAnswer": 2,
+      "explanation": "Kyiv is the capital of Ukraine.",
+      "category": "Geography",
+      "subject": "Ukraine"
+    },
+    {
+      "id": "GEOGRAPHY_057",
+      "question": "What is Ethiopia's capital?",
+      "options": [
+        "Tehran",
+        "Port Louis",
+        "Addis Ababa",
+        "Brasília"
+      ],
+      "correctAnswer": 2,
+      "explanation": "Addis Ababa is the capital of Ethiopia.",
+      "category": "Geography",
+      "subject": "Ethiopia"
+    },
+    {
+      "id": "GEOGRAPHY_058",
+      "question": "What is Tanzania's capital?",
+      "options": [
+        "Dhaka",
+        "Madrid",
+        "Vilnius",
+        "Dodoma"
+      ],
+      "correctAnswer": 3,
+      "explanation": "Dodoma is the capital of Tanzania.",
+      "category": "Geography",
+      "subject": "Tanzania"
+    },
+    {
+      "id": "GEOGRAPHY_059",
+      "question": "What is Uganda's capital?",
+      "options": [
+        "Kampala",
+        "Prague",
+        "Dakar",
+        "Beijing"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Kampala is the capital of Uganda.",
+      "category": "Geography",
+      "subject": "Uganda"
+    },
+    {
+      "id": "GEOGRAPHY_060",
+      "question": "What is Senegal's capital?",
+      "options": [
+        "Dakar",
+        "San Salvador",
+        "Dodoma",
+        "Addis Ababa"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Dakar is the capital of Senegal.",
+      "category": "Geography",
+      "subject": "Senegal"
+    },
+    {
+      "id": "GEOGRAPHY_061",
+      "question": "What is Algeria's capital?",
+      "options": [
+        "Ulaanbaatar",
+        "Ljubljana",
+        "Sofia",
+        "Algiers"
+      ],
+      "correctAnswer": 3,
+      "explanation": "Algiers is the capital of Algeria.",
+      "category": "Geography",
+      "subject": "Algeria"
+    },
+    {
+      "id": "GEOGRAPHY_062",
+      "question": "What is Tunisia's capital?",
+      "options": [
+        "Montevideo",
+        "Asunción",
+        "Tunis",
+        "Tegucigalpa"
+      ],
+      "correctAnswer": 2,
+      "explanation": "Tunis is the capital of Tunisia.",
+      "category": "Geography",
+      "subject": "Tunisia"
+    },
+    {
+      "id": "GEOGRAPHY_063",
+      "question": "What is Jordan's capital?",
+      "options": [
+        "Amman",
+        "Nairobi",
+        "Cairo",
+        "Rome"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Amman is the capital of Jordan.",
+      "category": "Geography",
+      "subject": "Jordan"
+    },
+    {
+      "id": "GEOGRAPHY_064",
+      "question": "What is Iraq's capital?",
+      "options": [
+        "Quito",
+        "Bratislava",
+        "Thimphu",
+        "Baghdad"
+      ],
+      "correctAnswer": 3,
+      "explanation": "Baghdad is the capital of Iraq.",
+      "category": "Geography",
+      "subject": "Iraq"
+    },
+    {
+      "id": "GEOGRAPHY_065",
+      "question": "What is Iran's capital?",
+      "options": [
+        "Sofia",
+        "Tehran",
+        "Islamabad",
+        "Dakar"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Tehran is the capital of Iran.",
+      "category": "Geography",
+      "subject": "Iran"
+    },
+    {
+      "id": "GEOGRAPHY_066",
+      "question": "What is Afghanistan's capital?",
+      "options": [
+        "Budapest",
+        "Manama",
+        "Kabul",
+        "Dublin"
+      ],
+      "correctAnswer": 2,
+      "explanation": "Kabul is the capital of Afghanistan.",
+      "category": "Geography",
+      "subject": "Afghanistan"
+    },
+    {
+      "id": "GEOGRAPHY_067",
+      "question": "What is Mongolia's capital?",
+      "options": [
+        "Quito",
+        "Ulaanbaatar",
+        "Wellington",
+        "Seoul"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Ulaanbaatar is the capital of Mongolia.",
+      "category": "Geography",
+      "subject": "Mongolia"
+    },
+    {
+      "id": "GEOGRAPHY_068",
+      "question": "What is Cambodia's capital?",
+      "options": [
+        "Ljubljana",
+        "Phnom Penh",
+        "Luxembourg",
+        "Ankara"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Phnom Penh is the capital of Cambodia.",
+      "category": "Geography",
+      "subject": "Cambodia"
+    },
+    {
+      "id": "GEOGRAPHY_069",
+      "question": "What is Laos's capital?",
+      "options": [
+        "Sucre",
+        "Bogotá",
+        "Vientiane",
+        "Tegucigalpa"
+      ],
+      "correctAnswer": 2,
+      "explanation": "Vientiane is the capital of Laos.",
+      "category": "Geography",
+      "subject": "Laos"
+    },
+    {
+      "id": "GEOGRAPHY_070",
+      "question": "What is Myanmar's capital?",
+      "options": [
+        "Naypyidaw",
+        "Nicosia",
+        "Santiago",
+        "Bratislava"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Naypyidaw is the capital of Myanmar.",
+      "category": "Geography",
+      "subject": "Myanmar"
+    },
+    {
+      "id": "GEOGRAPHY_071",
+      "question": "What is Oman's capital?",
+      "options": [
+        "Apia",
+        "Muscat",
+        "Riyadh",
+        "Jakarta"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Muscat is the capital of Oman.",
+      "category": "Geography",
+      "subject": "Oman"
+    },
+    {
+      "id": "GEOGRAPHY_072",
+      "question": "What is Qatar's capital?",
+      "options": [
+        "Doha",
+        "Kuwait City",
+        "Accra",
+        "Sucre"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Doha is the capital of Qatar.",
+      "category": "Geography",
+      "subject": "Qatar"
+    },
+    {
+      "id": "GEOGRAPHY_073",
+      "question": "What is Kuwait's capital?",
+      "options": [
+        "Antananarivo",
+        "Vilnius",
+        "Amman",
+        "Kuwait City"
+      ],
+      "correctAnswer": 3,
+      "explanation": "Kuwait City is the capital of Kuwait.",
+      "category": "Geography",
+      "subject": "Kuwait"
+    },
+    {
+      "id": "GEOGRAPHY_074",
+      "question": "What is Bahrain's capital?",
+      "options": [
+        "Manama",
+        "Hanoi",
+        "Tokyo",
+        "Bratislava"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Manama is the capital of Bahrain.",
+      "category": "Geography",
+      "subject": "Bahrain"
+    },
+    {
+      "id": "GEOGRAPHY_075",
+      "question": "What is Lebanon's capital?",
+      "options": [
+        "Beirut",
+        "Tehran",
+        "Port Louis",
+        "Nairobi"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Beirut is the capital of Lebanon.",
+      "category": "Geography",
+      "subject": "Lebanon"
+    },
+    {
+      "id": "GEOGRAPHY_076",
+      "question": "What is Bolivia's capital?",
+      "options": [
+        "Prague",
+        "Ulaanbaatar",
+        "Nairobi",
+        "Sucre"
+      ],
+      "correctAnswer": 3,
+      "explanation": "Sucre is the capital of Bolivia.",
+      "category": "Geography",
+      "subject": "Bolivia"
+    },
+    {
+      "id": "GEOGRAPHY_077",
+      "question": "What is Ecuador's capital?",
+      "options": [
+        "Seoul",
+        "Budapest",
+        "Phnom Penh",
+        "Quito"
+      ],
+      "correctAnswer": 3,
+      "explanation": "Quito is the capital of Ecuador.",
+      "category": "Geography",
+      "subject": "Ecuador"
+    },
+    {
+      "id": "GEOGRAPHY_078",
+      "question": "What is Uruguay's capital?",
+      "options": [
+        "Jakarta",
+        "Montevideo",
+        "Hanoi",
+        "Oslo"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Montevideo is the capital of Uruguay.",
+      "category": "Geography",
+      "subject": "Uruguay"
+    },
+    {
+      "id": "GEOGRAPHY_079",
+      "question": "What is Paraguay's capital?",
+      "options": [
+        "Asunción",
+        "Quito",
+        "Athens",
+        "Vientiane"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Asunción is the capital of Paraguay.",
+      "category": "Geography",
+      "subject": "Paraguay"
+    },
+    {
+      "id": "GEOGRAPHY_080",
+      "question": "What is Venezuela's capital?",
+      "options": [
+        "Naypyidaw",
+        "Nicosia",
+        "Vilnius",
+        "Caracas"
+      ],
+      "correctAnswer": 3,
+      "explanation": "Caracas is the capital of Venezuela.",
+      "category": "Geography",
+      "subject": "Venezuela"
+    },
+    {
+      "id": "GEOGRAPHY_081",
+      "question": "What is Costa Rica's capital?",
+      "options": [
+        "San José",
+        "Suva",
+        "Rome",
+        "Paris"
+      ],
+      "correctAnswer": 0,
+      "explanation": "San José is the capital of Costa Rica.",
+      "category": "Geography",
+      "subject": "Costa Rica"
+    },
+    {
+      "id": "GEOGRAPHY_082",
+      "question": "What is Panama's capital?",
+      "options": [
+        "Caracas",
+        "Port Louis",
+        "Prague",
+        "Panama City"
+      ],
+      "correctAnswer": 3,
+      "explanation": "Panama City is the capital of Panama.",
+      "category": "Geography",
+      "subject": "Panama"
+    },
+    {
+      "id": "GEOGRAPHY_083",
+      "question": "What is Guatemala's capital?",
+      "options": [
+        "Kabul",
+        "Panama City",
+        "Guatemala City",
+        "Kuala Lumpur"
+      ],
+      "correctAnswer": 2,
+      "explanation": "Guatemala City is the capital of Guatemala.",
+      "category": "Geography",
+      "subject": "Guatemala"
+    },
+    {
+      "id": "GEOGRAPHY_084",
+      "question": "What is Honduras's capital?",
+      "options": [
+        "Muscat",
+        "Manila",
+        "Tegucigalpa",
+        "Berlin"
+      ],
+      "correctAnswer": 2,
+      "explanation": "Tegucigalpa is the capital of Honduras.",
+      "category": "Geography",
+      "subject": "Honduras"
+    },
+    {
+      "id": "GEOGRAPHY_085",
+      "question": "What is El Salvador's capital?",
+      "options": [
+        "Tokyo",
+        "Caracas",
+        "Vienna",
+        "San Salvador"
+      ],
+      "correctAnswer": 3,
+      "explanation": "San Salvador is the capital of El Salvador.",
+      "category": "Geography",
+      "subject": "El Salvador"
+    },
+    {
+      "id": "GEOGRAPHY_086",
+      "question": "What is Croatia's capital?",
+      "options": [
+        "Islamabad",
+        "Oslo",
+        "Seoul",
+        "Zagreb"
+      ],
+      "correctAnswer": 3,
+      "explanation": "Zagreb is the capital of Croatia.",
+      "category": "Geography",
+      "subject": "Croatia"
+    },
+    {
+      "id": "GEOGRAPHY_087",
+      "question": "What is Serbia's capital?",
+      "options": [
+        "Ankara",
+        "New Delhi",
+        "Belgrade",
+        "Dodoma"
+      ],
+      "correctAnswer": 2,
+      "explanation": "Belgrade is the capital of Serbia.",
+      "category": "Geography",
+      "subject": "Serbia"
+    },
+    {
+      "id": "GEOGRAPHY_088",
+      "question": "What is Bulgaria's capital?",
+      "options": [
+        "Muscat",
+        "Sofia",
+        "Stockholm",
+        "Hanoi"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Sofia is the capital of Bulgaria.",
+      "category": "Geography",
+      "subject": "Bulgaria"
+    },
+    {
+      "id": "GEOGRAPHY_089",
+      "question": "What is Slovakia's capital?",
+      "options": [
+        "Addis Ababa",
+        "Abu Dhabi",
+        "Bratislava",
+        "Ankara"
+      ],
+      "correctAnswer": 2,
+      "explanation": "Bratislava is the capital of Slovakia.",
+      "category": "Geography",
+      "subject": "Slovakia"
+    },
+    {
+      "id": "GEOGRAPHY_090",
+      "question": "What is Slovenia's capital?",
+      "options": [
+        "Ljubljana",
+        "Cairo",
+        "Buenos Aires",
+        "Addis Ababa"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Ljubljana is the capital of Slovenia.",
+      "category": "Geography",
+      "subject": "Slovenia"
+    },
+    {
+      "id": "GEOGRAPHY_091",
+      "question": "What is Estonia's capital?",
+      "options": [
+        "Tallinn",
+        "Manama",
+        "Brussels",
+        "San Salvador"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Tallinn is the capital of Estonia.",
+      "category": "Geography",
+      "subject": "Estonia"
+    },
+    {
+      "id": "GEOGRAPHY_092",
+      "question": "What is Latvia's capital?",
+      "options": [
+        "Riga",
+        "Prague",
+        "Manama",
+        "Kampala"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Riga is the capital of Latvia.",
+      "category": "Geography",
+      "subject": "Latvia"
+    },
+    {
+      "id": "GEOGRAPHY_093",
+      "question": "What is Lithuania's capital?",
+      "options": [
+        "Vilnius",
+        "Santiago",
+        "Amman",
+        "Abuja"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Vilnius is the capital of Lithuania.",
+      "category": "Geography",
+      "subject": "Lithuania"
+    },
+    {
+      "id": "GEOGRAPHY_094",
+      "question": "What is Luxembourg's capital?",
+      "options": [
+        "Tallinn",
+        "Kuwait City",
+        "Luxembourg",
+        "Thimphu"
+      ],
+      "correctAnswer": 2,
+      "explanation": "Luxembourg is the capital of Luxembourg.",
+      "category": "Geography",
+      "subject": "Luxembourg"
+    },
+    {
+      "id": "GEOGRAPHY_095",
+      "question": "What is Cyprus's capital?",
+      "options": [
+        "Nicosia",
+        "Canberra",
+        "Reykjavík",
+        "Helsinki"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Nicosia is the capital of Cyprus.",
+      "category": "Geography",
+      "subject": "Cyprus"
+    },
+    {
+      "id": "GEOGRAPHY_096",
+      "question": "What is Maldives's capital?",
+      "options": [
+        "Santiago",
+        "Stockholm",
+        "Malé",
+        "Accra"
+      ],
+      "correctAnswer": 2,
+      "explanation": "Malé is the capital of Maldives.",
+      "category": "Geography",
+      "subject": "Maldives"
+    },
+    {
+      "id": "GEOGRAPHY_097",
+      "question": "What is Mauritius's capital?",
+      "options": [
+        "Bangkok",
+        "Port Louis",
+        "Singapore",
+        "Zagreb"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Port Louis is the capital of Mauritius.",
+      "category": "Geography",
+      "subject": "Mauritius"
+    },
+    {
+      "id": "GEOGRAPHY_098",
+      "question": "What is Madagascar's capital?",
+      "options": [
+        "Budapest",
+        "Antananarivo",
+        "Kabul",
+        "Ulaanbaatar"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Antananarivo is the capital of Madagascar.",
+      "category": "Geography",
+      "subject": "Madagascar"
+    },
+    {
+      "id": "GEOGRAPHY_099",
+      "question": "What is Fiji's capital?",
+      "options": [
+        "Asunción",
+        "Tunis",
+        "Naypyidaw",
+        "Suva"
+      ],
+      "correctAnswer": 3,
+      "explanation": "Suva is the capital of Fiji.",
+      "category": "Geography",
+      "subject": "Fiji"
+    },
+    {
+      "id": "GEOGRAPHY_100",
+      "question": "What is Samoa's capital?",
+      "options": [
+        "Apia",
+        "Guatemala City",
+        "Kuwait City",
+        "Mexico City"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Apia is the capital of Samoa.",
+      "category": "Geography",
+      "subject": "Samoa"
+    },
+    {
+      "id": "FAMOUSLAND_101",
+      "question": "Which landmark is in France?",
+      "options": [
+        "Great Wall",
+        "Colosseum",
+        "Taj Mahal",
+        "Eiffel Tower"
+      ],
+      "correctAnswer": 3,
+      "explanation": "Eiffel Tower is a famous landmark in France.",
+      "category": "Famous Landmarks",
+      "subject": "France"
+    },
+    {
+      "id": "FAMOUSLAND_102",
+      "question": "Which landmark is in China?",
+      "options": [
+        "Eiffel Tower",
+        "Taj Mahal",
+        "Colosseum",
+        "Great Wall"
+      ],
+      "correctAnswer": 3,
+      "explanation": "Great Wall is a famous landmark in China.",
+      "category": "Famous Landmarks",
+      "subject": "China"
+    },
+    {
+      "id": "FAMOUSLAND_103",
+      "question": "Which landmark is in India?",
+      "options": [
+        "Eiffel Tower",
+        "Colosseum",
+        "Great Wall",
+        "Taj Mahal"
+      ],
+      "correctAnswer": 3,
+      "explanation": "Taj Mahal is a famous landmark in India.",
+      "category": "Famous Landmarks",
+      "subject": "India"
+    },
+    {
+      "id": "FAMOUSLAND_104",
+      "question": "Which landmark is in Italy?",
+      "options": [
+        "Eiffel Tower",
+        "Great Wall",
+        "Taj Mahal",
+        "Colosseum"
+      ],
+      "correctAnswer": 3,
+      "explanation": "Colosseum is a famous landmark in Italy.",
+      "category": "Famous Landmarks",
+      "subject": "Italy"
+    },
+    {
+      "id": "FAMOUSLAND_105",
+      "question": "Which landmark is in Egypt?",
+      "options": [
+        "Taj Mahal",
+        "Pyramids of Giza",
+        "Eiffel Tower",
+        "Great Wall"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Pyramids of Giza is a famous landmark in Egypt.",
+      "category": "Famous Landmarks",
+      "subject": "Egypt"
+    },
+    {
+      "id": "FAMOUSLAND_106",
+      "question": "Which landmark is in United States?",
+      "options": [
+        "Taj Mahal",
+        "Great Wall",
+        "Eiffel Tower",
+        "Statue of Liberty"
+      ],
+      "correctAnswer": 3,
+      "explanation": "Statue of Liberty is a famous landmark in United States.",
+      "category": "Famous Landmarks",
+      "subject": "United States"
+    },
+    {
+      "id": "FAMOUSLAND_107",
+      "question": "Which landmark is in Peru?",
+      "options": [
+        "Taj Mahal",
+        "Machu Picchu",
+        "Great Wall",
+        "Eiffel Tower"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Machu Picchu is a famous landmark in Peru.",
+      "category": "Famous Landmarks",
+      "subject": "Peru"
+    },
+    {
+      "id": "FAMOUSLAND_108",
+      "question": "Which landmark is in Brazil?",
+      "options": [
+        "Christ the Redeemer",
+        "Eiffel Tower",
+        "Taj Mahal",
+        "Great Wall"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Christ the Redeemer is a famous landmark in Brazil.",
+      "category": "Famous Landmarks",
+      "subject": "Brazil"
+    },
+    {
+      "id": "FAMOUSLAND_109",
+      "question": "Which landmark is in Australia?",
+      "options": [
+        "Eiffel Tower",
+        "Great Wall",
+        "Taj Mahal",
+        "Sydney Opera House"
+      ],
+      "correctAnswer": 3,
+      "explanation": "Sydney Opera House is a famous landmark in Australia.",
+      "category": "Famous Landmarks",
+      "subject": "Australia"
+    },
+    {
+      "id": "FAMOUSLAND_110",
+      "question": "Which landmark is in United Kingdom?",
+      "options": [
+        "Eiffel Tower",
+        "Great Wall",
+        "Taj Mahal",
+        "Big Ben"
+      ],
+      "correctAnswer": 3,
+      "explanation": "Big Ben is a famous landmark in United Kingdom.",
+      "category": "Famous Landmarks",
+      "subject": "United Kingdom"
+    },
+    {
+      "id": "FAMOUSLAND_111",
+      "question": "Which landmark is in Jordan?",
+      "options": [
+        "Great Wall",
+        "Petra",
+        "Eiffel Tower",
+        "Taj Mahal"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Petra is a famous landmark in Jordan.",
+      "category": "Famous Landmarks",
+      "subject": "Jordan"
+    },
+    {
+      "id": "FAMOUSLAND_112",
+      "question": "Which landmark is in Cambodia?",
+      "options": [
+        "Eiffel Tower",
+        "Great Wall",
+        "Angkor Wat",
+        "Taj Mahal"
+      ],
+      "correctAnswer": 2,
+      "explanation": "Angkor Wat is a famous landmark in Cambodia.",
+      "category": "Famous Landmarks",
+      "subject": "Cambodia"
+    },
+    {
+      "id": "FAMOUSLAND_113",
+      "question": "Which landmark is in Japan?",
+      "options": [
+        "Great Wall",
+        "Taj Mahal",
+        "Mount Fuji",
+        "Eiffel Tower"
+      ],
+      "correctAnswer": 2,
+      "explanation": "Mount Fuji is a famous landmark in Japan.",
+      "category": "Famous Landmarks",
+      "subject": "Japan"
+    },
+    {
+      "id": "FAMOUSLAND_114",
+      "question": "Which landmark is in Greece?",
+      "options": [
+        "Taj Mahal",
+        "Acropolis",
+        "Eiffel Tower",
+        "Great Wall"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Acropolis is a famous landmark in Greece.",
+      "category": "Famous Landmarks",
+      "subject": "Greece"
+    },
+    {
+      "id": "FAMOUSLAND_115",
+      "question": "Which landmark is in United Arab Emirates?",
+      "options": [
+        "Burj Khalifa",
+        "Taj Mahal",
+        "Great Wall",
+        "Eiffel Tower"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Burj Khalifa is a famous landmark in United Arab Emirates.",
+      "category": "Famous Landmarks",
+      "subject": "United Arab Emirates"
+    },
+    {
+      "id": "FAMOUSLAND_116",
+      "question": "Which landmark is in Spain?",
+      "options": [
+        "Sagrada Família",
+        "Great Wall",
+        "Eiffel Tower",
+        "Taj Mahal"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Sagrada Família is a famous landmark in Spain.",
+      "category": "Famous Landmarks",
+      "subject": "Spain"
+    },
+    {
+      "id": "FAMOUSLAND_117",
+      "question": "Which landmark is in Mexico?",
+      "options": [
+        "Taj Mahal",
+        "Chichén Itzá",
+        "Eiffel Tower",
+        "Great Wall"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Chichén Itzá is a famous landmark in Mexico.",
+      "category": "Famous Landmarks",
+      "subject": "Mexico"
+    },
+    {
+      "id": "FAMOUSLAND_118",
+      "question": "Which landmark is in Chile?",
+      "options": [
+        "Moai statues",
+        "Taj Mahal",
+        "Eiffel Tower",
+        "Great Wall"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Moai statues is a famous landmark in Chile.",
+      "category": "Famous Landmarks",
+      "subject": "Chile"
+    },
+    {
+      "id": "FAMOUSLAND_119",
+      "question": "Which landmark is in Turkey?",
+      "options": [
+        "Great Wall",
+        "Eiffel Tower",
+        "Hagia Sophia",
+        "Taj Mahal"
+      ],
+      "correctAnswer": 2,
+      "explanation": "Hagia Sophia is a famous landmark in Turkey.",
+      "category": "Famous Landmarks",
+      "subject": "Turkey"
+    },
+    {
+      "id": "FAMOUSLAND_120",
+      "question": "Which landmark is in Germany?",
+      "options": [
+        "Eiffel Tower",
+        "Taj Mahal",
+        "Great Wall",
+        "Brandenburg Gate"
+      ],
+      "correctAnswer": 3,
+      "explanation": "Brandenburg Gate is a famous landmark in Germany.",
+      "category": "Famous Landmarks",
+      "subject": "Germany"
+    },
+    {
+      "id": "FAMOUSLAND_121",
+      "question": "Which landmark is in South Africa?",
+      "options": [
+        "Great Wall",
+        "Eiffel Tower",
+        "Table Mountain",
+        "Taj Mahal"
+      ],
+      "correctAnswer": 2,
+      "explanation": "Table Mountain is a famous landmark in South Africa.",
+      "category": "Famous Landmarks",
+      "subject": "South Africa"
+    },
+    {
+      "id": "FAMOUSLAND_122",
+      "question": "Which landmark is in Canada?",
+      "options": [
+        "Great Wall",
+        "CN Tower",
+        "Taj Mahal",
+        "Eiffel Tower"
+      ],
+      "correctAnswer": 1,
+      "explanation": "CN Tower is a famous landmark in Canada.",
+      "category": "Famous Landmarks",
+      "subject": "Canada"
+    },
+    {
+      "id": "FAMOUSLAND_123",
+      "question": "Which landmark is in Russia?",
+      "options": [
+        "Taj Mahal",
+        "Great Wall",
+        "Kremlin",
+        "Eiffel Tower"
+      ],
+      "correctAnswer": 2,
+      "explanation": "Kremlin is a famous landmark in Russia.",
+      "category": "Famous Landmarks",
+      "subject": "Russia"
+    },
+    {
+      "id": "FAMOUSLAND_124",
+      "question": "Which landmark is in Indonesia?",
+      "options": [
+        "Great Wall",
+        "Taj Mahal",
+        "Eiffel Tower",
+        "Borobudur"
+      ],
+      "correctAnswer": 3,
+      "explanation": "Borobudur is a famous landmark in Indonesia.",
+      "category": "Famous Landmarks",
+      "subject": "Indonesia"
+    },
+    {
+      "id": "FAMOUSLAND_125",
+      "question": "Which landmark is in Singapore?",
+      "options": [
+        "Marina Bay Sands",
+        "Eiffel Tower",
+        "Taj Mahal",
+        "Great Wall"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Marina Bay Sands is a famous landmark in Singapore.",
+      "category": "Famous Landmarks",
+      "subject": "Singapore"
+    },
+    {
+      "id": "FOOD_126",
+      "question": "Which food is linked to Japan?",
+      "options": [
+        "Sushi",
+        "pizza",
+        "curry",
+        "tacos"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Sushi is commonly associated with Japan.",
+      "category": "Food",
+      "subject": "Japan"
+    },
+    {
+      "id": "FOOD_127",
+      "question": "Which food is linked to Mexico?",
+      "options": [
+        "Tacos",
+        "sushi",
+        "curry",
+        "pizza"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Tacos is commonly associated with Mexico.",
+      "category": "Food",
+      "subject": "Mexico"
+    },
+    {
+      "id": "FOOD_128",
+      "question": "Which food is linked to Italy?",
+      "options": [
+        "tacos",
+        "Pizza",
+        "sushi",
+        "curry"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Pizza is commonly associated with Italy.",
+      "category": "Food",
+      "subject": "Italy"
+    },
+    {
+      "id": "FOOD_129",
+      "question": "Which food is linked to France?",
+      "options": [
+        "pizza",
+        "Croissant",
+        "tacos",
+        "sushi"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Croissant is commonly associated with France.",
+      "category": "Food",
+      "subject": "France"
+    },
+    {
+      "id": "FOOD_130",
+      "question": "Which food is linked to South Korea?",
+      "options": [
+        "sushi",
+        "pizza",
+        "Kimchi",
+        "tacos"
+      ],
+      "correctAnswer": 2,
+      "explanation": "Kimchi is commonly associated with South Korea.",
+      "category": "Food",
+      "subject": "South Korea"
+    },
+    {
+      "id": "FOOD_131",
+      "question": "Which food is linked to Spain?",
+      "options": [
+        "sushi",
+        "Paella",
+        "pizza",
+        "tacos"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Paella is commonly associated with Spain.",
+      "category": "Food",
+      "subject": "Spain"
+    },
+    {
+      "id": "FOOD_132",
+      "question": "Which food is linked to Vietnam?",
+      "options": [
+        "tacos",
+        "sushi",
+        "pizza",
+        "Pho"
+      ],
+      "correctAnswer": 3,
+      "explanation": "Pho is commonly associated with Vietnam.",
+      "category": "Food",
+      "subject": "Vietnam"
+    },
+    {
+      "id": "FOOD_133",
+      "question": "Which food is linked to Thailand?",
+      "options": [
+        "tacos",
+        "sushi",
+        "Pad Thai",
+        "pizza"
+      ],
+      "correctAnswer": 2,
+      "explanation": "Pad Thai is commonly associated with Thailand.",
+      "category": "Food",
+      "subject": "Thailand"
+    },
+    {
+      "id": "FOOD_134",
+      "question": "Which food is linked to Poland?",
+      "options": [
+        "sushi",
+        "tacos",
+        "pizza",
+        "Pierogi"
+      ],
+      "correctAnswer": 3,
+      "explanation": "Pierogi is commonly associated with Poland.",
+      "category": "Food",
+      "subject": "Poland"
+    },
+    {
+      "id": "FOOD_135",
+      "question": "Which food is linked to Lebanon?",
+      "options": [
+        "pizza",
+        "sushi",
+        "tacos",
+        "Falafel"
+      ],
+      "correctAnswer": 3,
+      "explanation": "Falafel is commonly associated with Lebanon.",
+      "category": "Food",
+      "subject": "Lebanon"
+    },
+    {
+      "id": "FOOD_136",
+      "question": "Which food is linked to Canada?",
+      "options": [
+        "pizza",
+        "sushi",
+        "tacos",
+        "Poutine"
+      ],
+      "correctAnswer": 3,
+      "explanation": "Poutine is commonly associated with Canada.",
+      "category": "Food",
+      "subject": "Canada"
+    },
+    {
+      "id": "FOOD_137",
+      "question": "Which food is linked to Brazil?",
+      "options": [
+        "Feijoada",
+        "sushi",
+        "tacos",
+        "pizza"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Feijoada is commonly associated with Brazil.",
+      "category": "Food",
+      "subject": "Brazil"
+    },
+    {
+      "id": "FOOD_138",
+      "question": "Which food is linked to Peru?",
+      "options": [
+        "Ceviche",
+        "sushi",
+        "pizza",
+        "tacos"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Ceviche is commonly associated with Peru.",
+      "category": "Food",
+      "subject": "Peru"
+    },
+    {
+      "id": "FOOD_139",
+      "question": "Which food is linked to Hungary?",
+      "options": [
+        "Goulash",
+        "pizza",
+        "tacos",
+        "sushi"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Goulash is commonly associated with Hungary.",
+      "category": "Food",
+      "subject": "Hungary"
+    },
+    {
+      "id": "FOOD_140",
+      "question": "Which food is linked to India?",
+      "options": [
+        "Biryani",
+        "pizza",
+        "tacos",
+        "sushi"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Biryani is commonly associated with India.",
+      "category": "Food",
+      "subject": "India"
+    },
+    {
+      "id": "FOOD_141",
+      "question": "Which food is linked to Malaysia?",
+      "options": [
+        "tacos",
+        "sushi",
+        "pizza",
+        "Laksa"
+      ],
+      "correctAnswer": 3,
+      "explanation": "Laksa is commonly associated with Malaysia.",
+      "category": "Food",
+      "subject": "Malaysia"
+    },
+    {
+      "id": "FOOD_142",
+      "question": "Which food is linked to Indonesia?",
+      "options": [
+        "sushi",
+        "tacos",
+        "Rendang",
+        "pizza"
+      ],
+      "correctAnswer": 2,
+      "explanation": "Rendang is commonly associated with Indonesia.",
+      "category": "Food",
+      "subject": "Indonesia"
+    },
+    {
+      "id": "FOOD_143",
+      "question": "Which food is linked to Ethiopia?",
+      "options": [
+        "tacos",
+        "pizza",
+        "sushi",
+        "Injera"
+      ],
+      "correctAnswer": 3,
+      "explanation": "Injera is commonly associated with Ethiopia.",
+      "category": "Food",
+      "subject": "Ethiopia"
+    },
+    {
+      "id": "FOOD_144",
+      "question": "Which food is linked to Nigeria?",
+      "options": [
+        "sushi",
+        "Jollof Rice",
+        "pizza",
+        "tacos"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Jollof Rice is commonly associated with Nigeria.",
+      "category": "Food",
+      "subject": "Nigeria"
+    },
+    {
+      "id": "FOOD_145",
+      "question": "Which food is linked to Morocco?",
+      "options": [
+        "tacos",
+        "pizza",
+        "Tagine",
+        "sushi"
+      ],
+      "correctAnswer": 2,
+      "explanation": "Tagine is commonly associated with Morocco.",
+      "category": "Food",
+      "subject": "Morocco"
+    },
+    {
+      "id": "FOOD_146",
+      "question": "Which food is linked to Venezuela?",
+      "options": [
+        "tacos",
+        "pizza",
+        "Arepas",
+        "sushi"
+      ],
+      "correctAnswer": 2,
+      "explanation": "Arepas is commonly associated with Venezuela.",
+      "category": "Food",
+      "subject": "Venezuela"
+    },
+    {
+      "id": "FOOD_147",
+      "question": "Which food is linked to United Kingdom?",
+      "options": [
+        "Fish And Chips",
+        "sushi",
+        "tacos",
+        "pizza"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Fish And Chips is commonly associated with United Kingdom.",
+      "category": "Food",
+      "subject": "United Kingdom"
+    },
+    {
+      "id": "FOOD_148",
+      "question": "Which food is linked to Greece?",
+      "options": [
+        "pizza",
+        "Moussaka",
+        "sushi",
+        "tacos"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Moussaka is commonly associated with Greece.",
+      "category": "Food",
+      "subject": "Greece"
+    },
+    {
+      "id": "LANGUAGE_149",
+      "question": "Which language is spoken in Mexico?",
+      "options": [
+        "Portuguese",
+        "Spanish",
+        "Arabic",
+        "French"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Spanish is spoken in Mexico.",
+      "category": "Language",
+      "subject": "Mexico"
+    },
+    {
+      "id": "LANGUAGE_150",
+      "question": "Which language is spoken in Egypt?",
+      "options": [
+        "Spanish",
+        "French",
+        "Portuguese",
+        "Arabic"
+      ],
+      "correctAnswer": 3,
+      "explanation": "Arabic is spoken in Egypt.",
+      "category": "Language",
+      "subject": "Egypt"
+    },
+    {
+      "id": "LANGUAGE_151",
+      "question": "Which language is spoken in Brazil?",
+      "options": [
+        "Portuguese",
+        "Arabic",
+        "Spanish",
+        "French"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Portuguese is spoken in Brazil.",
+      "category": "Language",
+      "subject": "Brazil"
+    },
+    {
+      "id": "LANGUAGE_152",
+      "question": "Which language is spoken in Japan?",
+      "options": [
+        "French",
+        "Japanese",
+        "Arabic",
+        "Spanish"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Japanese is spoken in Japan.",
+      "category": "Language",
+      "subject": "Japan"
+    },
+    {
+      "id": "LANGUAGE_153",
+      "question": "Which language is spoken in France?",
+      "options": [
+        "Arabic",
+        "French",
+        "Spanish",
+        "Portuguese"
+      ],
+      "correctAnswer": 1,
+      "explanation": "French is spoken in France.",
+      "category": "Language",
+      "subject": "France"
+    },
+    {
+      "id": "LANGUAGE_154",
+      "question": "Which language is spoken in Germany?",
+      "options": [
+        "Spanish",
+        "Arabic",
+        "German",
+        "French"
+      ],
+      "correctAnswer": 2,
+      "explanation": "German is spoken in Germany.",
+      "category": "Language",
+      "subject": "Germany"
+    },
+    {
+      "id": "LANGUAGE_155",
+      "question": "Which language is spoken in Italy?",
+      "options": [
+        "Italian",
+        "Arabic",
+        "French",
+        "Spanish"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Italian is spoken in Italy.",
+      "category": "Language",
+      "subject": "Italy"
+    },
+    {
+      "id": "LANGUAGE_156",
+      "question": "Which language is spoken in South Korea?",
+      "options": [
+        "Spanish",
+        "Arabic",
+        "French",
+        "Korean"
+      ],
+      "correctAnswer": 3,
+      "explanation": "Korean is spoken in South Korea.",
+      "category": "Language",
+      "subject": "South Korea"
+    },
+    {
+      "id": "LANGUAGE_157",
+      "question": "Which language is spoken in India?",
+      "options": [
+        "Spanish",
+        "French",
+        "Hindi",
+        "Arabic"
+      ],
+      "correctAnswer": 2,
+      "explanation": "Hindi is spoken in India.",
+      "category": "Language",
+      "subject": "India"
+    },
+    {
+      "id": "LANGUAGE_158",
+      "question": "Which language is spoken in Bangladesh?",
+      "options": [
+        "Arabic",
+        "Bengali",
+        "French",
+        "Spanish"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Bengali is spoken in Bangladesh.",
+      "category": "Language",
+      "subject": "Bangladesh"
+    },
+    {
+      "id": "LANGUAGE_159",
+      "question": "Which language is spoken in China?",
+      "options": [
+        "Mandarin Chinese",
+        "French",
+        "Spanish",
+        "Arabic"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Mandarin Chinese is spoken in China.",
+      "category": "Language",
+      "subject": "China"
+    },
+    {
+      "id": "LANGUAGE_160",
+      "question": "Which language is spoken in Tanzania?",
+      "options": [
+        "Spanish",
+        "French",
+        "Arabic",
+        "Swahili"
+      ],
+      "correctAnswer": 3,
+      "explanation": "Swahili is spoken in Tanzania.",
+      "category": "Language",
+      "subject": "Tanzania"
+    },
+    {
+      "id": "LANGUAGE_161",
+      "question": "Which language is spoken in Turkey?",
+      "options": [
+        "French",
+        "Spanish",
+        "Arabic",
+        "Turkish"
+      ],
+      "correctAnswer": 3,
+      "explanation": "Turkish is spoken in Turkey.",
+      "category": "Language",
+      "subject": "Turkey"
+    },
+    {
+      "id": "LANGUAGE_162",
+      "question": "Which language is spoken in Thailand?",
+      "options": [
+        "Thai",
+        "Spanish",
+        "Arabic",
+        "French"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Thai is spoken in Thailand.",
+      "category": "Language",
+      "subject": "Thailand"
+    },
+    {
+      "id": "LANGUAGE_163",
+      "question": "Which language is spoken in Vietnam?",
+      "options": [
+        "French",
+        "Spanish",
+        "Vietnamese",
+        "Arabic"
+      ],
+      "correctAnswer": 2,
+      "explanation": "Vietnamese is spoken in Vietnam.",
+      "category": "Language",
+      "subject": "Vietnam"
+    },
+    {
+      "id": "LANGUAGE_164",
+      "question": "Which language is spoken in Netherlands?",
+      "options": [
+        "Arabic",
+        "Spanish",
+        "Dutch",
+        "French"
+      ],
+      "correctAnswer": 2,
+      "explanation": "Dutch is spoken in Netherlands.",
+      "category": "Language",
+      "subject": "Netherlands"
+    },
+    {
+      "id": "LANGUAGE_165",
+      "question": "Which language is spoken in Greece?",
+      "options": [
+        "Greek",
+        "Spanish",
+        "French",
+        "Arabic"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Greek is spoken in Greece.",
+      "category": "Language",
+      "subject": "Greece"
+    },
+    {
+      "id": "GEOGRAPHY_166",
+      "question": "Which mountain in Nepal is the world's highest?",
+      "options": [
+        "K2",
+        "Everest",
+        "Denali",
+        "Kilimanjaro"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Mount Everest, on the Nepal–China border, is Earth's highest mountain above sea level.",
+      "category": "Geography",
+      "subject": "Nepal"
+    },
+    {
+      "id": "GEOGRAPHY_167",
+      "question": "Which vast desert covers much of Egypt?",
+      "options": [
+        "Gobi",
+        "Sahara",
+        "Atacama",
+        "Mojave"
+      ],
+      "correctAnswer": 1,
+      "explanation": "The Sahara extends across Egypt and much of North Africa.",
+      "category": "Geography",
+      "subject": "Egypt"
+    },
+    {
+      "id": "GEOGRAPHY_168",
+      "question": "Which major river flows through Egypt?",
+      "options": [
+        "Nile",
+        "Danube",
+        "Amazon",
+        "Indus"
+      ],
+      "correctAnswer": 0,
+      "explanation": "The Nile flows through Egypt and empties into the Mediterranean Sea.",
+      "category": "Geography",
+      "subject": "Egypt"
+    },
+    {
+      "id": "GEOGRAPHY_169",
+      "question": "Which ocean borders Japan to the east?",
+      "options": [
+        "Atlantic",
+        "Indian",
+        "Pacific",
+        "Arctic"
+      ],
+      "correctAnswer": 2,
+      "explanation": "Japan lies beside the Pacific Ocean.",
+      "category": "Geography",
+      "subject": "Japan"
+    },
+    {
+      "id": "GEOGRAPHY_170",
+      "question": "Which mountain range runs along western Peru?",
+      "options": [
+        "Alps",
+        "Andes",
+        "Himalayas",
+        "Rockies"
+      ],
+      "correctAnswer": 1,
+      "explanation": "The Andes run along Peru's western side.",
+      "category": "Geography",
+      "subject": "Peru"
+    },
+    {
+      "id": "GEOGRAPHY_171",
+      "question": "Which range borders northern India?",
+      "options": [
+        "Alps",
+        "Andes",
+        "Himalayas",
+        "Atlas"
+      ],
+      "correctAnswer": 2,
+      "explanation": "The Himalayas form a major mountain barrier north of India.",
+      "category": "Geography",
+      "subject": "India"
+    },
+    {
+      "id": "GEOGRAPHY_172",
+      "question": "Which reef lies off Australia's northeast coast?",
+      "options": [
+        "Belize Reef",
+        "Great Barrier Reef",
+        "Red Sea Reef",
+        "Ningaloo Reef"
+      ],
+      "correctAnswer": 1,
+      "explanation": "The Great Barrier Reef lies off northeastern Australia.",
+      "category": "Geography",
+      "subject": "Australia"
+    },
+    {
+      "id": "GEOGRAPHY_173",
+      "question": "Which deep lake lies in Russia?",
+      "options": [
+        "Lake Baikal",
+        "Lake Victoria",
+        "Lake Erie",
+        "Lake Como"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Lake Baikal is in Siberia, Russia.",
+      "category": "Geography",
+      "subject": "Russia"
+    },
+    {
+      "id": "GEOGRAPHY_174",
+      "question": "Which salty lake borders Jordan?",
+      "options": [
+        "Caspian Sea",
+        "Dead Sea",
+        "Aral Sea",
+        "Lake Chad"
+      ],
+      "correctAnswer": 1,
+      "explanation": "The Dead Sea borders Jordan and Israel/West Bank.",
+      "category": "Geography",
+      "subject": "Jordan"
+    },
+    {
+      "id": "HISTORY_175",
+      "question": "Which ancient people built the pyramids at Giza in Egypt?",
+      "options": [
+        "Romans",
+        "Egyptians",
+        "Persians",
+        "Greeks"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Ancient Egyptians built the Giza pyramids.",
+      "category": "History",
+      "subject": "Egypt"
+    },
+    {
+      "id": "HISTORY_176",
+      "question": "Which empire built the Colosseum in Italy?",
+      "options": [
+        "Roman",
+        "Mongol",
+        "Ottoman",
+        "Mughal"
+      ],
+      "correctAnswer": 0,
+      "explanation": "The Colosseum was built in ancient Rome.",
+      "category": "History",
+      "subject": "Italy"
+    },
+    {
+      "id": "HISTORY_177",
+      "question": "Which civilization built Machu Picchu in Peru?",
+      "options": [
+        "Maya",
+        "Inca",
+        "Aztec",
+        "Olmec"
+      ],
+      "correctAnswer": 1,
+      "explanation": "The Inca built Machu Picchu in the Andes.",
+      "category": "History",
+      "subject": "Peru"
+    },
+    {
+      "id": "HISTORY_178",
+      "question": "Which dynasty built much of China's Forbidden City?",
+      "options": [
+        "Ming",
+        "Qing only",
+        "Han",
+        "Tang"
+      ],
+      "correctAnswer": 0,
+      "explanation": "The Ming dynasty began building the Forbidden City in Beijing.",
+      "category": "History",
+      "subject": "China"
+    },
+    {
+      "id": "HISTORY_179",
+      "question": "Which Japanese era began in 1868?",
+      "options": [
+        "Meiji",
+        "Edo",
+        "Heian",
+        "Kamakura"
+      ],
+      "correctAnswer": 0,
+      "explanation": "The Meiji era began in 1868.",
+      "category": "History",
+      "subject": "Japan"
+    },
+    {
+      "id": "HISTORY_180",
+      "question": "Which city was the capital of the Aztec Empire in Mexico?",
+      "options": [
+        "Tenochtitlan",
+        "Cusco",
+        "Tikal",
+        "Teotihuacan"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Tenochtitlan was the Aztec capital, on the site of modern Mexico City.",
+      "category": "History",
+      "subject": "Mexico"
+    },
+    {
+      "id": "HISTORY_181",
+      "question": "Which English document was sealed in 1215?",
+      "options": [
+        "Magna Carta",
+        "Bill of Rights",
+        "Domesday Book",
+        "Act of Union"
+      ],
+      "correctAnswer": 0,
+      "explanation": "King John sealed Magna Carta in England in 1215.",
+      "category": "History",
+      "subject": "United Kingdom"
+    },
+    {
+      "id": "HISTORY_182",
+      "question": "Which Indian emperor promoted Buddhism after the Kalinga War?",
+      "options": [
+        "Ashoka",
+        "Akbar",
+        "Chandragupta II",
+        "Harsha"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Ashoka embraced and promoted Buddhism after the Kalinga War.",
+      "category": "History",
+      "subject": "India"
+    },
+    {
+      "id": "HISTORY_183",
+      "question": "Which city hosted South Africa's first democratic inauguration in 1994?",
+      "options": [
+        "Pretoria",
+        "Durban",
+        "Cape Town",
+        "Johannesburg"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Nelson Mandela was inaugurated in Pretoria in 1994.",
+      "category": "History",
+      "subject": "South Africa"
+    },
+    {
+      "id": "HISTORY_184",
+      "question": "Which empire ruled much of modern Turkey from Istanbul?",
+      "options": [
+        "Ottoman",
+        "Inca",
+        "Mali",
+        "Aztec"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Istanbul was the Ottoman Empire's capital for centuries.",
+      "category": "History",
+      "subject": "Turkey"
+    },
+    {
+      "id": "HISTORY_185",
+      "question": "Which ancient trade route crossed Uzbekistan's Samarkand?",
+      "options": [
+        "Silk Road",
+        "Amber Road",
+        "Spice Route only",
+        "Royal Road"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Samarkand was a major Silk Road city.",
+      "category": "History",
+      "subject": "Uzbekistan"
+    },
+    {
+      "id": "HISTORY_186",
+      "question": "Which civilization developed at Mohenjo-daro in Pakistan?",
+      "options": [
+        "Indus Valley",
+        "Minoan",
+        "Olmec",
+        "Etruscan"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Mohenjo-daro was a major Indus Valley Civilization city.",
+      "category": "History",
+      "subject": "Pakistan"
+    },
+    {
+      "id": "HISTORY_187",
+      "question": "Which kingdom built Angkor Wat in Cambodia?",
+      "options": [
+        "Khmer Empire",
+        "Pagan Kingdom",
+        "Majapahit",
+        "Ayutthaya"
+      ],
+      "correctAnswer": 0,
+      "explanation": "The Khmer Empire built Angkor Wat in the 12th century.",
+      "category": "History",
+      "subject": "Cambodia"
+    },
+    {
+      "id": "HISTORY_188",
+      "question": "Which ancient city in Jordan was carved into rose-colored rock?",
+      "options": [
+        "Petra",
+        "Byblos",
+        "Palmyra",
+        "Tyre"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Petra was a major Nabataean city in present-day Jordan.",
+      "category": "History",
+      "subject": "Jordan"
+    },
+    {
+      "id": "HISTORY_189",
+      "question": "Which 1911 event ended China's last imperial dynasty?",
+      "options": [
+        "Xinhai Revolution",
+        "Taiping Rebellion",
+        "May Fourth Movement",
+        "Boxer Rebellion"
+      ],
+      "correctAnswer": 0,
+      "explanation": "The Xinhai Revolution led to the fall of the Qing dynasty.",
+      "category": "History",
+      "subject": "China"
+    },
+    {
+      "id": "HISTORY_190",
+      "question": "Which treaty ended World War I with Germany in 1919?",
+      "options": [
+        "Versailles",
+        "Tordesillas",
+        "Utrecht",
+        "Paris of 1763"
+      ],
+      "correctAnswer": 0,
+      "explanation": "The Treaty of Versailles was signed in 1919.",
+      "category": "History",
+      "subject": "Germany"
+    },
+    {
+      "id": "HISTORY_191",
+      "question": "Which city was the center of the Renaissance in Tuscany, Italy?",
+      "options": [
+        "Florence",
+        "Naples",
+        "Turin",
+        "Genoa"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Florence was a major center of the Italian Renaissance.",
+      "category": "History",
+      "subject": "Italy"
+    },
+    {
+      "id": "HISTORY_192",
+      "question": "Which city in Greece hosted the first modern Olympics in 1896?",
+      "options": [
+        "Athens",
+        "Sparta",
+        "Thebes",
+        "Corinth"
+      ],
+      "correctAnswer": 0,
+      "explanation": "The first modern Olympic Games were held in Athens in 1896.",
+      "category": "History",
+      "subject": "Greece"
+    },
+    {
+      "id": "HISTORY_193",
+      "question": "Which ancient civilization built the city of Tikal in Guatemala?",
+      "options": [
+        "Maya",
+        "Inca",
+        "Aztec",
+        "Olmec"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Tikal was a major Maya city in present-day Guatemala.",
+      "category": "History",
+      "subject": "Guatemala"
+    },
+    {
+      "id": "HISTORY_194",
+      "question": "Which 1804 revolution created independent Haiti?",
+      "options": [
+        "Haitian Revolution",
+        "French Revolution",
+        "Glorious Revolution",
+        "July Revolution"
+      ],
+      "correctAnswer": 0,
+      "explanation": "The Haitian Revolution led to independence in 1804.",
+      "category": "History",
+      "subject": "Haiti"
+    },
+    {
+      "id": "HISTORY_195",
+      "question": "Which empire built the Great Zimbabwe stone city?",
+      "options": [
+        "Kingdom of Zimbabwe",
+        "Roman Empire",
+        "Mughal Empire",
+        "Inca Empire"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Great Zimbabwe was built by ancestors of the Shona people.",
+      "category": "History",
+      "subject": "Zimbabwe"
+    },
+    {
+      "id": "HISTORY_196",
+      "question": "Which 1947 event created Pakistan as a state?",
+      "options": [
+        "Partition of British India",
+        "Quit India Movement",
+        "Khilafat Movement",
+        "Simla Agreement"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Pakistan became independent during the 1947 partition of British India.",
+      "category": "History",
+      "subject": "Pakistan"
+    },
+    {
+      "id": "HISTORY_197",
+      "question": "Which city was the Inca Empire's capital in Peru?",
+      "options": [
+        "Cusco",
+        "Lima",
+        "Quito",
+        "Arequipa"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Cusco was the Inca Empire's capital.",
+      "category": "History",
+      "subject": "Peru"
+    },
+    {
+      "id": "HISTORY_198",
+      "question": "Which ancient library stood in Alexandria, Egypt?",
+      "options": [
+        "Great Library",
+        "House of Wisdom",
+        "Pergamon Library",
+        "Nalanda Library"
+      ],
+      "correctAnswer": 0,
+      "explanation": "The Great Library of Alexandria was part of the ancient city's scholarly center.",
+      "category": "History",
+      "subject": "Egypt"
+    },
+    {
+      "id": "HISTORY_199",
+      "question": "Which empire built the Red Fort in Delhi, India?",
+      "options": [
+        "Mughal",
+        "Maurya",
+        "Gupta",
+        "Chola"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Mughal emperor Shah Jahan commissioned Delhi's Red Fort.",
+      "category": "History",
+      "subject": "India"
+    },
+    {
+      "id": "HISTORY_200",
+      "question": "Which city in Mali became famous as a medieval center of learning?",
+      "options": [
+        "Timbuktu",
+        "Bamako",
+        "Dakar",
+        "Niamey"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Timbuktu became a major scholarly center in the Mali region.",
+      "category": "History",
+      "subject": "Mali"
+    }
+  ]
+}
