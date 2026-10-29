@@ -89,15 +89,15 @@ function generateReward() {
     }
 
     if (roll < 90) {
-        return randomInt(26, 30); // 20% — Uncommon
+        return randomInt(26, 27); // 20% — Uncommon
     }
 
     if (roll < 97) {
-        return randomInt(31, 35); // 7% — Rare
+        return randomInt(28, 30); // 7% — Rare
     }
 
     if (roll < 99.5) {
-        return randomInt(36, 39); // 2.5% — Epic
+        return randomInt(31, 39); // 2.5% — Epic
     }
 
     return 40; // 0.5% — Jackpot
