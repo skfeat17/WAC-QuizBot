@@ -58,8 +58,8 @@ const EVENT_NAME =
 const EVENT_TYPE =
     "Mystery Event";
 
-const REWARD_MIN = 20;
-const REWARD_MAX = 40;
+const REWARD_MIN = 10;
+const REWARD_MAX = 20;
 
 const MORA_EMOJI =
     "<:mora:1503931162525962333>";
@@ -84,23 +84,19 @@ function randomInt(min, max) {
 function generateReward() {
     const roll = Math.random() * 100;
 
-    if (roll < 70) {
-        return randomInt(20, 25); // 70% — Common
+    if (roll < 85) {
+        return randomInt(10, 15); // 85% — Common
     }
 
-    if (roll < 90) {
-        return randomInt(26, 27); // 20% — Uncommon
+    if (roll < 95) {
+        return randomInt(16, 17); // 10% — Uncommon
     }
 
-    if (roll < 97) {
-        return randomInt(28, 30); // 7% — Rare
+    if (roll < 99) {
+        return randomInt(18, 19); // 4% — Rare
     }
 
-    if (roll < 99.5) {
-        return randomInt(31, 39); // 2.5% — Epic
-    }
-
-    return 40; // 0.5% — Jackpot
+    return 20; // 1% — Jackpot
 }
 
 function createAttemptId() {
@@ -133,6 +129,7 @@ function buildMysteryEventEmbed() {
                 "world is waiting to be answered...",
                 "",
                 `🎁 **Reward: Up to ${REWARD_MAX} ${MORA_EMOJI}**`,
+                `⚠️ **Incorrect answer cooldown: ${Incorrect_Answer_Cooldown / 60} minutes**`,
                 "",
                 "<:paimonThink:1505801467435548752> Think you know the answer?",
                 "",
@@ -141,7 +138,7 @@ function buildMysteryEventEmbed() {
         )
         .setFooter({
             text:
-                "Daily question • Up to 40 Mora per attempt • Certain Cooldown after every attempt • Earn upto 120 Mora",
+                "Daily question • Up to 20 Mora per attempt • Certain Cooldown after every attempt • Earn upto 100 Mora",
         });
 }
 
@@ -178,7 +175,7 @@ function buildQuestionEmbed(
         .setFooter({
             text:
                 `Category: ${question.category} • ` +
-                `1 Minute Cooldown for Incorrect Answers`,
+                `2 Minute Cooldown for Incorrect Answers`,
         });
 }
 
