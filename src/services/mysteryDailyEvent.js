@@ -58,7 +58,7 @@ const EVENT_NAME =
 const EVENT_TYPE =
     "Mystery Event";
 
-const REWARD_MIN = 10;
+const REWARD_MIN = 15;
 const REWARD_MAX = 20;
 
 const MORA_EMOJI =
@@ -84,19 +84,23 @@ function randomInt(min, max) {
 function generateReward() {
     const roll = Math.random() * 100;
 
-    if (roll < 85) {
-        return randomInt(10, 15); // 85% — Common
+    if (roll < 60) {
+        return 15; // 60% — Common
     }
 
-    if (roll < 95) {
-        return randomInt(16, 17); // 10% — Uncommon
+    if (roll < 80) {
+        return 16; // 20% — Uncommon
     }
 
-    if (roll < 99) {
-        return randomInt(18, 19); // 4% — Rare
+    if (roll < 92) {
+        return 17; // 12% — Rare
     }
 
-    return 20; // 1% — Jackpot
+    if (roll < 98) {
+        return randomInt(18, 19); // 6% — Epic
+    }
+
+    return 20; // 2% — Jackpot
 }
 
 function createAttemptId() {
