@@ -58,8 +58,8 @@ const EVENT_NAME =
 const EVENT_TYPE =
     "Mystery Event";
 
-const REWARD_MIN = 15;
-const REWARD_MAX = 20;
+const REWARD_MIN = 20;
+const REWARD_MAX = 40;
 
 const MORA_EMOJI =
     "<:mora:1503931162525962333>";
@@ -84,23 +84,23 @@ function randomInt(min, max) {
 function generateReward() {
     const roll = Math.random() * 100;
 
-    if (roll < 60) {
-        return 15; // 60% — Common
+    if (roll < 70) {
+        return randomInt(20, 25); // 70% — Common
     }
 
-    if (roll < 80) {
-        return 16; // 20% — Uncommon
+    if (roll < 90) {
+        return randomInt(26, 30); // 20% — Uncommon
     }
 
-    if (roll < 92) {
-        return 17; // 12% — Rare
+    if (roll < 97) {
+        return randomInt(31, 35); // 7% — Rare
     }
 
-    if (roll < 98) {
-        return randomInt(18, 19); // 6% — Epic
+    if (roll < 99.5) {
+        return randomInt(36, 39); // 2.5% — Epic
     }
 
-    return 20; // 2% — Jackpot
+    return 40; // 0.5% — Jackpot
 }
 
 function createAttemptId() {
@@ -133,7 +133,6 @@ function buildMysteryEventEmbed() {
                 "world is waiting to be answered...",
                 "",
                 `🎁 **Reward: Up to ${REWARD_MAX} ${MORA_EMOJI}**`,
-                `⚠️ **Incorrect answer cooldown: ${Incorrect_Answer_Cooldown / 60} minutes**`,
                 "",
                 "<:paimonThink:1505801467435548752> Think you know the answer?",
                 "",
@@ -142,7 +141,7 @@ function buildMysteryEventEmbed() {
         )
         .setFooter({
             text:
-                "Daily question • Up to 20 Mora per attempt • Certain Cooldown after every attempt • Earn upto 100 Mora",
+                "Daily question • Up to 40 Mora per attempt • Certain Cooldown after every attempt • Earn upto 120 Mora",
         });
 }
 
@@ -179,7 +178,7 @@ function buildQuestionEmbed(
         .setFooter({
             text:
                 `Category: ${question.category} • ` +
-                `2 Minute Cooldown for Incorrect Answers`,
+                `1 Minute Cooldown for Incorrect Answers`,
         });
 }
 
