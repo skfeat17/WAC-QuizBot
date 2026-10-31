@@ -1,3 +1,4 @@
+
 // All Discord embeds and interactive components used by the weekly quiz.
 // weeklyEmbeds.js
 
@@ -12,7 +13,12 @@ const MEDALS = ['🥇', '🥈', '🥉'];
 const PRIZES = [750, 500, 350];
 
 // Replace this with the Discord message link to your detailed guide.
-const WEEKLY_GUIDE_URL = 'https://discordapp.com/channels/1116542113274929233/1520280046001197086/1563843205470879817';
+const WEEKLY_GUIDE_URL =
+    'https://discordapp.com/channels/1116542113274929233/1520280046001197086/1563843205470879817';
+
+// --------------------------------------------------
+// PARTICIPATION EMBED
+// --------------------------------------------------
 
 function participationEmbed(state, participantCount = 0) {
     const end = Math.floor(state.endsAt / 1000);
@@ -57,6 +63,10 @@ function participationEmbed(state, participantCount = 0) {
         .setTimestamp(new Date(state.startedAt));
 }
 
+// --------------------------------------------------
+// PARTICIPATION COMPONENTS
+// --------------------------------------------------
+
 function participationComponents(disabled = false) {
     return [
         new ActionRowBuilder().addComponents(
@@ -92,6 +102,10 @@ function participationComponents(disabled = false) {
     ];
 }
 
+// --------------------------------------------------
+// CHALLENGE READY EMBED
+// --------------------------------------------------
+
 function challengeReadyEmbed() {
     return new EmbedBuilder()
         .setColor(0x5865F2)
@@ -121,6 +135,10 @@ function challengeReadyComponents() {
         ),
     ];
 }
+
+// --------------------------------------------------
+// LEADERBOARD EMBED
+// --------------------------------------------------
 
 function leaderboardEmbed(state, rows, participantCount) {
     const end = Math.floor(state.endsAt / 1000);
@@ -157,6 +175,10 @@ function leaderboardEmbed(state, rows, participantCount) {
         .setTimestamp();
 }
 
+// --------------------------------------------------
+// QUESTION EMBED
+// --------------------------------------------------
+
 function questionEmbed(question, index, total, deadlineMs) {
     const deadline = Math.floor(deadlineMs / 1000);
 
@@ -171,6 +193,10 @@ function questionEmbed(question, index, total, deadlineMs) {
             text: '⏱️ 15 seconds • Correct: 0–100 points • Incorrect: −15 • Timeout: 0',
         });
 }
+
+// --------------------------------------------------
+// ANSWER BUTTONS
+// --------------------------------------------------
 
 function answerRows(attemptId, question, questionIndex, disabled = false) {
     const letters = ['A', 'B', 'C', 'D'];
@@ -190,7 +216,18 @@ function answerRows(attemptId, question, questionIndex, disabled = false) {
     ];
 }
 
-function answerFeedbackEmbed({ correct, timeout, pointsDelta, elapsedMs, question, questionNumber }) {
+// --------------------------------------------------
+// ANSWER FEEDBACK EMBED
+// --------------------------------------------------
+
+function answerFeedbackEmbed({
+    correct,
+    timeout,
+    pointsDelta,
+    elapsedMs,
+    question,
+    questionNumber,
+}) {
     const letters = ['A', 'B', 'C', 'D'];
     const answerIndex = Number(question.correctAnswer);
     const answerText = question.options?.[answerIndex] ?? 'Answer unavailable';
@@ -229,25 +266,82 @@ function answerFeedbackEmbed({ correct, timeout, pointsDelta, elapsedMs, questio
         });
 }
 
+// --------------------------------------------------
+// FINAL CHALLENGE RESULT EMBED
+// RANKINGS SEALED UNTIL OFFICIAL ANNOUNCEMENT
+// --------------------------------------------------
+
 function resultEmbed(attempt, participant, rank) {
     return new EmbedBuilder()
-        .setColor(0x57F287)
-        .setTitle('🎉 🌍 Your Challenge Results')
+        .setColor(0xF1C40F)
+        .setTitle('🎉 🌍 Challenge Completed!')
         .setDescription([
             `**Correct:** ${attempt.correct}/${attempt.totalQuestions}`,
             `**Incorrect:** ${attempt.incorrect}/${attempt.totalQuestions}`,
             `**Timed out:** ${attempt.timedOut}`,
             '',
             `**Your Total Score:** ${attempt.points} points`,
-            `**Your Ranking:** ${rank ? `#${rank}` : 'Unranked'}`,
-            `**Weekly Total:** ${Number(participant?.points) || 0} points`,
             '',
+            '🤫 **THE STANDINGS ARE SEALED!**',
+            '',
+            'Your performance has been recorded successfully.',
+            'However, individual rankings and weekly standings are being kept confidential.',
+            '',
+            '🏆 **The final results will be officially announced soon!**',
+            '',
+            'Until then, no spoilers. Let the suspense begin!',
         ].join('\n'))
         .setFooter({
-            text: 'Your score stays saved until the admin clears the weekly event.',
+            text: 'Thank you for participating in the Weekly World Quiz!',
         })
         .setTimestamp();
 }
+
+// --------------------------------------------------
+// SEALED RANKING RESPONSE
+// --------------------------------------------------
+
+function rankingSealedEmbed() {
+    return new EmbedBuilder()
+        .setColor(0xF1C40F)
+        .setTitle('🔒 YOUR RANKING IS UNDER WRAPS!')
+        .setDescription(
+            'Your performance has been recorded successfully.\n\n' +
+            'However, individual rankings are currently confidential.\n\n' +
+            '🤫 **No peeking!**\n\n' +
+            '🏆 Your position will be revealed during official results announcement.\n\n' +
+            '**Patience, champion. Your moment is coming!**',
+        )
+        .setFooter({
+            text: 'Weekly World Quiz • Results Awaited',
+        })
+        .setTimestamp();
+}
+
+// --------------------------------------------------
+// SEALED LEADERBOARD RESPONSE
+// --------------------------------------------------
+
+function leaderboardSealedEmbed() {
+    return new EmbedBuilder()
+        .setColor(0xF1C40F)
+        .setTitle('🤫 THE LEADERBOARD IS SEALED!')
+        .setDescription(
+            'The final standings are being kept confidential.\n\n' +
+            'No leaderboard previews. No spoilers. Just suspense!\n\n' +
+            '🏆 **Who will claim the championship?**\n\n' +
+            'All rankings and winners will be revealed during official results announcement.\n\n' +
+            '**Stay tuned. The big reveal is almost here!**',
+        )
+        .setFooter({
+            text: 'Weekly World Quiz • Official Results Awaited',
+        })
+        .setTimestamp();
+}
+
+// --------------------------------------------------
+// EXPORTS
+// --------------------------------------------------
 
 module.exports = {
     participationEmbed,
@@ -259,4 +353,7 @@ module.exports = {
     challengeReadyEmbed,
     challengeReadyComponents,
     answerFeedbackEmbed,
+    rankingSealedEmbed,
+    leaderboardSealedEmbed,
 };
+
