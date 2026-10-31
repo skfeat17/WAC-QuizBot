@@ -15,6 +15,8 @@ const {
     challengeReadyEmbed,
     challengeReadyComponents,
     answerFeedbackEmbed,
+    rankingSealedEmbed,
+    leaderboardSealedEmbed,
 } = require('./weeklyEmbeds');
 const { startWeeklyScheduler } = require('./weeklyScheduler');
 const { utcDateKey, scoreForAnswer } = require('./weeklyUtils');
@@ -456,12 +458,14 @@ async function processAnswer(client, input) {
                 persistAttemptInBackground(attempt),
                 updatedParticipant ? saveParticipantInBackground(updatedParticipant) : Promise.resolve(),
             ]);
-            const leaderboard = await R.getLeaderboard(10000);
-            const rank = leaderboard.findIndex((player) => player.userId === userId) + 1;
-            weeklyLogs.action('Attempt completed', `user=${userId} | attempt=${attemptId} | points=${attempt.points} | correct=${attempt.correct} | incorrect=${attempt.incorrect} | timedOut=${attempt.timedOut} | rank=${rank}`);
+            // Do not calculate or reveal weekly ranking during the suspense period.
+            weeklyLogs.action(
+                'Attempt completed',
+                `user=${userId} | attempt=${attemptId} | points=${attempt.points} | correct=${attempt.correct} | incorrect=${attempt.incorrect} | timedOut=${attempt.timedOut}`,
+            );
             await updateOriginal(attemptId, interaction, {
                 content: '',
-                embeds: [resultEmbed(attempt, updatedParticipant, rank)],
+                embeds: [resultEmbed(attempt, updatedParticipant)],
                 components: [],
             }, attempt);
             liveResponses.delete(attemptId);
@@ -632,44 +636,27 @@ async function handleWeeklyButton(interaction, client) {
         return true;
     }
 
-    if (customId === 'weekly:leaderboard' || customId === 'weekly:my-ranking') {
-
+    // Keep weekly standings confidential until the official results announcement.
+    if (customId === 'weekly:leaderboard') {
         await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-        console.log(
-            `[WEEKLY] ${interaction.user.globalName} clicked ${customId === 'weekly:leaderboard' ? 'LEADERBOARD' : 'CHECK MY RANKING'
-            }`
+        weeklyLogs.action(
+            'Leaderboard access blocked',
+            weeklyLogs.formatUser(interaction.user),
         );
-        try {
-            const state = stateCache || await R.getState();
-            if (!state) {
-                await interaction.editReply({ content: 'ℹ️ No weekly competition data is available yet.' });
-                return true;
-            }
-            const rows = await R.getLeaderboard(10000);
-            const participantCount = Number(await R.redis.scard(R.keys.participants())) || 0;
-            if (customId === 'weekly:leaderboard') {
-                await interaction.editReply({
-                    embeds: [leaderboardEmbed(state, rows, participantCount)],
-                    allowedMentions: { parse: [] },
-                });
-            } else {
-                const index = rows.findIndex((player) => player.userId === interaction.user.id);
-                const player = index >= 0 ? rows[index] : null;
-                const embed = new EmbedBuilder()
-                    .setColor(0x5865F2)
-                    .setTitle('📊 Your Weekly Ranking')
-                    .setDescription(player
-                        ? `🏅 **Rank:** #${index + 1} of ${rows.length}\n✨ **Points:** ${player.points}\n✅ **Correct answers:** ${player.correct || 0}\n📝 **Answers submitted:** ${player.answered || 0}`
-                        : 'You have not scored any weekly points yet. Press **Challenge** to get started!')
-                    .setFooter({ text: 'This ranking is visible only to you.' })
-                    .setTimestamp();
-                await interaction.editReply({ embeds: [embed], allowedMentions: { parse: [] } });
-            }
-        } catch (error) {
-            console.error('[weekly] private ranking failed:', error.message || error);
-            await interaction.editReply({ content: '❌ Could not load the ranking right now.' }).catch(() => { });
-        }
-        return true;
+        return interaction.editReply({
+            embeds: [leaderboardSealedEmbed()],
+        }).then(() => true);
+    }
+
+    if (customId === 'weekly:my-ranking') {
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+        weeklyLogs.action(
+            'Individual ranking access blocked',
+            weeklyLogs.formatUser(interaction.user),
+        );
+        return interaction.editReply({
+            embeds: [rankingSealedEmbed()],
+        }).then(() => true);
     }
 
     if (!customId.startsWith('weekly:answer:')) return false;
