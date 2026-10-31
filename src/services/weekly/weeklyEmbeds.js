@@ -1,5 +1,4 @@
 
-// All Discord embeds and interactive components used by the weekly quiz.
 // weeklyEmbeds.js
 
 const {
