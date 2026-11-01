@@ -121,9 +121,9 @@ function weeklyCommand() {
             .setRequired(true)
             .addChoices(
                 // { name: 'Start', value: 'start' },
-                // { name: 'End', value: 'end' },
+                { name: 'End', value: 'end' },
                 { name: 'Leader', value: 'leader' },
-                // { name: 'Reset a user', value: 'reset' },
+                { name: 'Reset a user', value: 'reset' },
             ))
         .addUserOption((option) => option
             .setName('user')
