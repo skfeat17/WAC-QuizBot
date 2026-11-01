@@ -181,6 +181,58 @@ client.on(Events.InteractionCreate, async (interaction) => {
     if (interaction.isChatInputCommand()) {
 
         // ==========================================
+        // WEEKLY WORLD QUIZ — ACKNOWLEDGE IMMEDIATELY
+        // This must run before generic command routing/access checks.
+        // ==========================================
+        if (interaction.commandName === "weekly") {
+            const action = interaction.options.getString("action", true);
+            const weeklyAdmins = COMMAND_ACCESS.weekly || COMMAND_ACCESS.dailyevent || [];
+            const isAuthorizedStart = action === "start" &&
+                weeklyAdmins.map(String).includes(String(interaction.user.id));
+
+            try {
+                await interaction.deferReply(
+                    isAuthorizedStart ? {} : { flags: MessageFlags.Ephemeral }
+                );
+            } catch (ackError) {
+                console.error("[weekly] Could not acknowledge command:", ackError);
+                return;
+            }
+
+            try {
+                await handleWeeklyCommand(interaction, client);
+            } catch (error) {
+                console.error("[weekly] Command failed:", error);
+
+                const response = {
+                    content: "❌ The weekly command failed. Please try again.",
+                    embeds: [],
+                    components: [],
+                };
+
+                try {
+                    if (interaction.deferred) {
+                        await interaction.editReply(response);
+                    } else if (interaction.replied) {
+                        await interaction.followUp({
+                            ...response,
+                            flags: MessageFlags.Ephemeral,
+                        });
+                    } else {
+                        await interaction.reply({
+                            ...response,
+                            flags: MessageFlags.Ephemeral,
+                        });
+                    }
+                } catch (responseError) {
+                    console.error("[weekly] Could not send command error:", responseError);
+                }
+            }
+
+            return;
+        }
+
+        // ==========================================
         // COMMAND ACCESS CONTROL
         // ==========================================
 
@@ -220,30 +272,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
                     "❌ You are not authorized to use this command.",
                 flags: MessageFlags.Ephemeral,
             });
-
-            return;
-        }
-        // ==========================================
-        // WEEKLY WORLD QUIZ
-        // ==========================================
-
-        if (interaction.commandName === "weekly") {
-            try {
-                await handleWeeklyCommand(interaction, client);
-            } catch (error) {
-                console.error("[weekly] Command failed:", error);
-
-                const response = {
-                    content: "❌ The weekly command failed. Please try again.",
-                    flags: MessageFlags.Ephemeral,
-                };
-
-                if (interaction.deferred || interaction.replied) {
-                    await interaction.followUp(response).catch(console.error);
-                } else {
-                    await interaction.reply(response).catch(console.error);
-                }
-            }
 
             return;
         }
