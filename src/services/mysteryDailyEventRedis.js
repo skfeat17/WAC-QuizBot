@@ -701,7 +701,8 @@ async function ensureQuestionHistoryMigrated() {
 
 async function pruneOldQuestionHistory(key) {
     const cutoff = Date.now() - QUESTION_HISTORY_WINDOW_MS;
-    await redis.zremrangebyscore(key, "-inf", cutoff);
+    // No explicit pruning is needed: reads are restricted to the active window.
+    // This avoids relying on a client method not exposed by @upstash/redis.
     return cutoff;
 }
 
@@ -778,10 +779,11 @@ async function getStoredQuestionContexts() {
     try {
         await ensureQuestionHistoryMigrated();
         const cutoff = await pruneOldQuestionHistory(questionHistoryDatedKey());
-        const contexts = await redis.zrangebyscore(
+        const contexts = await redis.zrange(
             questionHistoryDatedKey(),
             cutoff,
-            "+inf"
+            "+inf",
+            { byScore: true }
         );
         return Array.isArray(contexts) ? contexts : [];
     } catch (error) {
