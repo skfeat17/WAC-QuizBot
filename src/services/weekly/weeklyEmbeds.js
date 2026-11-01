@@ -32,6 +32,10 @@ function participationEmbed(state, participantCount = 0) {
         .setTimestamp(new Date(state.startedAt));
 }
 
+// --------------------------------------------------
+// PARTICIPATION COMPONENTS
+// --------------------------------------------------
+
 function participationComponents(disabled = false) {
     return [
         new ActionRowBuilder().addComponents(
@@ -176,6 +180,10 @@ function leaderboardEmbed(state, rows, participantCount) {
         .setTimestamp();
 }
 
+// --------------------------------------------------
+// QUESTION EMBED
+// --------------------------------------------------
+
 function questionEmbed(question, index, total, deadlineMs) {
     const deadline = Math.floor(deadlineMs / 1000);
     const difficulty = String(question.difficulty || 'easy').toLowerCase();
@@ -193,6 +201,10 @@ function questionEmbed(question, index, total, deadlineMs) {
     .setFooter({ text: '⏱️ You have 15 seconds to answer!' });
 }
 
+// --------------------------------------------------
+// ANSWER BUTTONS
+// --------------------------------------------------
+
 function answerRows(attemptId, question, questionIndex, disabled = false, dayKey = null) {
     const letters = ['A', 'B', 'C', 'D'];
     return [new ActionRowBuilder().addComponents(
@@ -203,6 +215,10 @@ function answerRows(attemptId, question, questionIndex, disabled = false, dayKey
             .setDisabled(disabled)),
     )];
 }
+
+// --------------------------------------------------
+// ANSWER FEEDBACK EMBED
+// --------------------------------------------------
 
 function answerFeedbackEmbed({ correct, timeout, pointsDelta, elapsedMs, question, questionNumber }) {
     const letters = ['A', 'B', 'C', 'D'];
@@ -245,8 +261,8 @@ function resultEmbed(attempt, participant, rank, rankingsHidden = false) {
     const quizPoints = (Number(attempt.points) || 0) - streakBonus;
 
     return new EmbedBuilder()
-        .setColor(0x57F287)
-        .setTitle('🎉 🌍 Your Challenge Results')
+        .setColor(0xF1C40F)
+        .setTitle('🎉 🌍 Challenge Completed!')
         .setDescription([
             `**Correct:** ${attempt.correct}/${attempt.totalQuestions}`,
             `**Incorrect:** ${attempt.incorrect}/${attempt.totalQuestions}`,
@@ -295,9 +311,14 @@ function leaderboardSealedEmbed() {
         .setTimestamp();
 }
 
+// --------------------------------------------------
+// EXPORTS
+// --------------------------------------------------
+
 module.exports = {
     participationEmbed, participationComponents, leaderboardEmbed, questionEmbed,
     answerRows, resultEmbed, challengeReadyEmbed, challengeReadyComponents, answerFeedbackEmbed,
     profileEmbed, profileComponents, profileMenuEmbed, rulesGuideEmbed,
     rankingSealedEmbed, leaderboardSealedEmbed,
 };
+
