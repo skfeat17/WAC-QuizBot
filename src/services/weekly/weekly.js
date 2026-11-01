@@ -140,14 +140,12 @@ async function startWeekly(interaction) {
     weeklyLogs.action('START requested', weeklyLogs.formatUser(interaction.user));
     if (!isAdmin(interaction.user.id)) {
         weeklyLogs.blocked(interaction.user, 'not authorized to start the weekly competition');
-        return interaction.reply({
+        return interaction.editReply({
             content: '❌ You are not authorized to manage the weekly competition.',
-            flags: MessageFlags.Ephemeral,
+            embeds: [],
+            components: [],
         });
     }
-
-    // Acknowledge before Redis work.
-    await interaction.deferReply();
 
     try {
         const existing = await R.getState();
@@ -710,15 +708,23 @@ async function handleWeeklyButton(interaction, client) {
 
 async function handleWeeklyCommand(interaction) {
     const action = interaction.options.getString('action', true);
+
+    // index.js normally acknowledges /weekly before any other command routing.
+    // Keep this fallback for direct calls, without acknowledging twice.
+    if (!interaction.deferred && !interaction.replied) {
+        const weeklyAdmins = COMMAND_ACCESS.weekly || COMMAND_ACCESS.dailyevent || [];
+        const isAuthorizedStart = action === 'start' && weeklyAdmins.map(String).includes(String(interaction.user.id));
+        await interaction.deferReply(isAuthorizedStart ? {} : { flags: MessageFlags.Ephemeral });
+    }
+
     weeklyLogs.action(`Command /weekly action:${action}`, weeklyLogs.formatUser(interaction.user));
     if (action === 'start') return startWeekly(interaction);
 
     if (action === 'leader') {
         if (!isAdmin(interaction.user.id)) {
             weeklyLogs.blocked(interaction.user, `not authorized for /weekly ${action}`);
-            return interaction.reply({ content: '❌ This command is restricted to weekly admins.', flags: MessageFlags.Ephemeral });
+            return interaction.editReply({ content: '❌ This command is restricted to weekly admins.', embeds: [], components: [] });
         }
-        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
         const state = await R.getState();
         stateCache = state;
         if (!state) {
@@ -745,9 +751,8 @@ async function handleWeeklyCommand(interaction) {
 
     if (action === 'reset') {
         if (!isAdmin(interaction.user.id)) {
-            return interaction.reply({ content: '❌ This command is restricted to weekly admins.', flags: MessageFlags.Ephemeral });
+            return interaction.editReply({ content: '❌ This command is restricted to weekly admins.', embeds: [], components: [] });
         }
-        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
         const state = await R.getState();
         if (!state) return interaction.editReply('⚠️ No weekly event data found.');
         const target = interaction.options.getUser('user');
@@ -791,10 +796,9 @@ async function handleWeeklyCommand(interaction) {
 
     if (action === 'end') {
         if (!isAdmin(interaction.user.id)) {
-            return interaction.reply({ content: '❌ You are not authorized to manage the weekly competition.', flags: MessageFlags.Ephemeral });
+            return interaction.editReply({ content: '❌ You are not authorized to manage the weekly competition.', embeds: [], components: [] });
         }
 
-        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
         const state = await R.getState();
         if (!state) return interaction.editReply('⚠️ No weekly event data to clear.');
 
