@@ -375,8 +375,10 @@ function containsGeographicalTerm(text, term) {
     const normalizedText = normalize(text);
     const normalizedTerm = normalize(term);
     if (!normalizedText || !normalizedTerm) return false;
+
     const escaped = normalizedTerm.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    return new RegExp(`(?:^|\\s)${escaped}(?=$|\\s)`, "i").test(normalizedText);
+    const pattern = `(^|[^\\p{L}\\p{N}])${escaped}(?=$|[^\\p{L}\\p{N}])`;
+    return new RegExp(pattern, "iu").test(normalizedText);
 }
 
 function questionMentionsGeography(question) {
@@ -1233,7 +1235,7 @@ function getPrompt(
     const history =
         previousContexts.length
             ? previousContexts
-                  .slice(-200)
+                  .slice(-100)
                   .map(
                       (
                           context,
@@ -1281,10 +1283,12 @@ CORE REQUIREMENTS
 - Questions must be factually accurate.
 - Use established, reliable facts.
 - Questions must be suitable for an international audience.
-- CRITICAL: EVERY question's actual question text MUST identify a meaningful geographic connection.
-- The geographic reference must appear in the question itself, not only in the answer options, subject, or explanation.
-- The question must be meaningfully about that location. Do not insert a geographic name randomly just to satisfy this rule.
-- Reject generic questions unless the question directly connects the fact to an identifiable geographic location or feature.
+- CRITICAL: Every question sentence MUST explicitly name the country, city, region, island, river, mountain, landmark, or other recognized geographic place being tested.
+- The place name must appear in the question text itself, not only in the answers, subject, or explanation.
+- Never ask generic prompts such as "Which country is the birthplace of sushi?" or "Which country is home to the Great Wall?" without naming Japan or China in the question sentence.
+- Instead ask: "Which Japanese country is associated with sushi?" (Use natural wording, e.g. "Which country is sushi traditionally associated with: Japan?")
+- For the Great Wall, name China directly; for kangaroos, name Australia directly; for Icelandic volcanoes, name Iceland directly.
+- Do not add a place name randomly; the fact must genuinely relate to that place.
 - Use natural English.
 - Keep questions suitable for Discord.
 - Do not mention rewards.
@@ -1421,7 +1425,7 @@ SUBJECTS USED WITHIN THE LAST 14 DAYS
 ${
     [...previousSubjects].length
         ? [...previousSubjects]
-              .slice(-200)
+              .slice(-100)
               .join("\n")
         : "NONE"
 }

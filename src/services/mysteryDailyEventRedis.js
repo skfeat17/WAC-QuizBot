@@ -75,7 +75,7 @@ function questionSubjectHistoryDatedKey() {
 }
 
 function questionHistoryMigrationKey() {
-    return `${PREFIX}history:14d:migrated`;
+    return `${PREFIX}history:14d:migrated:v2`;
 }
 
 function questionPoolKey() {
@@ -665,16 +665,21 @@ function createQuestionContext({
 // QUESTION HISTORY (ROLLING 14-DAY WINDOW)
 // ==========================================
 
-// Older versions stored history in Redis Sets without timestamps.
-// Their exact age cannot be recovered, so on the first run we conservatively
-// mark existing entries as used from the migration date. They become reusable
-// after 14 days. New entries always receive their real save timestamp.
+// Legacy Set entries have no reliable timestamps. This v2 migration resets
+// that undated legacy history to score 0 so it does not block generation.
+// From this migration onward, every newly saved entry gets a real timestamp
+// and is blocked for exactly 14 days.
+let questionHistoryMigrationPromise = null;
+
 async function ensureQuestionHistoryMigrated() {
+    if (questionHistoryMigrationPromise) return questionHistoryMigrationPromise;
+
+    questionHistoryMigrationPromise = (async () => {
     const migrationKey = questionHistoryMigrationKey();
     const alreadyMigrated = await redis.get(migrationKey);
     if (alreadyMigrated) return;
 
-    const migrationTimestamp = Date.now();
+    const migrationTimestamp = 0;
     const legacyContexts = await redis.smembers(questionHistoryKey());
     const legacySubjects = await redis.smembers(questionSubjectHistoryKey());
 
@@ -697,13 +702,19 @@ async function ensureQuestionHistoryMigrated() {
     await migrateMembers(questionSubjectHistoryDatedKey(), legacySubjects);
 
     await redis.set(migrationKey, "1", { ex: EVENT_TTL_SECONDS });
+    })();
+
+    try {
+        await questionHistoryMigrationPromise;
+    } catch (error) {
+        questionHistoryMigrationPromise = null;
+        throw error;
+    }
 }
 
 async function pruneOldQuestionHistory(key) {
-    const cutoff = Date.now() - QUESTION_HISTORY_WINDOW_MS;
-    // No explicit pruning is needed: reads are restricted to the active window.
-    // This avoids relying on a client method not exposed by @upstash/redis.
-    return cutoff;
+    // Keep the sorted sets intact; all reads/checks apply this cutoff.
+    return Date.now() - QUESTION_HISTORY_WINDOW_MS;
 }
 
 async function hasQuestionBeenUsed(context) {
@@ -867,6 +878,26 @@ async function saveQuestionSubjects(subjects) {
     } catch (error) {
         console.error(
             "❌ Mystery subjects save error:",
+            error.message
+        );
+        throw error;
+    }
+}
+
+async function getStoredQuestionSubjects() {
+    try {
+        await ensureQuestionHistoryMigrated();
+        const cutoff = await pruneOldQuestionHistory(questionSubjectHistoryDatedKey());
+        const subjects = await redis.zrange(
+            questionSubjectHistoryDatedKey(),
+            cutoff,
+            "+inf",
+            { byScore: true }
+        );
+        return Array.isArray(subjects) ? subjects : [];
+    } catch (error) {
+        console.error(
+            "❌ Mystery subject history read error:",
             error.message
         );
         throw error;
@@ -1128,6 +1159,7 @@ module.exports = {
     saveQuestionContext,
     saveQuestionContexts,
     getStoredQuestionContexts,
+    getStoredQuestionSubjects,
 
     hasQuestionSubjectBeenUsed,
     saveQuestionSubject,
