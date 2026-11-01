@@ -115,6 +115,8 @@ const COUNTRY_NAMES = [
     "Cabo Verde",
     "Cambodia",
     "Cameroon",
+    "Country",
+    "country",
     "Canada",
     "Central African Republic",
     "Chad",

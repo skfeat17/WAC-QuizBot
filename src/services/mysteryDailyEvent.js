@@ -36,6 +36,56 @@ const {
     generateMysteryQuestionBatch,
 } = require("./mysteryDailyEventAI");
 
+// ============================================================
+// BACKGROUND QUESTION-POOL RESTOCK
+// ============================================================
+
+const MYSTERY_POOL_RESTOCK_THRESHOLD = 5;
+let mysteryPoolRestockInProgress = false;
+
+/**
+ * Checks the current pool and starts generation without blocking
+ * the event/reveal interaction whenever the pool has 5 or fewer
+ * questions. A local lock prevents multiple simultaneous batches.
+ */
+function startMysteryPoolRestockInBackground(source = "unknown") {
+    if (mysteryPoolRestockInProgress) {
+        console.log(`🔄 POOL RESTOCK ALREADY RUNNING | ${source}`);
+        return;
+    }
+
+    mysteryPoolRestockInProgress = true;
+
+    (async () => {
+        try {
+            const poolSize = await getMysteryQuestionPoolSize();
+
+            console.log(`📦 QUESTION POOL CHECK | ${poolSize} questions | ${source}`);
+
+            if (poolSize > MYSTERY_POOL_RESTOCK_THRESHOLD) {
+                console.log(`✅ POOL ABOVE RESTOCK THRESHOLD | ${poolSize}`);
+                return;
+            }
+
+            console.log(
+                `🔄 BACKGROUND RESTOCK STARTED | Pool: ${poolSize} (threshold: ${MYSTERY_POOL_RESTOCK_THRESHOLD})`
+            );
+
+            await generateMysteryQuestionBatch();
+
+            const updatedPoolSize = await getMysteryQuestionPoolSize();
+
+            console.log(
+                `✅ BACKGROUND RESTOCK COMPLETE | Pool: ${updatedPoolSize}`
+            );
+        } catch (error) {
+            console.error("❌ BACKGROUND MYSTERY POOL RESTOCK FAILED:", error);
+        } finally {
+            mysteryPoolRestockInProgress = false;
+        }
+    })();
+}
+
 const {
     createPaymentTransaction,
 } = require("./paymentService");
@@ -399,21 +449,8 @@ async function startMysteryEvent(interaction) {
             `📦 CURRENT QUESTION POOL: ${poolSize}`
         );
 
-        /*
-         * If the pool is empty,
-         * generate 20 fresh questions.
-         */
-        if (poolSize === 0) {
-
-            console.log(
-                "📦 POOL EMPTY | Generating 20 questions..."
-            );
-
-            await generateMysteryQuestionBatch();
-
-            poolSize =
-                await getMysteryQuestionPoolSize();
-        }
+        // Restock in the background whenever the pool has 5 or fewer questions.
+        startMysteryPoolRestockInBackground("event start");
 
         const event = {
 
@@ -692,32 +729,17 @@ async function handleMysteryReveal(
     }
 
     // --------------------------------------------------------
-    // CLAIM QUESTION ATOMICALLY
+    // CHECK POOL + START BACKGROUND RESTOCK
     // --------------------------------------------------------
 
-    let question =
-        await claimMysteryQuestion();
+    startMysteryPoolRestockInBackground("question reveal");
+
+    // Do not wait for AI generation here. Use an already available
+    // question immediately; the background task replenishes the pool.
+    const question = await claimMysteryQuestion();
 
     if (!question) {
-        console.log(
-            "📦 QUESTION POOL EMPTY"
-        );
-
-        console.log(
-            "🔄 GENERATING NEW QUESTIONS..."
-        );
-
-        try {
-            await generateMysteryQuestionBatch();
-
-            question =
-                await claimMysteryQuestion();
-        } catch (error) {
-            console.error(
-                "❌ RESTOCK FAILED:",
-                error
-            );
-        }
+        console.log("📦 QUESTION POOL EMPTY | BACKGROUND RESTOCK RUNNING");
     }
 
     if (!question) {
