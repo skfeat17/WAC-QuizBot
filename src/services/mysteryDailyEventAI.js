@@ -1384,9 +1384,8 @@ Changing:
 
 does NOT make an old fact new.
 
-Never reuse the same underlying fact.
-
-Never reuse the same subject.
+Never reuse the same underlying fact or subject if it was used within the LAST 14 DAYS.
+Facts and subjects last used more than 14 days ago may be reused.
 
 For example:
 
@@ -1408,15 +1407,15 @@ ${currentBatch}
 Do not duplicate any of these.
 
 ==========================================
-PREVIOUSLY USED QUESTION CONTEXTS
+QUESTION CONTEXTS USED WITHIN THE LAST 14 DAYS
 ==========================================
 
 ${history}
 
-Do not repeat any of these.
+Do not repeat any of these during the 14-day cooldown window.
 
 ==========================================
-PREVIOUS SUBJECTS
+SUBJECTS USED WITHIN THE LAST 14 DAYS
 ==========================================
 
 ${
@@ -1427,7 +1426,7 @@ ${
         : "NONE"
 }
 
-Do not reuse these subjects.
+Do not reuse these subjects if they were used within the last 14 days.
 
 ==========================================
 QUALITY RULES

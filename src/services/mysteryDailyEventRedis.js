@@ -16,6 +16,10 @@ const PREFIX = "wac:mysteryevent:";
 
 const EVENT_TTL_SECONDS = 365 * 24 * 60 * 60;
 
+// A fact can be reused once its previous use is at least 14 days old.
+const QUESTION_HISTORY_DAYS = 14;
+const QUESTION_HISTORY_WINDOW_MS = QUESTION_HISTORY_DAYS * 24 * 60 * 60 * 1000;
+
 // Random player cooldown: 12–16 hours.
 const MIN_COOLDOWN_SECONDS = 3 * 60 * 60;
 const MAX_COOLDOWN_SECONDS = 6 * 60 * 60;
@@ -60,6 +64,18 @@ function questionHistoryKey() {
 
 function questionSubjectHistoryKey() {
     return `${PREFIX}subjects`;
+}
+
+function questionHistoryDatedKey() {
+    return `${PREFIX}questions:dated`;
+}
+
+function questionSubjectHistoryDatedKey() {
+    return `${PREFIX}subjects:dated`;
+}
+
+function questionHistoryMigrationKey() {
+    return `${PREFIX}history:14d:migrated`;
 }
 
 function questionPoolKey() {
@@ -646,98 +662,133 @@ function createQuestionContext({
 }
 
 // ==========================================
-// QUESTION HISTORY
+// QUESTION HISTORY (ROLLING 14-DAY WINDOW)
 // ==========================================
 
-async function hasQuestionBeenUsed(
-    context
-) {
+// Older versions stored history in Redis Sets without timestamps.
+// Their exact age cannot be recovered, so on the first run we conservatively
+// mark existing entries as used from the migration date. They become reusable
+// after 14 days. New entries always receive their real save timestamp.
+async function ensureQuestionHistoryMigrated() {
+    const migrationKey = questionHistoryMigrationKey();
+    const alreadyMigrated = await redis.get(migrationKey);
+    if (alreadyMigrated) return;
+
+    const migrationTimestamp = Date.now();
+    const legacyContexts = await redis.smembers(questionHistoryKey());
+    const legacySubjects = await redis.smembers(questionSubjectHistoryKey());
+
+    const migrateMembers = async (key, members) => {
+        const values = Array.isArray(members) ? members.filter(Boolean) : [];
+        for (let i = 0; i < values.length; i += 100) {
+            const chunk = values.slice(i, i + 100);
+            await Promise.all(
+                chunk.map((member) =>
+                    redis.zadd(key, {
+                        score: migrationTimestamp,
+                        member: String(member),
+                    })
+                )
+            );
+        }
+    };
+
+    await migrateMembers(questionHistoryDatedKey(), legacyContexts);
+    await migrateMembers(questionSubjectHistoryDatedKey(), legacySubjects);
+
+    await redis.set(migrationKey, "1", { ex: EVENT_TTL_SECONDS });
+}
+
+async function pruneOldQuestionHistory(key) {
+    const cutoff = Date.now() - QUESTION_HISTORY_WINDOW_MS;
+    await redis.zremrangebyscore(key, "-inf", cutoff);
+    return cutoff;
+}
+
+async function hasQuestionBeenUsed(context) {
+    if (!context) return false;
+
     try {
-        return await redis.sismember(
-            questionHistoryKey(),
-            context
-        );
+        await ensureQuestionHistoryMigrated();
+        const cutoff = await pruneOldQuestionHistory(questionHistoryDatedKey());
+        const score = await redis.zscore(questionHistoryDatedKey(), String(context));
+        return score !== null && score !== undefined && Number(score) >= cutoff;
     } catch (error) {
         console.error(
             "❌ Mystery question history check error:",
             error.message
         );
-
         throw error;
     }
 }
 
-async function saveQuestionContext(
-    context
-) {
-    try {
-        await redis.sadd(
-            questionHistoryKey(),
-            context
-        );
+async function saveQuestionContext(context) {
+    if (!context) return true;
 
+    try {
+        await ensureQuestionHistoryMigrated();
+        const timestamp = Date.now();
+        await redis.zadd(questionHistoryDatedKey(), {
+            score: timestamp,
+            member: String(context),
+        });
+        // Keep the legacy set populated for compatibility with older code.
+        await redis.sadd(questionHistoryKey(), String(context));
         return true;
     } catch (error) {
         console.error(
             "❌ Mystery question history save error:",
             error.message
         );
-
         throw error;
     }
 }
 
-async function saveQuestionContexts(
-    contexts
-) {
-    if (
-        !Array.isArray(contexts) ||
-        contexts.length === 0
-    ) {
-        return;
-    }
+async function saveQuestionContexts(contexts) {
+    if (!Array.isArray(contexts) || contexts.length === 0) return;
 
-    const uniqueContexts = [
-        ...new Set(
-            contexts.filter(Boolean)
-        ),
-    ];
-
-    if (!uniqueContexts.length) {
-        return;
-    }
+    const uniqueContexts = [...new Set(contexts.filter(Boolean).map(String))];
+    if (!uniqueContexts.length) return;
 
     try {
-        await redis.sadd(
-            questionHistoryKey(),
-            ...uniqueContexts
+        await ensureQuestionHistoryMigrated();
+        const timestamp = Date.now();
+
+        await Promise.all(
+            uniqueContexts.map((member) =>
+                redis.zadd(questionHistoryDatedKey(), {
+                    score: timestamp,
+                    member,
+                })
+            )
         );
+
+        // Keep the legacy set populated for compatibility with older code.
+        await redis.sadd(questionHistoryKey(), ...uniqueContexts);
     } catch (error) {
         console.error(
             "❌ Mystery question histories save error:",
             error.message
         );
-
         throw error;
     }
 }
 
 async function getStoredQuestionContexts() {
     try {
-        const contexts =
-            await redis.smembers(
-                questionHistoryKey()
-            );
-
-        return Array.isArray(contexts)
-            ? contexts
-            : [];
+        await ensureQuestionHistoryMigrated();
+        const cutoff = await pruneOldQuestionHistory(questionHistoryDatedKey());
+        const contexts = await redis.zrangebyscore(
+            questionHistoryDatedKey(),
+            cutoff,
+            "+inf"
+        );
+        return Array.isArray(contexts) ? contexts : [];
     } catch (error) {
         console.error(
             "❌ Mystery question history read error:",
             error.message
         );
-
         throw error;
     }
 }
@@ -746,91 +797,76 @@ async function getStoredQuestionContexts() {
 // SUBJECT HISTORY
 // ==========================================
 
-async function hasQuestionSubjectBeenUsed(
-    subject
-) {
-    const normalizedSubject =
-        normalizeContextPart(subject);
-
-    if (!normalizedSubject) {
-        return false;
-    }
+async function hasQuestionSubjectBeenUsed(subject) {
+    const normalizedSubject = normalizeContextPart(subject);
+    if (!normalizedSubject) return false;
 
     try {
-        return await redis.sismember(
-            questionSubjectHistoryKey(),
+        await ensureQuestionHistoryMigrated();
+        const cutoff = await pruneOldQuestionHistory(questionSubjectHistoryDatedKey());
+        const score = await redis.zscore(
+            questionSubjectHistoryDatedKey(),
             normalizedSubject
         );
+        return score !== null && score !== undefined && Number(score) >= cutoff;
     } catch (error) {
         console.error(
             "❌ Mystery subject history check error:",
             error.message
         );
-
         throw error;
     }
 }
 
-async function saveQuestionSubject(
-    subject
-) {
-    const normalizedSubject =
-        normalizeContextPart(subject);
-
-    if (!normalizedSubject) {
-        return;
-    }
+async function saveQuestionSubject(subject) {
+    const normalizedSubject = normalizeContextPart(subject);
+    if (!normalizedSubject) return;
 
     try {
-        await redis.sadd(
-            questionSubjectHistoryKey(),
-            normalizedSubject
-        );
+        await ensureQuestionHistoryMigrated();
+        await redis.zadd(questionSubjectHistoryDatedKey(), {
+            score: Date.now(),
+            member: normalizedSubject,
+        });
+        // Keep the legacy set populated for compatibility with older code.
+        await redis.sadd(questionSubjectHistoryKey(), normalizedSubject);
     } catch (error) {
         console.error(
             "❌ Mystery subject history save error:",
             error.message
         );
-
         throw error;
     }
 }
 
-async function saveQuestionSubjects(
-    subjects
-) {
-    if (
-        !Array.isArray(subjects) ||
-        subjects.length === 0
-    ) {
-        return;
-    }
+async function saveQuestionSubjects(subjects) {
+    if (!Array.isArray(subjects) || subjects.length === 0) return;
 
     const normalizedSubjects = [
-        ...new Set(
-            subjects
-                .map(
-                    normalizeContextPart
-                )
-                .filter(Boolean)
-        ),
+        ...new Set(subjects.map(normalizeContextPart).filter(Boolean)),
     ];
-
-    if (!normalizedSubjects.length) {
-        return;
-    }
+    if (!normalizedSubjects.length) return;
 
     try {
-        await redis.sadd(
-            questionSubjectHistoryKey(),
-            ...normalizedSubjects
+        await ensureQuestionHistoryMigrated();
+        const timestamp = Date.now();
+
+        await Promise.all(
+            normalizedSubjects.map((member) =>
+                redis.zadd(questionSubjectHistoryDatedKey(), {
+                    score: timestamp,
+                    member,
+                })
+            )
         );
+
+        // Keep the legacy set populated for compatibility with older code.
+        await redis.sadd(questionSubjectHistoryKey(), ...normalizedSubjects);
     } catch (error) {
         console.error(
             "❌ Mystery subjects save error:",
             error.message
         );
-
         throw error;
     }
 }
@@ -1050,6 +1086,7 @@ module.exports = {
     PREFIX,
 
     EVENT_TTL_SECONDS,
+    QUESTION_HISTORY_DAYS,
 
     MIN_COOLDOWN_SECONDS,
     MAX_COOLDOWN_SECONDS,
