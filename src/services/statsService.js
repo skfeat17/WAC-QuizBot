@@ -10,7 +10,6 @@ const redis = new Redis({
 
 const VALID_EVENTS = new Set([
     "mystery",
-    "chest",
 ]);
 
 

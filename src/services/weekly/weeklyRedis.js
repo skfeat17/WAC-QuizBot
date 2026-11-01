@@ -18,6 +18,8 @@ const keys = {
     participants: () => `${PREFIX}participants`,
     participant: (id) => `${PREFIX}participant:${id}`,
     attempt: (id, day) => `${PREFIX}attempt:${id}:${day}`,
+    dailyRecord: (userId, competitionId, date) => `${PREFIX}daily:${userId}:${competitionId}:${date}`,
+    dailyRecords: () => `${PREFIX}daily-record-keys`,
     attempts: () => `${PREFIX}attempt-keys`,
     activeAttempts: () => `${PREFIX}active-attempt-keys`,
     activeAttemptsMigrated: () => `${PREFIX}active-attempts-migrated`,
@@ -28,6 +30,8 @@ const keys = {
     usedSubjectNames: () => `${PREFIX}used-subject-names`,
     emergencyIndex: () => `${PREFIX}emergency-question-index`,
     playerQuestionHistory: (userId) => `${PREFIX}player-question-history:${userId}`,
+    playerAttemptHistory: (userId) => `${PREFIX}player-attempt-history:${userId}`,
+    playerPointsHistory: (userId) => `${PREFIX}player-points-history:${userId}`,
 };
 
 const getState = () => redis.get(keys.state());
@@ -60,6 +64,49 @@ async function takeQuestionFromPool() {
 }
 const getParticipant = (id) => redis.get(keys.participant(id));
 const getAttempt = (id, day) => redis.get(keys.attempt(id, day));
+const getDailyRecord = (userId, competitionId, date) =>
+    redis.get(keys.dailyRecord(userId, competitionId, date));
+async function setDailyRecord(userId, competitionId, date, record) {
+    const key = keys.dailyRecord(userId, competitionId, date);
+    await redis.set(key, record);
+    await redis.sadd(keys.dailyRecords(), key);
+    return record;
+}
+async function initializeDailyRecords(userId, state) {
+    if (!userId || !state?.competitionId || !state?.startedAt) return [];
+    const startDate = new Date(state.startedAt);
+    startDate.setUTCHours(0, 0, 0, 0);
+    const records = [];
+    for (let offset = 0; offset < 7; offset += 1) {
+        const day = new Date(startDate);
+        day.setUTCDate(day.getUTCDate() + offset);
+        const date = day.toISOString().slice(0, 10);
+        const key = keys.dailyRecord(userId, state.competitionId, date);
+        const record = {
+            userId: String(userId), competitionId: String(state.competitionId), date,
+            dayNumber: offset + 1, status: 'pending', questionsAnswered: 0,
+            correctAnswers: 0, incorrectAnswers: 0, timedOut: 0, quizPoints: 0,
+            streakBonus: 0, missedAttemptUsed: false, restoreStatus: 'available',
+            createdAt: Date.now(), updatedAt: Date.now(),
+        };
+        // Never overwrite progress when a participant returns or a command is retried.
+        await redis.set(key, record, { nx: true });
+        await redis.sadd(keys.dailyRecords(), key);
+        records.push(await redis.get(key));
+    }
+    return records;
+}
+async function getDailyRecords(userId, competitionId) {
+    const allKeys = await redis.smembers(keys.dailyRecords());
+    const prefix = `${PREFIX}daily:${userId}:${competitionId}:`;
+    const matching = (allKeys || []).filter((key) => String(key).startsWith(prefix));
+    const rows = await Promise.all(matching.map(async (key) => {
+        const row = await redis.get(key);
+        if (!row) await redis.srem(keys.dailyRecords(), key);
+        return row || null;
+    }));
+    return rows.filter(Boolean).sort((a, b) => String(a.date).localeCompare(String(b.date)));
+}
 
 async function join(userId, displayName) {
     const participant = {
@@ -184,17 +231,90 @@ async function markQuestionsAndSubjectsUsed(questions) {
     ]);
 }
 
+
+async function appendAttemptHistory(userId, attempt) {
+    await redis.lpush(keys.playerAttemptHistory(userId), JSON.stringify(attempt));
+    await redis.ltrim(keys.playerAttemptHistory(userId), 0, 99);
+}
+async function getAttemptHistory(userId, limit = 20) {
+    const rows = await redis.lrange(keys.playerAttemptHistory(userId), 0, Math.max(0, limit - 1));
+    return (rows || []).map((row) => {
+        if (typeof row === 'string') { try { return JSON.parse(row); } catch { return null; } }
+        return row;
+    }).filter(Boolean);
+}
+async function appendPointsHistory(userId, entry) {
+    await redis.lpush(keys.playerPointsHistory(userId), JSON.stringify(entry));
+    await redis.ltrim(keys.playerPointsHistory(userId), 0, 199);
+}
+async function getPointsHistory(userId, limit = 20) {
+    const rows = await redis.lrange(keys.playerPointsHistory(userId), 0, Math.max(0, limit - 1));
+    return (rows || []).map((row) => {
+        if (typeof row === 'string') { try { return JSON.parse(row); } catch { return null; } }
+        return row;
+    }).filter(Boolean);
+}
+
+
+async function deleteAttemptDayHistory(userId, dayKey) {
+    const attemptHistoryKey = keys.playerAttemptHistory(userId);
+    const pointsHistoryKey = keys.playerPointsHistory(userId);
+    const [attemptRows, pointsRows] = await Promise.all([
+        redis.lrange(attemptHistoryKey, 0, -1),
+        redis.lrange(pointsHistoryKey, 0, -1),
+    ]);
+    const parse = (row) => {
+        if (typeof row !== 'string') return row;
+        try { return JSON.parse(row); } catch { return null; }
+    };
+    const keptAttempts = (attemptRows || []).map(parse).filter((row) => row && row.dayKey !== dayKey);
+    const keptPoints = (pointsRows || []).map(parse).filter((row) => row && row.dayKey !== dayKey);
+    await Promise.all([
+        redis.del(attemptHistoryKey, pointsHistoryKey),
+        ...(keptAttempts.length ? [redis.rpush(attemptHistoryKey, ...keptAttempts.map((row) => JSON.stringify(row)))] : []),
+        ...(keptPoints.length ? [redis.rpush(pointsHistoryKey, ...keptPoints.map((row) => JSON.stringify(row)))] : []),
+    ]);
+}
+
+async function deleteUserData(userId) {
+    const trackedKeys = await redis.smembers(keys.attempts());
+    const userAttemptKeys = (trackedKeys || []).filter((key) => String(key).startsWith(`${PREFIX}attempt:${userId}:`));
+    const reattemptKeys = [];
+    for (const key of userAttemptKeys) {
+        const dayKey = String(key).slice(`${PREFIX}attempt:${userId}:`.length);
+        const reattempt = `${keys.participant(userId)}:reattempt:${dayKey}`;
+        reattemptKeys.push(reattempt, `${reattempt}:bonus`, keys.operationLock(userId, dayKey));
+    }
+    const existingReattemptKeys = await redis.keys(`${keys.participant(userId)}:reattempt:*`);
+    const toDelete = [
+        keys.participant(userId), keys.playerAttemptHistory(userId), keys.playerPointsHistory(userId),
+        keys.playerQuestionHistory(userId), ...userAttemptKeys, ...reattemptKeys,
+        ...((await redis.smembers(keys.dailyRecords())) || []).filter((key) => String(key).startsWith(`${PREFIX}daily:${userId}:`)),
+        ...(existingReattemptKeys || []),
+    ];
+    if (toDelete.length) await redis.del(...toDelete);
+    await Promise.all([
+        redis.srem(keys.participants(), userId),
+        redis.zrem(keys.leaderboard(), userId),
+        ...(userAttemptKeys.length ? [redis.srem(keys.attempts(), ...userAttemptKeys), redis.srem(keys.activeAttempts(), ...userAttemptKeys)] : []),
+    ]);
+    const dailyKeys = toDelete.filter((key) => String(key).startsWith(`${PREFIX}daily:${userId}:`));
+    if (dailyKeys.length) await redis.srem(keys.dailyRecords(), ...dailyKeys);
+    return userAttemptKeys.length;
+}
+
 async function clearWeeklyData() {
     // Deletes event/session data only. Per-player and legacy question history survive.
-    const [participantIds, attemptKeys] = await Promise.all([
+    const [participantIds, attemptKeys, dailyRecordKeys] = await Promise.all([
         redis.smembers(keys.participants()),
         redis.smembers(keys.attempts()),
+        redis.smembers(keys.dailyRecords()),
     ]);
     const toDelete = [
         keys.state(), keys.pool(), keys.poolQueue(), keys.leaderboard(), keys.participants(), keys.attempts(),
-        keys.activeAttempts(),
+        keys.activeAttempts(), keys.dailyRecords(),
         ...(participantIds || []).map((id) => keys.participant(id)),
-        ...(attemptKeys || []),
+        ...(attemptKeys || []), ...(dailyRecordKeys || []),
     ];
     if (toDelete.length) await redis.del(...toDelete);
 }
@@ -203,8 +323,10 @@ module.exports = {
     redis, keys, getState, setState, getPool, setPool, getQuestionPoolSize,
     addQuestionsToPool, takeQuestionFromPool, nextEmergencyQuestionIndex, join,
     getParticipant, saveParticipant, getLeaderboard, getAttempt, setAttempt,
-    deleteAttempt, getTrackedAttempts, getActiveAttempts, acquireLock, releaseLock,
+    getDailyRecord, setDailyRecord, initializeDailyRecords, getDailyRecords,
+    deleteAttempt, deleteAttemptDayHistory, deleteUserData, getTrackedAttempts, getActiveAttempts, acquireLock, releaseLock,
     hasQuestionBeenUsed, hasSubjectBeenUsed, getUsedSubjectNames, getUsedQuestionTexts,
     markQuestionsAndSubjectsUsed, getUsedQuestionIds, hasPlayerUsedQuestion,
-    markQuestionUsed, clearWeeklyData,
+    markQuestionUsed, clearWeeklyData, appendAttemptHistory, getAttemptHistory, appendPointsHistory, getPointsHistory,
+
 };

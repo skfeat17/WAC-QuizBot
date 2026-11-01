@@ -308,8 +308,12 @@ const commands = [
                 .setRequired(true)
                 .addChoices(
                     {
-                        name: "Mystery Event",
+                        name: "Daily World Event",
                         value: "mystery",
+                    },
+                    {
+                        name: "Weekly World Quiz",
+                        value: "weekly",
                     }
                 )
         )

@@ -13,16 +13,147 @@ const {
     getLast24Hours,
 } = require("./statsService");
 
-
+const weeklyRedis = require("./weekly/weeklyRedis");
 const VALID_EVENTS = new Set([
     "mystery",
-    "chest",
 ]);
+
+const WEEKLY_PAGE_SIZE = 10;
+const WEEKLY_SNAPSHOT_TTL_MS = 15 * 60 * 1000;
+const weeklyStatsSnapshots = new Map();
+
+function cleanWeeklyStatsSnapshots() {
+    const now = Date.now();
+    for (const [key, snapshot] of weeklyStatsSnapshots) {
+        if (snapshot.expiresAt <= now) weeklyStatsSnapshots.delete(key);
+    }
+}
+
+function getAttemptDate(dayKey) {
+    const match = String(dayKey || "").match(/:date-(\d{4}-\d{2}-\d{2})$/);
+    return match ? match[1] : null;
+}
+
+async function loadWeeklyStatsSnapshot() {
+    const [players, attempts] = await Promise.all([
+        weeklyRedis.getLeaderboard(10000),
+        weeklyRedis.getTrackedAttempts(),
+    ]);
+
+    const byUser = new Map();
+    for (const player of players) {
+        const userId = String(player.userId);
+        byUser.set(userId, {
+            userId,
+            displayName: player.displayName || userId,
+            points: Number(player.points) || 0,
+            correct: Number(player.correct) || 0,
+            incorrect: Number(player.incorrect) || 0,
+            timedOut: 0,
+            days: new Set(),
+            joinedAt: Number(player.joinedAt) || null,
+        });
+    }
+
+    for (const attempt of attempts) {
+        if (!attempt?.userId) continue;
+        const userId = String(attempt.userId);
+        let row = byUser.get(userId);
+        if (!row) {
+            row = {
+                userId,
+                displayName: userId,
+                points: 0,
+                correct: 0,
+                incorrect: 0,
+                timedOut: 0,
+                days: new Set(),
+                joinedAt: null,
+            };
+            byUser.set(userId, row);
+        }
+
+        row.timedOut += Number(attempt.timedOut) || 0;
+        const date = getAttemptDate(attempt.dayKey);
+        if (date && (attempt.participatedAt || attempt.startedAt || Number(attempt.answered) > 0 || attempt.status === "completed")) {
+            row.days.add(date);
+        }
+    }
+
+    const rows = [...byUser.values()]
+        .map(row => ({ ...row, daysParticipated: row.days.size }))
+        .sort((a, b) => b.points - a.points || a.displayName.localeCompare(b.displayName));
+
+    return rows;
+}
+
+function buildWeeklyStatsButtons(snapshotId, pageIndex, totalPages) {
+    return [
+        new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setCustomId(`stats_weekly_prev_${snapshotId}_${pageIndex}`)
+                .setLabel("Previous")
+                .setEmoji("◀️")
+                .setStyle(ButtonStyle.Secondary)
+                .setDisabled(pageIndex <= 0),
+            new ButtonBuilder()
+                .setCustomId(`stats_weekly_next_${snapshotId}_${pageIndex}`)
+                .setLabel("Next")
+                .setEmoji("▶️")
+                .setStyle(ButtonStyle.Secondary)
+                .setDisabled(pageIndex >= totalPages - 1),
+        ),
+    ];
+}
+
+async function getWeeklyStatsPage(client, snapshotId, pageIndex) {
+    cleanWeeklyStatsSnapshots();
+    const snapshot = weeklyStatsSnapshots.get(snapshotId);
+    if (!snapshot || snapshot.expiresAt <= Date.now()) {
+        weeklyStatsSnapshots.delete(snapshotId);
+        return {
+            embed: new EmbedBuilder()
+                .setColor(0x5865F2)
+                .setTitle("🏆 WEEKLY WORLD QUIZ STATS")
+                .setDescription("This stats snapshot has expired. Run `/stats` again to load the latest data."),
+            components: [],
+        };
+    }
+
+    const totalPages = Math.max(1, Math.ceil(snapshot.rows.length / WEEKLY_PAGE_SIZE));
+    const safePage = Math.min(Math.max(Number(pageIndex) || 0, 0), totalPages - 1);
+    const visibleRows = snapshot.rows.slice(safePage * WEEKLY_PAGE_SIZE, (safePage + 1) * WEEKLY_PAGE_SIZE);
+    const lines = [];
+
+    for (let i = 0; i < visibleRows.length; i += 1) {
+        const player = visibleRows[i];
+        const user = await getUserLabel(client, player.userId);
+        const joined = player.joinedAt
+            ? `<t:${Math.floor(player.joinedAt / 1000)}:F> (<t:${Math.floor(player.joinedAt / 1000)}:R>)`
+            : "Unknown";
+        lines.push(
+            `**${safePage * WEEKLY_PAGE_SIZE + i + 1}.** ${user.mention} — **${formatNumber(player.points)} points**\n` +
+            `   ✅ ${formatNumber(player.correct)} • ❌ ${formatNumber(player.incorrect)} • ⏰ ${formatNumber(player.timedOut)} • 📅 ${formatNumber(player.daysParticipated)} days\n` +
+            `   🕒 Joined: ${joined}`
+        );
+    }
+
+    const description = lines.length ? lines.join("\n\n") : "No weekly participants found.";
+    const embed = new EmbedBuilder()
+        .setColor(0x5865F2)
+        .setTitle("🏆 WEEKLY WORLD QUIZ STATS")
+        .setDescription(`**Players:** ${formatNumber(snapshot.rows.length)}\n**Page:** ${safePage + 1}/${totalPages}\n\n${description}`)
+        .setFooter({ text: `World Adventure Club • Weekly Stats • Snapshot expires in 15 minutes` });
+
+    return {
+        embed,
+        components: snapshot.rows.length ? buildWeeklyStatsButtons(snapshotId, safePage, totalPages) : [],
+    };
+}
 
 
 const EVENT_NAMES = {
-    mystery: "MYSTERY EVENT",
-    chest: "TREASURE CHEST",
+    mystery: "DAILY STATS",
 };
 
 const MORA_EMOJI =
@@ -381,6 +512,33 @@ async function handleStatsCommand(
         );
 
 
+    if (event === "weekly") {
+        try {
+            await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+            const rows = await loadWeeklyStatsSnapshot();
+            const snapshotId = interaction.id;
+            cleanWeeklyStatsSnapshots();
+            weeklyStatsSnapshots.set(snapshotId, {
+                rows,
+                expiresAt: Date.now() + WEEKLY_SNAPSHOT_TTL_MS,
+            });
+            const page = await getWeeklyStatsPage(interaction.client, snapshotId, 0);
+            await interaction.editReply({ embeds: [page.embed], components: page.components });
+        } catch (error) {
+            console.error("❌ Failed to load weekly stats:", error);
+            if (interaction.deferred || interaction.replied) {
+                await interaction.editReply({
+                    content: "⚠️ I couldn't load Weekly World Quiz statistics right now.",
+                    embeds: [],
+                    components: [],
+                });
+            } else {
+                await interaction.reply({ content: "⚠️ I couldn't load Weekly World Quiz statistics right now.", flags: MessageFlags.Ephemeral });
+            }
+        }
+        return;
+    }
+
     if (!VALID_EVENTS.has(event)) {
         await interaction.reply({
             content:
@@ -447,14 +605,25 @@ async function handleStatsCommand(
 async function handleStatsButton(
     interaction
 ) {
-    if (
-        !interaction.customId.startsWith(
-            "stats_"
-        )
-    ) {
+    if (!interaction.customId.startsWith("stats_")) return;
+
+    const weeklyParts = interaction.customId.split("_");
+    if (weeklyParts.length === 5 && weeklyParts[1] === "weekly") {
+        const action = weeklyParts[2];
+        const snapshotId = weeklyParts[3];
+        const pageIndex = Number(weeklyParts[4]);
+        if (!["prev", "next"].includes(action) || !Number.isInteger(pageIndex)) return;
+
+        try {
+            await interaction.deferUpdate();
+            const targetPage = action === "prev" ? pageIndex - 1 : pageIndex + 1;
+            const page = await getWeeklyStatsPage(interaction.client, snapshotId, targetPage);
+            await interaction.editReply({ embeds: [page.embed], components: page.components });
+        } catch (error) {
+            console.error("❌ Failed to update weekly stats:", error);
+        }
         return;
     }
-
 
     const parts =
         interaction.customId.split("_");

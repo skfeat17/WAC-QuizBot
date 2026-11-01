@@ -1,11 +1,9 @@
-// Marks the event ended at its seven-day deadline without deleting any scores.
+// Marks the event ended at its seven-day deadline without deleting scores.
 const { getState, setState } = require('./weeklyRedis');
-
 let schedulerTimer = null;
 let activeRecovery = null;
 let activeClient = null;
 let schedulerTickRunning = false;
-
 async function checkCompetitionDeadline() {
     try {
         const state = await getState();
@@ -19,7 +17,6 @@ async function checkCompetitionDeadline() {
         console.error('[weekly] deadline check failed:', error.message || error);
     }
 }
-
 function startWeeklyScheduler(client = null, recoverExpired = null) {
     activeClient = client || activeClient;
     activeRecovery = recoverExpired || activeRecovery;
@@ -40,7 +37,6 @@ function startWeeklyScheduler(client = null, recoverExpired = null) {
     schedulerTimer = setInterval(tick, 60 * 1000);
     schedulerTimer.unref?.();
 }
-
 async function finalizeWeekly() {
     const state = await getState();
     if (!state || state.status !== 'active') return { ended: false };
@@ -50,5 +46,4 @@ async function finalizeWeekly() {
     await setState(state);
     return { ended: true };
 }
-
 module.exports = { startWeeklyScheduler, finalizeWeekly };

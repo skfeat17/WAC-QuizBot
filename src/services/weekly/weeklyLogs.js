@@ -8,9 +8,12 @@ function timestamp() {
         hour12: false,
     });
 }
+
 function formatUser(user) {
     if (!user) return 'Unknown user';
-    return user.globalName || user.username || user.tag || 'Unknown';
+    const username = user.globalName || user.username || user.tag || 'Unknown';
+    const id = user.id || user.userId || 'unknown-id';
+    return `${username} (${id})`;
 }
 
 function write(level, event, details = '') {
