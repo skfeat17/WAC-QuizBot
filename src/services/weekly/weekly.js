@@ -203,7 +203,7 @@ function weeklyCommand() {
             .setRequired(true)
             .addChoices(
                 { name: 'Start', value: 'start' },
-                { name: 'End', value: 'end' },
+                // { name: 'End', value: 'end' },
                 { name: 'Participants List', value: 'leader' },
                 { name: 'Reset user attempt (one day)', value: 'resetday' },
                 { name: 'Delete all user data', value: 'deleteuser' },
@@ -2006,7 +2006,7 @@ async function handleWeeklyCommand(interaction) {
         if (!isAdmin(interaction.user.id)) {
             return interaction.editReply({ content: '❌ This command is restricted to weekly admins.', embeds: [], components: [] });
         }
-        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
 
         const state = await R.getState();
         if (!state) return interaction.editReply('⚠️ No weekly event data found.');
@@ -2090,7 +2090,7 @@ async function handleWeeklyCommand(interaction) {
         if (!isAdmin(interaction.user.id)) {
             return interaction.reply({ content: '❌ This command is restricted to weekly admins.', flags: MessageFlags.Ephemeral });
         }
-        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
         const target = interaction.options.getUser('user');
         if (!target) return interaction.editReply('⚠️ Select a user with `/weekly action:deleteuser user:@user`.');
 
