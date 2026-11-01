@@ -1,4 +1,5 @@
 // Command handlers and quiz state machine for WAC Weekly World Quiz Champion.
+
 //weekly.js
 const crypto = require('node:crypto');
 const emergencyData = require('./emergency_with_ids.json');
