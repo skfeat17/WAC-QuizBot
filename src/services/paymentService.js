@@ -101,15 +101,13 @@ function buildPaymentEmbed(transaction) {
             text: `Transaction ${transaction.transactionId}`,
         })
         .setTimestamp(transaction.createdAt);
-
-    if (transaction.paidBy) {
+    if (transaction.paidBy && transaction.paidAt) {
         embed.addFields({
             name: "Paid By",
-            value: `<@${transaction.paidBy}>`,
-            inline: true,
+            value: `<@${transaction.paidBy}> at <t:${Math.floor(transaction.paidAt / 1000)}:F>`,
+            inline: false,
         });
     }
-
     return embed;
 }
 
@@ -205,11 +203,13 @@ async function createPaymentTransaction({
 }
 
 async function updateAllPaymentMessages(client, transaction) {
-    for (const staffMessage of transaction.staffMessages || []) {
-        try {
+    await Promise.allSettled(
+        (transaction.staffMessages || []).map(async (staffMessage) => {
             const channel = await client.channels.fetch(
                 staffMessage.channelId
             );
+
+            if (!channel) return;
 
             const message = await channel.messages.fetch(
                 staffMessage.messageId
@@ -219,68 +219,87 @@ async function updateAllPaymentMessages(client, transaction) {
                 embeds: [buildPaymentEmbed(transaction)],
                 components: buildPaymentButtons(transaction),
             });
-        } catch (error) {
-            console.error(
-                `❌ Failed to update payment DM for ${staffMessage.staffId}:`,
-                error?.message || error
-            );
-        }
-    }
+        })
+    );
 }
 
 async function handlePaymentButton(interaction) {
-    const customId = interaction.customId;
-
-    if (!customId.startsWith("payment_paid_")) {
-        return false;
-    }
+    if (!interaction.customId.startsWith("payment_paid_")) return;
 
     if (!PAYMENT_STAFF.includes(interaction.user.id)) {
-        await interaction.reply({
-            content: "❌ You are not authorized to manage payments.",
-            flags: MessageFlags.Ephemeral,
+        return interaction.reply({
+            content: "❌ You are not authorized to mark payments as paid.",
+            ephemeral: true,
         });
-
-        return true;
     }
 
-    // Silently acknowledge the button click.
-    await interaction.deferUpdate();
+    const transactionId = interaction.customId.replace("payment_paid_", "");
 
-    const transactionId =
-        customId.slice("payment_paid_".length);
+    try {
+        const transaction = await getPaymentTransaction(transactionId);
 
-    const transaction =
-        await getPaymentTransaction(transactionId);
+        if (!transaction) {
+            return interaction.reply({
+                content: "❌ Transaction not found.",
+                ephemeral: true,
+            });
+        }
 
-    if (!transaction) {
-        return true;
-    }
+        if (transaction.status === "paid") {
+            return interaction.reply({
+                content: "✅ This transaction has already been marked as paid.",
+                ephemeral: true,
+            });
+        }
 
-    if (transaction.status === "paid") {
-        return true;
-    }
+        const paidAt = Date.now();
 
-    const updated = await updatePaymentTransaction(
-        transactionId,
-        {
+        const updatedTransaction = {
+            ...transaction,
             status: "paid",
             paidBy: interaction.user.id,
-            paidAt: Date.now(),
+            paidAt,
+        };
+
+        // 1. UPDATE THE CLICKED EMBED IMMEDIATELY
+        await interaction.update({
+            embeds: [buildPaymentEmbed(updatedTransaction)],
+            components: buildPaymentButtons(updatedTransaction),
+        });
+
+        // 2. DO EVERYTHING ELSE IN THE BACKGROUND
+        setImmediate(async () => {
+            try {
+                await updatePaymentTransaction(transactionId, {
+                    status: "paid",
+                    paidBy: interaction.user.id,
+                    paidAt,
+                });
+
+                await updateAllPaymentMessages(
+                    interaction.client,
+                    updatedTransaction,
+                    interaction.message.id
+                );
+
+                console.log(
+                    `✅ PAYMENT MARKED PAID | ${transactionId} `
+                );
+            } catch (error) {
+                console.error("[PAYMENT] Background update failed:", error);
+            }
+        });
+
+    } catch (error) {
+        console.error("[PAYMENT] Button error:", error);
+
+        if (!interaction.replied && !interaction.deferred) {
+            await interaction.reply({
+                content: "❌ Something went wrong while updating this payment.",
+                ephemeral: true,
+            }).catch(() => { });
         }
-    );
-
-    await updateAllPaymentMessages(
-        interaction.client,
-        updated
-    );
-
-    console.log(
-        `✅ PAYMENT MARKED PAID | ${transactionId} | ` +
-        `Winner: ${updated.winnerId} | Paid By: ${interaction.user.id}`
-    );
-
-    return true;
+    }
 }
 
 module.exports = {
