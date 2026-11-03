@@ -104,7 +104,7 @@ function buildPaymentEmbed(transaction) {
     if (transaction.paidBy && transaction.paidAt) {
         embed.addFields({
             name: "Paid By",
-            value: `<@${transaction.paidBy}> at <t:${Math.floor(transaction.paidAt / 1000)}:F>`,
+            value: `<@${transaction.paidBy}> at <t:${Math.floor(transaction.paidAt / 1000)}:f>`,
             inline: false,
         });
     }
