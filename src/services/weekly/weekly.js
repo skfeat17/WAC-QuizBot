@@ -168,7 +168,12 @@ async function handleRankPrivacyCommand(interaction) {
 
     const action = interaction.options?.getString('action') || interaction.commandName;
     const shouldHide = action === 'hide';
-    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+    // /weekly is normally deferred by handleWeeklyCommand (or index.js).
+    // Only acknowledge here when this handler is called directly.
+    if (!interaction.deferred && !interaction.replied) {
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+    }
 
     try {
         if (shouldHide) {
@@ -752,22 +757,52 @@ function scheduleTimeout(client, userId, dayKey, attemptId, questionIndex, quest
 
 async function updateOriginal(attemptId, interaction, payload, attempt = null) {
     if (interaction) {
-        await interaction.editReply(payload);
-        return;
+        try {
+            await interaction.editReply(payload);
+            return true;
+        } catch (error) {
+            console.error(`[weekly] could not edit quiz response attempt=${attemptId}:`, error.message || error);
+            return false;
+        }
     }
 
     const live = liveResponses.get(attemptId);
     if (live) {
-        await live.webhook.editMessage(live.messageId, payload);
-        return;
+        try {
+            await live.webhook.editMessage(live.messageId, payload);
+            return true;
+        } catch (error) {
+            // Discord interaction webhook tokens expire (normally after 15 minutes).
+            // The quiz result is already saved; an expired ephemeral response must
+            // not make timeout recovery or answer processing crash.
+            if (Number(error.code) === 50027 || Number(error.code) === 10015) {
+                console.warn(`[weekly] quiz response token expired; result remains saved (attempt=${attemptId}).`);
+                liveResponses.delete(attemptId);
+                return false;
+            }
+            console.error(`[weekly] live quiz response edit failed attempt=${attemptId}:`, error.message || error);
+            return false;
+        }
     }
 
     // The interaction webhook is persisted with the attempt, allowing timeout edits
     // to recover after a process restart while Discord's interaction token is valid.
     if (attempt?.webhook?.id && attempt?.webhook?.token) {
-        const webhook = new WebhookClient({ id: attempt.webhook.id, token: attempt.webhook.token });
-        await webhook.editMessage('@original', payload);
+        try {
+            const webhook = new WebhookClient({ id: attempt.webhook.id, token: attempt.webhook.token });
+            await webhook.editMessage('@original', payload);
+            return true;
+        } catch (error) {
+            if (Number(error.code) === 50027 || Number(error.code) === 10015) {
+                console.warn(`[weekly] saved quiz response token expired; result remains saved (attempt=${attemptId}).`);
+                return false;
+            }
+            console.error(`[weekly] saved quiz response edit failed attempt=${attemptId}:`, error.message || error);
+            return false;
+        }
     }
+
+    return false;
 }
 
 async function processAnswer(client, input) {
@@ -1525,18 +1560,28 @@ async function handleWeeklyButton(interaction, client) {
             const dayKey = getDayKey(state);
             const todayAttempt = await R.getAttempt(interaction.user.id, dayKey);
             const attempts = await R.getAttemptHistory(interaction.user.id, 100);
-            const rankIndex = rows.findIndex((row) => row.userId === interaction.user.id);
+            const rankIndex = rows.findIndex((row) => String(row.userId) === String(interaction.user.id));
+            const rank = rankIndex < 0 ? 0 : rankIndex + 1;
+
+            // The leaderboard is sorted from highest to lowest points.
+            // The player immediately above this user is rows[rankIndex - 1].
+            const nextRankPoints = rankIndex > 0
+                ? Number(rows[rankIndex - 1].points) || 0
+                : null;
+
             const participantCount = Number(await R.redis.scard(R.keys.participants())) || 0;
             const rankingsHidden = await areRankingsHidden();
+
             await interaction.editReply({
                 embeds: [profileEmbed({
                     user: interaction.user,
                     participant,
-                    rank: rankIndex < 0 ? 0 : rankIndex + 1,
+                    rank,
                     participantCount,
                     todayAttempt,
                     attempts,
                     rankingsHidden,
+                    nextRankPoints,
                 })],
                 components: profileComponents(),
                 allowedMentions: { parse: [] },

@@ -110,7 +110,7 @@ function challengeReadyComponents() {
     )];
 }
 
-function profileEmbed({ user, participant, rank, participantCount, todayAttempt, attempts = [], rankingsHidden = false }) {
+function profileEmbed({ user, participant, rank, participantCount, todayAttempt, attempts = [], rankingsHidden = false, nextRankPoints = null }) {
     const p = participant || {};
     const answers = attempts.flatMap((attempt) => Array.isArray(attempt.answers) ? attempt.answers : []);
     const today = todayAttempt || {};
@@ -128,6 +128,13 @@ function profileEmbed({ user, participant, rank, participantCount, todayAttempt,
         .setTitle(`👤 ${user.globalName || user.username}’s Weekly Profile`)
         .setDescription([
             `🏆 **Weekly Rank:** ${rankingsHidden ? '🔒 Sealed' : (rank ? `#${rank} of ${participantCount}` : 'Unranked')}`,
+            rankingsHidden
+                ? '🚀 **Next Ascension**   : 🔒 Sealed'
+                : rank === 1
+                    ? '🚀 **Next Ascension   :** 👑 **You are #1!**'
+                    : Number.isFinite(Number(nextRankPoints)) && nextRankPoints !== null
+                        ? `🚀 **Next Ascension**  : ${Math.max(0, Number(nextRankPoints) - (Number(p.points) || 0) + 1)} points`
+                        : '🚀 **Next Ascension**  : —',
             `⭐ **Total Points:** ${Number(p.points) || 0}`,
             `🔥 **Current Streak:** ${Number(p.currentStreak) || 0} days`,
             `🎯 **Challenges Completed:** ${Number(p.challengesCompleted) || 0}`,
