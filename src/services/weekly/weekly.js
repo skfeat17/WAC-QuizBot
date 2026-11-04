@@ -1905,8 +1905,21 @@ async function handleWeeklyButton(interaction, client) {
             const rows = await R.getLeaderboard(10000);
             const participantCount = Number(await R.redis.scard(R.keys.participants())) || 0;
             if (customId === 'weekly:leaderboard') {
+                // A player counts as participated today as soon as their daily
+                // attempt record exists (registered, active, or completed).
+                // This uses the UTC day key and intentionally ignores reattempt status.
+                const todayDayKey = getDayKey(state);
+                const todayAttempts = await Promise.all(
+                    rows.map((player) => R.getAttempt(player.userId, todayDayKey))
+                );
+                const participatedToday = new Set(
+                    rows
+                        .filter((player, index) => Boolean(todayAttempts[index]))
+                        .map((player) => String(player.userId))
+                );
+
                 await interaction.editReply({
-                    embeds: [leaderboardEmbed(state, rows, participantCount)],
+                    embeds: [leaderboardEmbed(state, rows, participantCount, participatedToday)],
                     allowedMentions: { parse: [] },
                 });
             } else {

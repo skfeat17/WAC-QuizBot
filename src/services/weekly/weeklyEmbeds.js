@@ -168,17 +168,23 @@ function profileMenuEmbed() {
     return new EmbedBuilder().setColor(0x5865F2).setTitle('👤 MY WEEKLY PROFILE').setDescription('View your weekly stats, make up missed challenges, reattempt today, or review your histories.');
 }
 
-function leaderboardEmbed(state, rows, participantCount) {
+function leaderboardEmbed(state, rows, participantCount, participatedToday = new Set()) {
     const end = Math.floor(state.endsAt / 1000);
     const status = state.status === 'active' ? '🟢 Active' : '🔴 Ended';
     const board = rows.slice(0, 10)
-        .map((player, index) => `**${index + 1}.** <@${player.userId}>`)
+        .map((player, index) => {
+            const marker = participatedToday.has(String(player.userId)) ? 'P' : 'NP';
+            return `**${index + 1}.** <@${player.userId}> - ${marker}`;
+        })
         .join('\n') || 'No participants yet. Be the first to play!';
 
     return new EmbedBuilder()
         .setColor(0xF1C40F)
         .setTitle('🏆 WEEKLY WORLD QUIZ • TOP 10')
-        .setDescription(`**Status:** ${status}\n**Competition ends:** <t:${end}:F>\n\n${board}`)
+        .setDescription(
+            `**Status:** ${status}\n**Competition ends:** <t:${end}:F>\n\n` +
+            `${board}\n\n**Today’s Participation**\nP = Participated\nNP = Not Participated`
+        )
         .addFields(
             { name: '👥 Participants', value: String(participantCount), inline: true },
             { name: '📅 Duration', value: '7 days', inline: true },
