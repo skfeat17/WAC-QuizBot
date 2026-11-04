@@ -5,6 +5,7 @@ const {
     ButtonBuilder,
     ButtonStyle,
 } = require('discord.js');
+const { createCanvas, loadImage } = require('canvas');
 
 const PRIZE_LINES = '🥇 1st — 1,000 Mora\n🥈 2nd — 750 Mora\n🥉 3rd — 550 Mora\n🏅 4th — 400 Mora\n🎖️ 5th — 300 Mora';
 
@@ -110,45 +111,133 @@ function challengeReadyComponents() {
     )];
 }
 
-function profileEmbed({ user, participant, rank, participantCount, todayAttempt, attempts = [], rankingsHidden = false, nextRankPoints = null }) {
+const avatarImageCache = new Map();
+
+async function getCachedAvatar(user) {
+    const url = user.displayAvatarURL({ extension: 'png', size: 128 });
+    const cached = avatarImageCache.get(url);
+    if (cached) return cached;
+    const pending = loadImage(url);
+    avatarImageCache.set(url, pending);
+    try {
+        const image = await pending;
+        // Keep the cache bounded so long-running bot processes do not grow forever.
+        if (avatarImageCache.size > 250) avatarImageCache.delete(avatarImageCache.keys().next().value);
+        return image;
+    } catch (error) {
+        avatarImageCache.delete(url);
+        throw error;
+    }
+}
+
+async function profileCardBuffer({ user, participant, rank, participantCount, todayAttempt, attempts = [], rankingsHidden = false, nextRankPoints = null }) {
+    // Roomier 1100x760 layout: clear hierarchy, generous gutters, readable stats.
+    const width = 1100;
+    const height = 760;
+    const canvas = createCanvas(width, height);
+    const ctx = canvas.getContext('2d');
     const p = participant || {};
-    const answers = attempts.flatMap((attempt) => Array.isArray(attempt.answers) ? attempt.answers : []);
     const today = todayAttempt || {};
-    const todayAnswers = Array.isArray(today.answers) ? today.answers : [];
-    const todayQuestionPoints = todayAnswers.reduce((sum, answer) => sum + (Number(answer.pointsDelta) || 0), 0);
-    const todayStreakBonus = Number(today.streakBonus) || 0;
-    const totalStreakBonus = Number(p.streakBonusTotal) || 0;
-    const totalCorrect = Number(p.correct) || 0;
-    const totalIncorrect = Number(p.incorrect) || 0;
-    const totalTimedOut = attempts.reduce((sum, attempt) => sum + (Number(attempt.timedOut) || 0), 0);
-    // Show today's question score only; streak bonus is displayed separately.
-    const todayPoints = todayQuestionPoints;
-    return new EmbedBuilder()
-        .setColor(0x5865F2)
-        .setTitle(`👤 ${user.globalName || user.username}’s Weekly Profile`)
-        .setDescription([
-            `🏆 **Weekly Rank:** ${rankingsHidden ? '🔒 Sealed' : (rank ? `#${rank} of ${participantCount}` : 'Unranked')}`,
-            rankingsHidden
-                ? '🚀 **Next Ascension**   : 🔒 Sealed'
-                : rank === 1
-                    ? '🚀 **Next Ascension   :** 👑 **You are #1!**'
-                    : Number.isFinite(Number(nextRankPoints)) && nextRankPoints !== null
-                        ? `🚀 **Next Ascension**  : ${Math.max(0, Number(nextRankPoints) - (Number(p.points) || 0) + 1)} points`
-                        : '🚀 **Next Ascension**  : —',
-            `⭐ **Total Points:** ${Number(p.points) || 0}`,
-            `🔥 **Current Streak:** ${Number(p.currentStreak) || 0} days`,
-            `🎯 **Challenges Completed:** ${Number(p.challengesCompleted) || 0}`,
-            `✅ **Correct Answers:** ${totalCorrect}`,
-            `❌ **Incorrect Answers:** ${totalIncorrect}`,
-            `⏰ **Timed-Out Questions:** ${totalTimedOut}`,
-            '',
-            `🎁 **Today’s Streak Bonus:** +${todayStreakBonus} points`,
-            `🔥 **Total Streak Bonus:** +${totalStreakBonus} points`,
-            `📅 **Today’s Points (without bonus):** ${todayPoints >= 0 ? '+' : ''}${todayPoints} points`,
-            `✨ **Today’s Points (with bonus):** ${todayPoints + todayStreakBonus >= 0 ? '+' : ''}${todayPoints + todayStreakBonus} points`,
-        ].join('\n'))
-        .setFooter({ text: 'Your profile and history are visible only to you.' })
-        .setTimestamp();
+    const answers = Array.isArray(today.answers) ? today.answers : [];
+    const todayPoints = answers.reduce((sum, answer) => sum + (Number(answer.pointsDelta) || 0), 0);
+    const todayBonus = Number(today.streakBonus) || 0;
+    const totalBonus = Number(p.streakBonusTotal) || 0;
+    const correct = Number(p.correct) || 0;
+    const incorrect = Number(p.incorrect) || 0;
+    const timedOut = attempts.reduce((sum, attempt) => sum + (Number(attempt.timedOut) || 0), 0);
+    const points = Number(p.points) || 0;
+    const streak = Number(p.currentStreak) || 0;
+    const completed = Number(p.challengesCompleted) || 0;
+    const name = String(user.globalName || user.username || 'Player').slice(0, 26);
+    const rankText = rankingsHidden ? 'SEALED' : rank ? `#${rank}` : 'UNRANKED';
+    const rankSub = rankingsHidden ? 'Rankings are hidden' : rank ? `of ${participantCount} players` : 'Play to enter the rankings';
+    const nextText = rankingsHidden ? 'Rank currently hidden' : rank === 1 ? 'You are leading the leaderboard!' : nextRankPoints !== null && Number.isFinite(Number(nextRankPoints)) ? `${Math.max(0, Number(nextRankPoints) - points + 1).toLocaleString()} pts to next rank` : 'Keep playing to climb';
+
+    // Bright, warm premium look; no blue stripe or narrow decorative bars.
+    const bg = ctx.createLinearGradient(0, 0, width, height);
+    bg.addColorStop(0, '#111318'); bg.addColorStop(0.55, '#171b22'); bg.addColorStop(1, '#101217');
+    ctx.fillStyle = bg; ctx.fillRect(0, 0, width, height);
+    const glow = ctx.createRadialGradient(900, 90, 5, 900, 90, 520);
+    glow.addColorStop(0, 'rgba(242,198,93,0.10)'); glow.addColorStop(1, 'rgba(242,198,93,0)');
+    ctx.fillStyle = glow; ctx.fillRect(0, 0, width, height);
+    const warm = ctx.createRadialGradient(120, 690, 5, 120, 690, 380);
+    warm.addColorStop(0, 'rgba(255,255,255,0.025)'); warm.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = warm; ctx.fillRect(0, 0, width, height);
+
+    // Outer frame and spacious inner content area.
+    ctx.fillStyle = 'rgba(25,29,37,0.99)'; roundedRect(ctx, 24, 24, 1052, 712, 28, true);
+    ctx.strokeStyle = 'rgba(190,198,211,0.22)'; ctx.lineWidth = 2; roundedRect(ctx, 24, 24, 1052, 712, 28, false); ctx.stroke();
+
+    // Header
+    const ax = 68, ay = 66, as = 116;
+    ctx.save(); ctx.beginPath(); ctx.arc(ax + as/2, ay + as/2, as/2 + 7, 0, Math.PI*2);
+    ctx.strokeStyle = '#e9bd59'; ctx.lineWidth = 4; ctx.stroke();
+    ctx.beginPath(); ctx.arc(ax + as/2, ay + as/2, as/2, 0, Math.PI*2); ctx.clip();
+    try { const avatar = await getCachedAvatar(user); ctx.drawImage(avatar, ax, ay, as, as); }
+    catch { ctx.fillStyle = '#252b36'; ctx.fillRect(ax, ay, as, as); ctx.fillStyle = '#ffffff'; ctx.font = 'bold 54px Sans'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(name[0].toUpperCase(), ax+as/2, ay+as/2); }
+    ctx.restore();
+
+    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    ctx.fillStyle = '#f2f3f6'; ctx.font = 'bold 42px Sans'; ctx.fillText(name, 218, 112);
+    ctx.fillStyle = '#aeb5c1'; ctx.font = 'bold 18px Sans'; ctx.fillText('🌍 WEEKLY WORLD QUIZ  •  PLAYER PROFILE', 220, 150);
+    ctx.textAlign = 'right'; ctx.fillStyle = '#efc65e'; ctx.font = 'bold 16px Sans'; ctx.fillText('PLAYER OVERVIEW', 1028, 91);
+    ctx.fillStyle = '#a3aab6'; ctx.font = '16px Sans'; ctx.fillText('Your progress at a glance', 1028, 119);
+
+    // Three prominent headline metrics.
+    drawCard(ctx, 68, 218, 300, 156, '🏆 WEEKLY RANK', rankText, '#efc65e', rankSub);
+    drawCard(ctx, 400, 218, 300, 156, '✨ TOTAL POINTS', points.toLocaleString(), '#f1f2f5', 'Your accumulated weekly score');
+    drawCard(ctx, 732, 218, 300, 156, '🔥 CURRENT STREAK', `${streak} ${streak === 1 ? 'DAY' : 'DAYS'}`, '#efc65e', 'Consecutive challenge days');
+
+    // Performance panel — left; daily progress panel — right.
+    panel(ctx, 68, 410, 464, 270, '📊 PERFORMANCE');
+    panel(ctx, 556, 410, 476, 270, '🌟 TODAY & PROGRESS');
+    drawMetric(ctx, 98, 482, '✅ Correct answers', correct, '#59c99a');
+    drawMetric(ctx, 302, 482, '❌ Incorrect answers', incorrect, '#f07883');
+    drawMetric(ctx, 98, 568, '⏰ Timed out', timedOut, '#e8b85b');
+    drawMetric(ctx, 302, 568, '🎯 Challenges done', completed, '#f1f2f5');
+
+    drawMetric(ctx, 586, 482, '⭐ Today’s points', `${todayPoints >= 0 ? '+' : ''}${todayPoints}`, '#59c99a');
+    drawMetric(ctx, 814, 482, '🔥 Streak bonus', `+${todayBonus}`, '#efc65e');
+    ctx.textAlign = 'left'; ctx.fillStyle = '#a5adba'; ctx.font = '16px Sans'; ctx.fillText('NEXT ASCENSION', 586, 572);
+    ctx.fillStyle = '#f1f2f5'; ctx.font = 'bold 21px Sans'; ctx.fillText(nextText, 586, 606, 410);
+    ctx.fillStyle = '#a5adba'; ctx.font = '15px Sans'; ctx.fillText(`🏅 Lifetime streak bonuses: +${totalBonus.toLocaleString()}`, 586, 645);
+
+    // Footer note separated from content, not squeezed into the panels.
+    ctx.textAlign = 'center'; ctx.fillStyle = '#929aa7'; ctx.font = '14px Sans';
+    ctx.fillText('WORLD ADVENTURE CLUB  •  KEEP EXPLORING, KEEP CLIMBING', width/2, 710);
+
+    // JPEG is substantially smaller/faster to encode and upload than a full-size PNG.
+    return canvas.toBuffer('image/jpeg', { quality: 0.88, progressive: true });
+}
+
+function roundedRect(ctx, x, y, width, height, radius, fill = false) {
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.arcTo(x + width, y, x + width, y + height, radius);
+    ctx.arcTo(x + width, y + height, x, y + height, radius);
+    ctx.arcTo(x, y + height, x, y, radius);
+    ctx.arcTo(x, y, x + width, y, radius);
+    ctx.closePath();
+    if (fill) ctx.fill();
+}
+
+function panel(ctx, x, y, width, height, title) {
+    ctx.fillStyle = 'rgba(30,35,44,0.98)'; roundedRect(ctx, x, y, width, height, 20, true);
+    ctx.strokeStyle = 'rgba(164,174,191,0.20)'; ctx.lineWidth = 1.5; roundedRect(ctx, x, y, width, height, 20, false); ctx.stroke();
+    ctx.textAlign = 'left'; ctx.fillStyle = '#dfe3ea'; ctx.font = 'bold 17px Sans'; ctx.fillText(title, x + 28, y + 38);
+}
+
+function drawCard(ctx, x, y, width, height, label, value, valueColor, subtitle = '') {
+    ctx.fillStyle = 'rgba(34,40,51,0.99)'; roundedRect(ctx, x, y, width, height, 20, true);
+    ctx.strokeStyle = 'rgba(164,174,191,0.22)'; ctx.lineWidth = 1.5; roundedRect(ctx, x, y, width, height, 20, false); ctx.stroke();
+    ctx.textAlign = 'left'; ctx.fillStyle = '#dfe3ea'; ctx.font = 'bold 16px Sans'; ctx.fillText(label, x + 26, y + 38);
+    ctx.fillStyle = valueColor; ctx.font = 'bold 38px Sans'; ctx.fillText(String(value), x + 26, y + 91, width - 52);
+    ctx.fillStyle = '#a5adba'; ctx.font = '15px Sans'; ctx.fillText(subtitle, x + 26, y + 126, width - 52);
+}
+
+function drawMetric(ctx, x, y, label, value, valueColor) {
+    ctx.textAlign = 'left'; ctx.fillStyle = '#b7bec9'; ctx.font = '16px Sans'; ctx.fillText(label, x, y);
+    ctx.fillStyle = valueColor; ctx.font = 'bold 29px Sans'; ctx.fillText(String(value), x, y + 38);
 }
 
 function profileComponents() {
@@ -173,8 +262,8 @@ function leaderboardEmbed(state, rows, participantCount, participatedToday = new
     const status = state.status === 'active' ? '🟢 Active' : '🔴 Ended';
     const board = rows.slice(0, 10)
         .map((player, index) => {
-            const marker = participatedToday.has(String(player.userId)) ? 'P' : 'NP';
-            return `**${index + 1}.** <@${player.userId}> - ${marker}`;
+            const marker = participatedToday.has(String(player.userId)) ? '🟢' : '🔴';
+            return `${marker} **${index + 1}.** <@${player.userId}>`;
         })
         .join('\n') || 'No participants yet. Be the first to play!';
 
@@ -183,7 +272,7 @@ function leaderboardEmbed(state, rows, participantCount, participatedToday = new
         .setTitle('🏆 WEEKLY WORLD QUIZ • TOP 10')
         .setDescription(
             `**Status:** ${status}\n**Competition ends:** <t:${end}:F>\n\n` +
-            `${board}\n\n**Today’s Participation**\nP = Participated\nNP = Not Participated`
+            `${board}\n\n🟢 Participated today  •  🔴 Not participated yet`
         )
         .addFields(
             { name: '👥 Participants', value: String(participantCount), inline: true },
@@ -331,7 +420,7 @@ function leaderboardSealedEmbed() {
 module.exports = {
     participationEmbed, participationComponents, leaderboardEmbed, questionEmbed,
     answerRows, resultEmbed, challengeReadyEmbed, challengeReadyComponents, answerFeedbackEmbed,
-    profileEmbed, profileComponents, profileMenuEmbed, rulesGuideEmbed,
+    profileCardBuffer, profileComponents, profileMenuEmbed, rulesGuideEmbed,
     rankingSealedEmbed, leaderboardSealedEmbed,
 };
 

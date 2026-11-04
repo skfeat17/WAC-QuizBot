@@ -2,7 +2,7 @@
 //weekly.js
 const crypto = require('node:crypto');
 const emergencyData = require('./weekly-question-v3.json');
-const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags, WebhookClient } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags, WebhookClient, AttachmentBuilder } = require('discord.js');
 const R = require('./weeklyRedis');
 const weeklyLogs = require('./weeklyLogs');
 const {
@@ -15,7 +15,7 @@ const {
     challengeReadyEmbed,
     challengeReadyComponents,
     answerFeedbackEmbed,
-    profileEmbed, profileComponents, profileMenuEmbed, rulesGuideEmbed,
+    profileCardBuffer, profileComponents, profileMenuEmbed, rulesGuideEmbed,
 } = require('./weeklyEmbeds');
 const { startWeeklyScheduler } = require('./weeklyScheduler');
 const { utcDateKey, scoreForAnswer } = require('./weeklyUtils');
@@ -1572,17 +1572,22 @@ async function handleWeeklyButton(interaction, client) {
             const participantCount = Number(await R.redis.scard(R.keys.participants())) || 0;
             const rankingsHidden = await areRankingsHidden();
 
+            const profileImage = await profileCardBuffer({
+                user: interaction.user,
+                participant,
+                rank,
+                participantCount,
+                todayAttempt,
+                attempts,
+                rankingsHidden,
+                nextRankPoints,
+            });
+            const attachment = new AttachmentBuilder(profileImage, { name: 'weekly-profile.jpg' });
+
             await interaction.editReply({
-                embeds: [profileEmbed({
-                    user: interaction.user,
-                    participant,
-                    rank,
-                    participantCount,
-                    todayAttempt,
-                    attempts,
-                    rankingsHidden,
-                    nextRankPoints,
-                })],
+                content: '',
+                embeds: [],
+                files: [attachment],
                 components: profileComponents(),
                 allowedMentions: { parse: [] },
             });
