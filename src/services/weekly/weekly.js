@@ -1614,27 +1614,115 @@ async function handleWeeklyButton(interaction, client) {
                 : pageAction === 'next'
                     ? parsedPage + 1
                     : Math.max(0, parsedPage);
-            const pageSize = 5;
+            // One complete attempt per page keeps the five-question breakdown readable,
+            // especially in Discord's narrow mobile layout.
+            const pageSize = isPoints ? 5 : 1;
             const allRows = isPoints
                 ? await R.getPointsHistory(interaction.user.id, 200)
                 : await R.getAttemptHistory(interaction.user.id, 100);
             const rows = allRows.slice(page * pageSize, (page + 1) * pageSize);
-            const description = isPoints
-                ? (rows.length ? rows.map((row) => {
+
+            let embed;
+            if (isPoints) {
+                const description = rows.length ? rows.map((row) => {
                     const delta = Number(row.delta) || 0;
                     const sign = delta > 0 ? '+' : '';
                     const date = Math.floor((Number(row.at) || Date.now()) / 1000);
                     return `• <t:${date}:f> — **${sign}${delta} points**\n  ${String(row.type || 'points').replaceAll('-', ' ')}${row.difficulty ? ` · ${row.difficulty}` : ''}${row.note ? ` · ${row.note}` : ''}\n  Balance: **${Number(row.balance) || 0}**`;
-                }).join('\n\n') : (page ? 'No more point history.' : 'No point changes recorded yet.'))
-                : (rows.length ? rows.map((row) => {
-                    const date = Math.floor((Number(row.completedAt || row.startedAt) || Date.now()) / 1000);
-                    const day = String(row.dayKey || '').split(':date-')[1] || 'Unknown date';
-                    return `• **${day}** · <t:${date}:R>\n  **${Number(row.points) || 0} points** · ✅ ${row.correct || 0} · ❌ ${row.incorrect || 0} · ⏰ ${row.timedOut || 0}\n  ${row.isReattempt ? 'Reattempt' : row.isMissedAttempt ? 'Missed-day attempt' : 'Daily attempt'} · Streak bonus: **${Number(row.streakBonus) || 0}**`;
-                }).join('\n\n') : (page ? 'No more attempt history.' : 'No completed attempts recorded yet.'));
-            const embed = new EmbedBuilder().setColor(0x5865F2)
-                .setTitle(isPoints ? `📊 Points History • Page ${page + 1}` : `📝 Attempt History • Page ${page + 1}`)
-                .setDescription(description.slice(0, 4000))
-                .setFooter({ text: `${allRows.length} records available • Showing ${rows.length}` }).setTimestamp();
+                }).join('\n\n') : (page ? 'No more point history.' : 'No point changes recorded yet.');
+
+                embed = new EmbedBuilder()
+                    .setColor(0x5865F2)
+                    .setTitle(`📊 Points History • Page ${page + 1}`)
+                    .setDescription(description.slice(0, 4000))
+                    .setFooter({ text: `${allRows.length} records available • Showing ${rows.length}` })
+                    .setTimestamp();
+            } else {
+                const attempt = rows[0];
+                if (!attempt) {
+                    embed = new EmbedBuilder()
+                        .setColor(0x5865F2)
+                        .setTitle(`📝 Attempt History • Page ${page + 1}`)
+                        .setDescription(page ? 'No more attempt history.' : 'No completed attempts recorded yet.')
+                        .setFooter({ text: 'One attempt per page' })
+                        .setTimestamp();
+                } else {
+                    const date = Math.floor((Number(attempt.completedAt || attempt.startedAt) || Date.now()) / 1000);
+                    const day = String(attempt.dayKey || '').split(':date-')[1] || 'Unknown date';
+                    const answers = Array.isArray(attempt.answers) ? attempt.answers : [];
+                    const questionPoints = answers.reduce((sum, answer) => sum + (Number(answer.pointsDelta) || 0), 0);
+                    const bonus = Number(attempt.streakBonus) || 0;
+                    const totalPoints = Number.isFinite(Number(attempt.points))
+                        ? Number(attempt.points)
+                        : questionPoints + bonus;
+                    const attemptType = attempt.isReattempt
+                        ? '🔁 Reattempt'
+                        : attempt.isMissedAttempt
+                            ? '📅 Missed-day attempt'
+                            : '🌍 Daily attempt';
+
+                    embed = new EmbedBuilder()
+                        .setColor(0x5865F2)
+                        .setTitle(`📝 ATTEMPT DETAILS • ${day}`)
+                        .setDescription([
+                            `**${attemptType}**`,
+                            `Completed <t:${date}:f>  ·  <t:${date}:R>`,
+                            '',
+                        ].join('\n'));
+
+                    answers.slice(0, 5).forEach((answer, index) => {
+                        const question = questionById.get(String(answer.questionId));
+                        const questionText = question?.question || `Question ${index + 1} (question text unavailable)`;
+                        const seconds = (Math.max(0, Number(answer.elapsedMs) || 0) / 1000).toFixed(2);
+                        const timedOut = Boolean(answer.timeout);
+                        const correct = Boolean(answer.correct) && !timedOut;
+                        const status = timedOut ? '⏰' : correct ? '✅' : '❌';
+                        const points = Number(answer.pointsDelta) || 0;
+                        const pointsText = `${points > 0 ? '+' : ''}${points} pts`;
+
+                        // Non-inline fields stack vertically on mobile; bold question text
+                        // is kept in the value so long questions wrap without truncation.
+                        embed.addFields({
+                            name: `Q${index + 1} **${questionText}** `,
+                            value: `\n⏱️ **${seconds}s**     🎯 **${pointsText}**    ${status}`,
+                            inline: false,
+                        });
+                    });
+
+                    if (!answers.length) {
+                        embed.addFields({
+                            name: 'Question details',
+                            value: '_No individual answer details were saved for this attempt._',
+                            inline: false,
+                        });
+                    }
+
+                    embed.addFields(
+                        {
+                            name: '📚 Question Points',
+                            value: `**${questionPoints >= 0 ? '+' : ''}${questionPoints} pts**`,
+                            inline: false,
+                        },
+                        {
+                            name: '🔥 Today’s Bonus',
+                            value: `**+${bonus} pts**`,
+                            inline: false,
+                        },
+                        {
+                            name: '🏆 Total Points',
+                            value: `**${totalPoints >= 0 ? '+' : ''}${totalPoints} pts**`,
+                            inline: false,
+                        },
+                        {
+                            name: '📈 Answer Summary',
+                            value: `✅ **${Number(attempt.correct) || 0}** Correct\n❌ **${Number(attempt.incorrect) || 0}** Incorrect\n⏰ **${Number(attempt.timedOut) || 0}** Timed out`,
+                            inline: false,
+                        },
+                    );
+                    embed.setFooter({ text: `Attempt ${page + 1} of ${allRows.length} • One attempt per page` })
+                        .setTimestamp();
+                }
+            }
             const maxPage = Math.max(0, Math.ceil(allRows.length / pageSize) - 1);
             const components = [];
             const row = new ActionRowBuilder();
