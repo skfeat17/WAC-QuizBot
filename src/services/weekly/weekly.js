@@ -1713,11 +1713,7 @@ async function handleWeeklyButton(interaction, client) {
                             value: `**${totalPoints >= 0 ? '+' : ''}${totalPoints} pts**`,
                             inline: false,
                         },
-                        {
-                            name: '📈 Answer Summary',
-                            value: `✅ **${Number(attempt.correct) || 0}** Correct\n❌ **${Number(attempt.incorrect) || 0}** Incorrect\n⏰ **${Number(attempt.timedOut) || 0}** Timed out`,
-                            inline: false,
-                        },
+                       
                     );
                     embed.setFooter({ text: `Attempt ${page + 1} of ${allRows.length} • One attempt per page` })
                         .setTimestamp();
