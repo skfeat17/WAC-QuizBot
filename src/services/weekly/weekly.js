@@ -1,7 +1,7 @@
 // Command handlers and quiz state machine for WAC Weekly World Quiz Champion.
 //weekly.js
 const crypto = require('node:crypto');
-const emergencyData = require('./weekly-question-v3.json');
+const emergencyData = require('./weekly-questions-v4.json');
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags, WebhookClient, AttachmentBuilder } = require('discord.js');
 const R = require('./weeklyRedis');
 const weeklyLogs = require('./weeklyLogs');
@@ -27,8 +27,8 @@ const QUESTION_TIME_MS = 15_000;
 const DIFFICULTY_SEQUENCE = ['easy', 'medium', 'easy', 'medium', 'hard'];
 const DIFFICULTY_MULTIPLIERS = { easy: 1, medium: 1.5, hard: 2 };
 const BASE_INCORRECT_PENALTY = 15;
-const MEDALS = ['🥇', '🥈', '🥉', '🏅', '🎖️'];
-const PRIZES = [1000, 750, 550, 400, 300];
+const MEDALS = ['🥇', '🥈', '🥉', '🏅', '🎖️', '🏅', '🎖️', '🏅', '🎖️', '🏅'];
+const PRIZES = [700, 500, 400, 350, 300, 250, 200, 150, 100, 50];
 
 // Holds the ephemeral response webhook for timeout-driven edits during this process.
 const liveResponses = new Map();
@@ -208,7 +208,7 @@ function weeklyCommand() {
             .setRequired(true)
             .addChoices(
                 { name: 'Start', value: 'start' },
-                // { name: 'End', value: 'end' },
+                { name: 'End', value: 'end' },
                 { name: 'Participants List', value: 'leader' },
                 { name: 'Reset user attempt (one day)', value: 'resetday' },
                 { name: 'Delete all user data', value: 'deleteuser' },
@@ -1713,7 +1713,7 @@ async function handleWeeklyButton(interaction, client) {
                             value: `**${totalPoints >= 0 ? '+' : ''}${totalPoints} pts**`,
                             inline: false,
                         },
-                       
+
                     );
                     embed.setFooter({ text: `Attempt ${page + 1} of ${allRows.length} • One attempt per page` })
                         .setTimestamp();
@@ -2268,30 +2268,73 @@ async function handleWeeklyCommand(interaction) {
 
     if (action === 'end') {
         if (!isAdmin(interaction.user.id)) {
-            return interaction.editReply({ content: '❌ You are not authorized to manage the weekly competition.', embeds: [], components: [] });
+            return interaction.editReply({
+                content: '❌ You are not authorized to manage the weekly competition.',
+                embeds: [],
+                components: [],
+            });
         }
 
-        const state = await R.getState();
-        if (!state) return interaction.editReply('⚠️ No weekly event data to clear.');
+        try {
+            const state = await R.getState();
+            const winners = await R.getLeaderboard(10);
 
-        const winners = await R.getLeaderboard(5);
-        weeklyLogs.action('Final rewards calculated', winners.map((player, index) => `place=${index + 1} user=${player.userId} reward=${PRIZES[index]} Mora points=${player.points}`).join(' | ') || 'no scored participants');
-        const summary = winners.length
-            ? winners.map((player, index) => `${MEDALS[index]} <@${player.userId}> — **${PRIZES[index]} Mora** (${player.points} points)`).join('\n')
-            : 'No participants scored points.';
+            const summary = winners.length
+                ? winners.map((player, index) =>
+                    `${MEDALS[index]} <@${player.userId}> — **${PRIZES[index]} Mora** (${player.points} points)`
+                ).join('\n')
+                : 'No participants scored points.';
 
-        // Tell the admin the results before deleting event scores. Deduplication history remains.
-        await interaction.editReply({
-            content: `🧹 **Weekly event data cleared.**\n\nFinal winners before deletion:\n${summary}`,
-            allowedMentions: { parse: [] },
-        });
-        await R.clearWeeklyData();
-        stateCache = null;
-        liveResponses.clear();
-        attemptCache.clear();
-        participantCache.clear();
-        participantWriteChains.clear();
-        attemptWriteChains.clear();
+            weeklyLogs.action(
+                'Final rewards calculated',
+                winners.map((player, index) =>
+                    `place=${index + 1} user=${player.userId} reward=${PRIZES[index]} Mora points=${player.points}`
+                ).join(' | ') || 'no scored participants'
+            );
+
+            // Stop the current competition before clearing its records.
+            if (state) {
+                await R.setState({ ...state, status: 'ended' });
+            }
+
+            // Wait for pending participant and attempt saves.
+            await Promise.all([
+                ...participantWriteChains.values(),
+                ...attemptWriteChains.values(),
+            ].map(promise => promise.catch(() => { })));
+
+            // Completely delete all weekly quiz Redis data.
+            const deletedKeys = await R.clearWeeklyData();
+
+            // Clear process-local data.
+            stateCache = null;
+            liveResponses.clear();
+            attemptCache.clear();
+            participantCache.clear();
+            participantWriteChains.clear();
+            attemptWriteChains.clear();
+
+            weeklyLogs.action(
+                'Weekly data completely cleared',
+                `Redis keys deleted=${deletedKeys}`
+            );
+
+            return interaction.editReply({
+                content:
+                    `🧹 **WEEKLY QUIZ COMPLETELY RESET!**\n\n` +
+                    `All weekly quiz data has been permanently cleared.\n\n` +
+                    `**Final Winners:**\n${summary}\n\n` +
+                    `You can now start a fresh competition.`,
+                allowedMentions: { parse: [] },
+            });
+
+        } catch (error) {
+            console.error('[weekly] complete reset failed:', error);
+
+            return interaction.editReply(
+                '❌ Failed to completely clear weekly quiz data. Check the bot logs.'
+            );
+        }
     }
 }
 

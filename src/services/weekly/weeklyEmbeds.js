@@ -7,7 +7,7 @@ const {
 } = require('discord.js');
 const { createCanvas, loadImage } = require('canvas');
 
-const PRIZE_LINES = '🥇 1st — 1,000 Mora\n🥈 2nd — 750 Mora\n🥉 3rd — 550 Mora\n🏅 4th — 400 Mora\n🎖️ 5th — 300 Mora';
+const PRIZE_LINES = '🥇 1st — **700 <:mora:1503931162525962333>**\n🥈 2nd — **500 <:mora:1503931162525962333>**\n🥉 3rd — **400 <:mora:1503931162525962333>**\n🏅 4th — **350 <:mora:1503931162525962333>**\n🎖️ 5th — **300 <:mora:1503931162525962333>**\n🏅 6th — **250 <:mora:1503931162525962333>**\n🎖️ 7th — **200 <:mora:1503931162525962333>**\n🏅 8th — **150 <:mora:1503931162525962333>**\n🎖️ 9th — **100 <:mora:1503931162525962333>**\n🏅 10th — **50 <:mora:1503931162525962333>**';
 
 function participationEmbed(state, participantCount = 0) {
     const end = Math.floor(state.endsAt / 1000);
@@ -81,7 +81,7 @@ function rulesGuideEmbed() {
             {
                 name: '🏆 Competition & Prizes',
                 value: '• Points accumulate on the weekly leaderboard.\n' +
-                    '• Top rewards: 🥇 **1,000 Mora** · 🥈 **750 Mora** · 🥉 **550 Mora** · 🏅 **400 Mora** · 🎖️ **300 Mora**.\n' +
+                    'Top 10 rewards: 🥇 **700 <:mora:1503931162525962333>** · 🥈 **500 <:mora:1503931162525962333>** · 🥉 **400 <:mora:1503931162525962333>** · 🏅 **350 <:mora:1503931162525962333>** · 🎖️ **300 <:mora:1503931162525962333>** · 🏅 **250 <:mora:1503931162525962333>** · 🎖️ **200 <:mora:1503931162525962333>** · 🏅 **150 <:mora:1503931162525962333>** · 🎖️ **100 <:mora:1503931162525962333>** · 🏅 **50 <:mora:1503931162525962333>**.\n' +
                     '• Play fairly; do not exploit bugs or interfere with other players.',
             },
         )

@@ -1,5 +1,5 @@
 // Redis persistence for the weekly competition.
-// Per-player question history deliberately survives /weekly action:end.
+// /weekly action:end removes every Redis key owned by this weekly system.
 require('dotenv').config();
 const { Redis } = require('@upstash/redis');
 const crypto = require('node:crypto');
@@ -304,19 +304,25 @@ async function deleteUserData(userId) {
 }
 
 async function clearWeeklyData() {
-    // Deletes event/session data only. Per-player and legacy question history survive.
-    const [participantIds, attemptKeys, dailyRecordKeys] = await Promise.all([
-        redis.smembers(keys.participants()),
-        redis.smembers(keys.attempts()),
-        redis.smembers(keys.dailyRecords()),
-    ]);
-    const toDelete = [
-        keys.state(), keys.pool(), keys.poolQueue(), keys.leaderboard(), keys.participants(), keys.attempts(),
-        keys.activeAttempts(), keys.dailyRecords(),
-        ...(participantIds || []).map((id) => keys.participant(id)),
-        ...(attemptKeys || []), ...(dailyRecordKeys || []),
-    ];
-    if (toDelete.length) await redis.del(...toDelete);
+    // Complete reset: delete every key owned by this weekly system, including
+    // participant profiles, all attempts/histories, reattempt flags, used-question
+    // history, question/subject deduplication sets, pools, locks, and indexes.
+    // The PREFIX is dedicated to Weekly World Quiz, so unrelated bot data is safe.
+    const allWeeklyKeys = await redis.keys(`${PREFIX}*`);
+    const keysToDelete = [...new Set([
+        ...(allWeeklyKeys || []),
+        // This global visibility toggle belongs to the weekly quiz but uses a
+        // legacy key outside PREFIX.
+        'weekly:rankings:hidden',
+    ])];
+
+    // Keep each DEL request reasonably small for Redis/Upstash.
+    const batchSize = 100;
+    for (let i = 0; i < keysToDelete.length; i += batchSize) {
+        await redis.del(...keysToDelete.slice(i, i + batchSize));
+    }
+
+    return keysToDelete.length;
 }
 
 module.exports = {
