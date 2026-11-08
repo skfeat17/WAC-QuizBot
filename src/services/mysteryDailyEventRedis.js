@@ -21,8 +21,8 @@ const QUESTION_HISTORY_DAYS = 14;
 const QUESTION_HISTORY_WINDOW_MS = QUESTION_HISTORY_DAYS * 24 * 60 * 60 * 1000;
 
 // Random player cooldown: 12–16 hours.
-const MIN_COOLDOWN_SECONDS = 4 * 60 * 60;
-const MAX_COOLDOWN_SECONDS = 7 * 60 * 60;
+const MIN_COOLDOWN_SECONDS = 3 * 60 * 60;
+const MAX_COOLDOWN_SECONDS = 5 * 60 * 60;
 
 // Fixed cooldown applied after an incorrect answer (5 minutes).
 const Incorrect_Answer_Cooldown = 1 * 60;
