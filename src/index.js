@@ -4,7 +4,13 @@
 // ==============================
 const COMMAND_ACCESS =
     require("./services/COMMAND_ACCESS.js").COMMAND_ACCESS;
-
+// ==============================
+// BOSS MODE
+// ==============================
+const {
+    handleBossCommand,
+    handleBossButton,
+} = require("../src/services/boss/boss.js");
 // ==============================
 // BLOCKED QUIZ USERS
 // ==============================
@@ -275,6 +281,63 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
             return;
         }
+
+// ==========================================
+// WORLD BOSS MODE
+// ==========================================
+if (interaction.commandName === "boss") {
+    try {
+        const action = interaction.options.getString("action", true);
+
+        // Same authorization convention as Weekly Quiz.
+        const bossAdmins =
+            COMMAND_ACCESS.weekly ||
+            COMMAND_ACCESS.dailyevent ||
+            [];
+
+        const isAdmin = bossAdmins
+            .map(String)
+            .includes(String(interaction.user.id));
+
+        const adminActions = [
+            "start",
+            "end",
+            "reset",
+            "participants",
+        ];
+
+        if (adminActions.includes(action) && !isAdmin) {
+            return interaction.reply({
+                content: "❌ You are not authorized to manage Boss Mode.",
+                flags: MessageFlags.Ephemeral,
+            });
+        }
+
+        await handleBossCommand(interaction, client);
+
+    } catch (error) {
+        console.error("[boss] Command failed:", error);
+
+        const response = {
+            content: "❌ Boss Mode command failed.",
+            embeds: [],
+            components: [],
+        };
+
+        if (interaction.deferred || interaction.replied) {
+            await interaction.editReply(response).catch(() => {});
+        } else {
+            await interaction.reply({
+                ...response,
+                flags: MessageFlags.Ephemeral,
+            }).catch(() => {});
+        }
+    }
+
+    return;
+}
+
+
         // ==========================================
         // /ping COMMAND
         // ==========================================
@@ -1308,7 +1371,39 @@ ${line}`
 
             return;
         }
+// ==========================================
+// BOSS MODE BUTTONS
+// ==========================================
+if (
+    interaction.isButton() &&
+    interaction.customId.startsWith("boss:")
+) {
+    try {
+        await handleBossButton(interaction);
+    } catch (error) {
+        console.error("[boss] Button failed:", error);
 
+        const response = {
+            content: "❌ Could not process this Boss Mode interaction.",
+            embeds: [],
+            components: [],
+        };
+
+        if (interaction.deferred || interaction.replied) {
+            await interaction.followUp({
+                ...response,
+                flags: MessageFlags.Ephemeral,
+            }).catch(() => {});
+        } else {
+            await interaction.reply({
+                ...response,
+                flags: MessageFlags.Ephemeral,
+            }).catch(() => {});
+        }
+    }
+
+    return;
+}
         // ==========================================
         // KAHOOT BUTTON INTERACTION
         // ==========================================

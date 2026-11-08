@@ -15,6 +15,9 @@ const {
     countUsernamesCommand,
 } = require("./src/services/countUsernames");
 const { weeklyCommand } = require("./src/services/weekly/weekly");
+const {
+    bossCommand,
+} = require("./src/services/boss/boss");
 const commands = [
 
     // ==========================================
@@ -333,6 +336,7 @@ const commands = [
     // ==========================================
 
     weeklyCommand().toJSON(),
+    bossCommand().toJSON(),
 ];
 commands.push(banCommand.toJSON());
 // ==========================================

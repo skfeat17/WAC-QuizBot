@@ -208,7 +208,7 @@ function weeklyCommand() {
             .setRequired(true)
             .addChoices(
                 { name: 'Start', value: 'start' },
-                { name: 'End', value: 'end' },
+                // { name: 'End', value: 'end' },
                 { name: 'Participants List', value: 'leader' },
                 { name: 'Reset user attempt (one day)', value: 'resetday' },
                 { name: 'Delete all user data', value: 'deleteuser' },
