@@ -243,7 +243,7 @@ function drawMetric(ctx, x, y, label, value, valueColor) {
 function profileComponents() {
     return [
         new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId('weekly:missed').setLabel('Missed Attempts').setEmoji('🔄').setStyle(ButtonStyle.Success),
+            new ButtonBuilder().setCustomId('weekly:missed').setLabel('Missed Days').setEmoji('🔄').setStyle(ButtonStyle.Success),
             new ButtonBuilder().setCustomId('weekly:reattempt').setLabel('Reattempt Today').setEmoji('🔁').setStyle(ButtonStyle.Primary),
         ),
         new ActionRowBuilder().addComponents(
