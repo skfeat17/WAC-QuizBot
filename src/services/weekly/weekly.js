@@ -2003,8 +2003,12 @@ async function handleWeeklyButton(interaction, client) {
                 );
                 const participatedToday = new Set(
                     rows
-                        .filter((player, index) => Boolean(todayAttempts[index]))
-                        .map((player) => String(player.userId))
+                        .filter((player, index) => {
+                            const attempt = todayAttempts[index];
+                            return attempt?.status === 'active' ||
+                                attempt?.status === 'completed';
+                        })
+                        .map(player => String(player.userId))
                 );
 
                 await interaction.editReply({
