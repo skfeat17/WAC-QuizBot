@@ -72,16 +72,6 @@ function buildPaymentEmbed(transaction) {
                 inline: true,
             },
             {
-                name: "Event",
-                value: transaction.eventName,
-                inline: false,
-            },
-            {
-                name: "Event Type",
-                value: transaction.eventType,
-                inline: true,
-            },
-            {
                 name: "Reward",
                 value: `**${transaction.reward} Mora**`,
                 inline: true,
