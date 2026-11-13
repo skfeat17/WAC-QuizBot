@@ -282,60 +282,60 @@ client.on(Events.InteractionCreate, async (interaction) => {
             return;
         }
 
-// ==========================================
-// WORLD BOSS MODE
-// ==========================================
-if (interaction.commandName === "boss") {
-    try {
-        const action = interaction.options.getString("action", true);
+        // ==========================================
+        // WORLD BOSS MODE
+        // ==========================================
+        if (interaction.commandName === "boss") {
+            try {
+                const action = interaction.options.getString("action", true);
 
-        // Same authorization convention as Weekly Quiz.
-        const bossAdmins =
-            COMMAND_ACCESS.weekly ||
-            COMMAND_ACCESS.dailyevent ||
-            [];
+                // Same authorization convention as Weekly Quiz.
+                const bossAdmins =
+                    COMMAND_ACCESS.weekly ||
+                    COMMAND_ACCESS.dailyevent ||
+                    [];
 
-        const isAdmin = bossAdmins
-            .map(String)
-            .includes(String(interaction.user.id));
+                const isAdmin = bossAdmins
+                    .map(String)
+                    .includes(String(interaction.user.id));
 
-        const adminActions = [
-            "start",
-            "end",
-            "reset",
-            "participants",
-        ];
+                const adminActions = [
+                    "start",
+                    "end",
+                    "reset",
+                    "participants",
+                ];
 
-        if (adminActions.includes(action) && !isAdmin) {
-            return interaction.reply({
-                content: "❌ You are not authorized to manage Boss Mode.",
-                flags: MessageFlags.Ephemeral,
-            });
+                if (adminActions.includes(action) && !isAdmin) {
+                    return interaction.reply({
+                        content: "❌ You are not authorized to manage Boss Mode.",
+                        flags: MessageFlags.Ephemeral,
+                    });
+                }
+
+                await handleBossCommand(interaction, client);
+
+            } catch (error) {
+                console.error("[boss] Command failed:", error);
+
+                const response = {
+                    content: "❌ Boss Mode command failed.",
+                    embeds: [],
+                    components: [],
+                };
+
+                if (interaction.deferred || interaction.replied) {
+                    await interaction.editReply(response).catch(() => { });
+                } else {
+                    await interaction.reply({
+                        ...response,
+                        flags: MessageFlags.Ephemeral,
+                    }).catch(() => { });
+                }
+            }
+
+            return;
         }
-
-        await handleBossCommand(interaction, client);
-
-    } catch (error) {
-        console.error("[boss] Command failed:", error);
-
-        const response = {
-            content: "❌ Boss Mode command failed.",
-            embeds: [],
-            components: [],
-        };
-
-        if (interaction.deferred || interaction.replied) {
-            await interaction.editReply(response).catch(() => {});
-        } else {
-            await interaction.reply({
-                ...response,
-                flags: MessageFlags.Ephemeral,
-            }).catch(() => {});
-        }
-    }
-
-    return;
-}
 
 
         // ==========================================
@@ -1371,39 +1371,39 @@ ${line}`
 
             return;
         }
-// ==========================================
-// BOSS MODE BUTTONS
-// ==========================================
-if (
-    interaction.isButton() &&
-    interaction.customId.startsWith("boss:")
-) {
-    try {
-        await handleBossButton(interaction);
-    } catch (error) {
-        console.error("[boss] Button failed:", error);
+        // ==========================================
+        // BOSS MODE BUTTONS
+        // ==========================================
+        if (
+            interaction.isButton() &&
+            interaction.customId.startsWith("boss:")
+        ) {
+            try {
+                await handleBossButton(interaction);
+            } catch (error) {
+                console.error("[boss] Button failed:", error);
 
-        const response = {
-            content: "❌ Could not process this Boss Mode interaction.",
-            embeds: [],
-            components: [],
-        };
+                const response = {
+                    content: "❌ Could not process this Boss Mode interaction.",
+                    embeds: [],
+                    components: [],
+                };
 
-        if (interaction.deferred || interaction.replied) {
-            await interaction.followUp({
-                ...response,
-                flags: MessageFlags.Ephemeral,
-            }).catch(() => {});
-        } else {
-            await interaction.reply({
-                ...response,
-                flags: MessageFlags.Ephemeral,
-            }).catch(() => {});
+                if (interaction.deferred || interaction.replied) {
+                    await interaction.followUp({
+                        ...response,
+                        flags: MessageFlags.Ephemeral,
+                    }).catch(() => { });
+                } else {
+                    await interaction.reply({
+                        ...response,
+                        flags: MessageFlags.Ephemeral,
+                    }).catch(() => { });
+                }
+            }
+
+            return;
         }
-    }
-
-    return;
-}
         // ==========================================
         // KAHOOT BUTTON INTERACTION
         // ==========================================
@@ -1586,7 +1586,7 @@ if (
 
                 await interaction.reply({
                     content:
-                        "⏱️ **The 30-second timer has ended!**\n\n" +
+                        "⏱️ **The 20-second timer has ended!**\n\n" +
                         "Please wait for the **rankings and answer reveal**.",
 
                     flags:
@@ -1694,6 +1694,17 @@ if (
             }
         );
 
+        const displayName =
+            interaction.user.globalName || interaction.user.username;
+        const optionEmoji = ["1️⃣", "2️⃣", "3️⃣", "4️⃣"][selectedAnswer] || "🔘";
+        const resultEmoji = isCorrect ? "✅" : "❌";
+        const resultLabel = isCorrect ? "Correct" : "Incorrect";
+
+        console.log(
+            `🌍 [QUIZ #${quiz.questionNumber}] 👤 ${displayName} ➜ ` +
+            `${optionEmoji} "${quiz.options[selectedAnswer]}" | ${resultEmoji} ${resultLabel}`
+        );
+
         // ==========================================
         // ANSWER SUBMITTED
         // ==========================================
@@ -1773,8 +1784,8 @@ function startTimestampUpdater(
                             "🌍 WORLD ADVENTURE CLUB QUIZ",
                     })
                     .setDescription(
-                        `### Question No. ${quiz.questionNumber}\n\n`
-                            `### ${quiz.question}\n\n` +
+                        `### Question No. ${quiz.questionNumber}\n\n` +
+                        `### ${quiz.question}\n\n` +
                         `⏱️ **Time Remaining:** <t:${endUnix}:R>`
                     )
                     .setFooter({
@@ -1938,6 +1949,20 @@ async function finishQuiz(
         });
 
         // ==========================================
+        // OPTION SELECTION COUNTS
+        // ==========================================
+
+        const optionCounts = quiz.options.map((option, index) => {
+            const count = [...quiz.answers.values()].filter(
+                answer => answer.selectedAnswer === index
+            ).length;
+
+            return `**${option}** — ${count} ${count === 1 ? "vote" : "votes"}`;
+        });
+
+        const totalParticipants = quiz.answers.size;
+
+        // ==========================================
         // RESULTS EMBED
         // ==========================================
 
@@ -1977,6 +2002,7 @@ async function finishQuiz(
                             false,
                     },
 
+
                     {
                         name:
                             "📚 Did You Know?",
@@ -1986,7 +2012,17 @@ async function finishQuiz(
 
                         inline:
                             false,
-                    }
+                    },
+                    {
+                        name:
+                            "👥 **Quiz Participants**",
+
+                        value:
+                            ` ${totalParticipants} Users\n`,
+
+                        inline:
+                            false,
+                    },
 
                 )
                 .setFooter({
