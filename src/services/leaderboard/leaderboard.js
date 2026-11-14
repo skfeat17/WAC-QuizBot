@@ -23,11 +23,19 @@ function buildLeaderboardButton() {
 }
 
 async function handleLeaderboardButton(interaction) {
+
+    console.log(
+        `🏆 LEADERBOARD OPENED | ${interaction.user.globalName || interaction.user.username} | ${new Date().toLocaleString("en-IN", {
+            timeZone: "Asia/Kolkata"
+        })}`
+    );
+
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     try {
         const data = await getLeaderboardData();
         const image = await renderLeaderboardImage(data, interaction.client);
+
         const attachment = new AttachmentBuilder(image, {
             name: "wac-mora-leaderboard.png",
         });
@@ -36,8 +44,10 @@ async function handleLeaderboardButton(interaction) {
             content: "🏆 **World Adventure Club — Mora Leaderboard**",
             files: [attachment],
         });
+
     } catch (error) {
         console.error("[WAC LEADERBOARD] Failed:", error);
+
         await interaction.editReply({
             content: "❌ Couldn't load the leaderboard right now. Please try again later.",
         });
