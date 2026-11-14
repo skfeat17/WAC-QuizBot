@@ -45,7 +45,7 @@ async function getUserData(userId, client) {
         }
 
         return {
-            name: user.globalName || user.username,
+            name:user.username,
             avatarUrl: user.displayAvatarURL({
                 extension: "png",
                 size: AVATAR_SIZE,
