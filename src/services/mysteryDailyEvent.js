@@ -196,14 +196,17 @@ function buildRevealButton() {
     return new ActionRowBuilder().addComponents(
         new ButtonBuilder()
             .setCustomId(REVEAL_BUTTON_ID)
-            .setLabel(
-                "Reveal My Today's Question"
-            )
+            .setLabel("Answer")
             .setEmoji("🔮")
-            .setStyle(ButtonStyle.Primary)
+            .setStyle(ButtonStyle.Primary),
+
+        new ButtonBuilder()
+            .setCustomId("wac:leaderboard:open")
+            .setLabel("Leaderboard")
+            .setEmoji("🏆")
+            .setStyle(ButtonStyle.Secondary)
     );
 }
-
 // ============================================================
 // EPHEMERAL QUESTION
 // ============================================================

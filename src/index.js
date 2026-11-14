@@ -34,7 +34,10 @@ const redis = new Redis({
     url: process.env.UPSTASH_REDIS_REST_URL,
     token: process.env.UPSTASH_REDIS_REST_TOKEN,
 });
-
+const {
+    LEADERBOARD_BUTTON_ID,
+    handleLeaderboardButton,
+} = require("./services/leaderboard/leaderboard");
 // ==========================================
 // QUIZ BAN RESPONSE EMBED
 // ==========================================
@@ -1428,7 +1431,17 @@ ${line}`
 
             return;
         }
+// ------------------------------------------
+// MORA LEADERBOARD BUTTON
+// ------------------------------------------
 
+if (
+    interaction.isButton() &&
+    interaction.customId === LEADERBOARD_BUTTON_ID
+) {
+    await handleLeaderboardButton(interaction);
+    return;
+}
         if (
             interaction.customId ===
             "mysteryevent_reveal"
