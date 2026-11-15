@@ -134,19 +134,25 @@ function randomInt(min, max) {
 function generateReward() {
     const roll = Math.random() * 100;
 
-    if (roll < 85) {
-        return randomInt(10, 12); // 85% — Common
+    if (roll < 92) {
+        return randomInt(10, 12); // 92% — Common
     }
 
-    if (roll < 95) {
-        return randomInt(13, 14); // 10% — Uncommon
+    if (roll < 98) {
+        return randomInt(13, 14); // 6% — Uncommon
     }
 
-    if (roll < 99) {
-        return randomInt(15, 19); // 4% — Rare
+    if (roll < 99.5) {
+        const rareRoll = Math.random() * 100;
+
+        if (rareRoll < 50) return 15;
+        if (rareRoll < 80) return 16;
+        if (rareRoll < 93) return 17;
+        if (rareRoll < 98) return 18;
+        return 19;
     }
 
-    return 20; // 1% — Jackpot
+    return 20; // 0.5% — Jackpot
 }
 
 function createAttemptId() {

@@ -383,7 +383,7 @@ async function renderLeaderboardImage(data, client) {
         }
 
         // LEADERBOARD SUMMARY
-        // Compact inline stats: icon + label + value.
+        // Three separate stat cards for better spacing and readability.
         const summaryY = panelY + 620;
         const summaryX = x + 18;
         const summaryW = panelW - 36;
@@ -391,21 +391,37 @@ async function renderLeaderboardImage(data, client) {
         const innerGap = 8;
         const statW = (summaryW - innerGap * 2) / 3;
 
+        roundedRect(
+            ctx,
+            summaryX,
+            summaryY,
+            summaryW,
+            summaryH,
+            14
+        );
+
+        ctx.fillStyle = "rgba(243,201,105,0.08)";
+        ctx.fill();
+
+        ctx.strokeStyle = "rgba(243,201,105,0.38)";
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+
         const stats = [
             {
-                label: "Mora",
+                label: "MORA",
                 value: formatNumber(section.totalRewarded),
                 icon: "mora",
                 color: "#f3c969",
             },
             {
-                label: "Users",
+                label: "USERS",
                 value: formatNumber(section.uniqueUsers),
-                icon: "👤",
+                icon: "👥",
                 color: "#8fd6ff",
             },
             {
-                label: "Attempts",
+                label: "ATTEMPTS",
                 value: formatNumber(section.totalAttempts),
                 icon: "🎯",
                 color: "#c5a4ff",
@@ -414,46 +430,61 @@ async function renderLeaderboardImage(data, client) {
 
         stats.forEach((stat, index) => {
             const statX = summaryX + index * (statW + innerGap);
-            const cardY = summaryY + 7;
-            const cardH = summaryH - 14;
             const centerX = statX + statW / 2;
 
+            // Individual stat background.
             roundedRect(
                 ctx,
                 statX,
-                cardY,
+                summaryY + 7,
                 statW,
-                cardH,
+                summaryH - 14,
                 9
             );
 
-            ctx.fillStyle = "rgba(255,255,255,0.045)";
+            ctx.fillStyle = "rgba(255,255,255,0.035)";
             ctx.fill();
 
-            ctx.strokeStyle = "rgba(255,255,255,0.08)";
-            ctx.lineWidth = 1;
-            ctx.stroke();
-
-            const iconText = stat.icon === "mora" ? "" : `${stat.icon} `;
-            const lineText = `${iconText}${stat.label} : ${stat.value}`;
-
+            // Icon and label.
             ctx.textAlign = "center";
             ctx.fillStyle = stat.color;
+            ctx.font = "700 12px Sans";
 
-            const fontSize = fitText(ctx, lineText, statW - 12, 16);
-            ctx.font = `700 ${fontSize}px Sans`;
-            ctx.fillText(lineText, centerX, summaryY + 39);
+            const label = stat.icon === "mora"
+                ? "MORA"
+                : `${stat.icon} ${stat.label}`;
 
-            // Use the actual custom Discord Mora emoji.
+            ctx.fillText(
+                label,
+                centerX,
+                summaryY + 25
+            );
+
+            // Value.
+            ctx.fillStyle = "#f1f4fa";
+            const valueFontSize = fitText(
+                ctx,
+                stat.value,
+                statW - 16,
+                19
+            );
+            ctx.font = `800 ${valueFontSize}px Sans`;
+
+            ctx.fillText(
+                stat.value,
+                centerX,
+                summaryY + 48
+            );
+
+            // Render the actual custom Discord Mora emoji beside the label.
             if (stat.icon === "mora" && moraImage) {
-                const textWidth = ctx.measureText(lineText).width;
-                const emojiSize = 17;
+                const labelWidth = ctx.measureText("MORA").width;
                 ctx.drawImage(
                     moraImage,
-                    centerX - textWidth / 2 - emojiSize - 4,
-                    summaryY + 22,
-                    emojiSize,
-                    emojiSize
+                    centerX - labelWidth / 2 - 21,
+                    summaryY + 13,
+                    16,
+                    16
                 );
             }
         });
