@@ -13,6 +13,7 @@ const VALID_EVENTS = new Set([
 ]);
 
 const DAY_TTL_SECONDS = 400 * 24 * 60 * 60;
+const TTL = DAY_TTL_SECONDS;
 
 // Mora leaderboard ledger
 const MORA_LEDGER_KEY =
@@ -541,26 +542,34 @@ async function getTotalMoraRewarded(startTimestamp, endTimestamp) {
         { byScore: true }
     );
 
-    if (!ledgerIds.length) return 0;
+    if (!ledgerIds?.length) return 0;
+
+    // Fetch ledger records in one Redis pipeline instead of sequential requests.
+    const pipeline = redis.pipeline();
+
+    for (const ledgerId of ledgerIds) {
+        pipeline.hget(MORA_LEDGER_DATA_KEY, ledgerId);
+    }
+
+    const records = await pipeline.exec();
 
     let total = 0;
 
-    for (const ledgerId of ledgerIds) {
-        const raw = await redis.hget(
-            MORA_LEDGER_DATA_KEY,
-            ledgerId
-        );
-
+    for (const raw of records) {
         if (!raw) continue;
 
-        const entry = typeof raw === "string"
-            ? JSON.parse(raw)
-            : raw;
+        try {
+            const entry = typeof raw === "string"
+                ? JSON.parse(raw)
+                : raw;
 
-        const amount = Number(entry.amount || 0);
+            const amount = Number(entry?.amount || 0);
 
-        if (Number.isFinite(amount)) {
-            total += amount;
+            if (Number.isFinite(amount) && amount > 0) {
+                total += amount;
+            }
+        } catch {
+            // Ignore malformed ledger records.
         }
     }
 
@@ -636,6 +645,22 @@ function getLeaderboardCacheKeys(timestamp = Date.now()) {
     };
 }
 
+// Exact previous calendar-day range using the IST timezone.
+function getYesterdayRange(timestamp = Date.now()) {
+    const istDate = new Date(timestamp + IST_OFFSET_MS);
+
+    const todayStart = Date.UTC(
+        istDate.getUTCFullYear(),
+        istDate.getUTCMonth(),
+        istDate.getUTCDate()
+    ) - IST_OFFSET_MS;
+
+    return {
+        start: todayStart - DAY_MS,
+        end: todayStart - 1,
+    };
+}
+
 // ==========================================
 // UPDATE CACHE WHEN MORA IS REWARDED
 // ==========================================
@@ -662,6 +687,11 @@ async function updateLeaderboardCache(userId, amount, timestamp = Date.now()) {
 async function getCachedLeaderboard() {
     const keys = getLeaderboardCacheKeys();
 
+    // Yesterday's IST daily key
+    const yesterdayKeys = getLeaderboardCacheKeys(
+        Date.now() - DAY_MS
+    );
+
     const pipeline = redis.pipeline();
 
     for (const period of Object.values(keys)) {
@@ -675,6 +705,9 @@ async function getCachedLeaderboard() {
         pipeline.get(period.total);
     }
 
+    // Fetch yesterday's total separately
+    pipeline.get(yesterdayKeys.today.total);
+
     const results = await pipeline.exec();
 
     function parseEntries(raw) {
@@ -682,7 +715,6 @@ async function getCachedLeaderboard() {
 
         const entries = [];
 
-        // Upstash may return member/score pairs.
         for (let i = 0; i < raw.length; i++) {
             const item = raw[i];
 
@@ -720,6 +752,8 @@ async function getCachedLeaderboard() {
             entries: parseEntries(results[4]),
             totalRewarded: Number(results[5] || 0),
         },
+
+        yesterdayMoraRewarded: Number(results[6] || 0),
 
         generatedAt: Date.now(),
     };
@@ -852,7 +886,6 @@ async function rebuildLeaderboardCache() {
         },
     });
 }
-// const TTL = 400 * 24 * 60 * 60; // 400 days
 // rebuildLeaderboardCache()
 //     .catch(console.error);
 

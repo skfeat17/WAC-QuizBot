@@ -94,7 +94,7 @@ async function getLeaderboardData() {
 
     return {
         generatedAt: now,
-
+ yesterdayMoraRewarded: cached.yesterdayMoraRewarded,
         sections: [
             {
                 key: "today",

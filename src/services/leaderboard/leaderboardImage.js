@@ -45,7 +45,7 @@ async function getUserData(userId, client) {
         }
 
         return {
-            name:user.username,
+            name: user.username,
             avatarUrl: user.displayAvatarURL({
                 extension: "png",
                 size: AVATAR_SIZE,
@@ -287,9 +287,9 @@ async function renderLeaderboardImage(data, client) {
             // RANK
             ctx.fillStyle =
                 i === 0 ? "#f3c969" :
-                i === 1 ? "#c8d2e3" :
-                i === 2 ? "#c58d63" :
-                "#8793a9";
+                    i === 1 ? "#c8d2e3" :
+                        i === 2 ? "#c58d63" :
+                            "#8793a9";
 
             ctx.textAlign = "left";
             ctx.font = "800 19px Sans";
@@ -519,8 +519,10 @@ async function renderLeaderboardImage(data, client) {
         timeStyle: "short",
     });
 
+    const yesterdayMora = formatNumber(data.yesterdayMoraRewarded);
+
     ctx.fillText(
-        `Updated ${updated} IST  •  Refreshes on the next IST period boundary`,
+        `Yesterday: ${yesterdayMora} Mora Rewarded  •  Updated ${updated} IST`,
         WIDTH / 2,
         870
     );
