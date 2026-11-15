@@ -176,12 +176,28 @@ async function renderLeaderboardImage(data, client) {
         101
     );
 
-    // MORA EMOJI
-    let moraImage = null;
+    // STAT EMOJI IMAGES
+    // Canvas cannot render Discord emoji names as images, so load PNGs directly.
+    const EMOJI_URLS = {
+        mora: MORA_EMOJI_URL,
+        users: "https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/72x72/1f464.png",
+        attempts: "https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/72x72/1f3af.png",
+    };
 
-    try {
-        moraImage = await loadImage(MORA_EMOJI_URL);
-    } catch {}
+    async function loadEmoji(url) {
+        try {
+            return await loadImage(url);
+        } catch (error) {
+            console.warn(`[LEADERBOARD] Could not load emoji: ${url}`, error.message);
+            return null;
+        }
+    }
+
+    const [moraImage, usersImage, attemptsImage] = await Promise.all([
+        loadEmoji(EMOJI_URLS.mora),
+        loadEmoji(EMOJI_URLS.users),
+        loadEmoji(EMOJI_URLS.attempts),
+    ]);
 
     // PANEL SETTINGS
     const margin = 42;
@@ -409,21 +425,21 @@ async function renderLeaderboardImage(data, client) {
 
         const stats = [
             {
-                label: "MORA",
+                label: "Mora",
                 value: formatNumber(section.totalRewarded),
-                icon: "mora",
+                image: moraImage,
                 color: "#f3c969",
             },
             {
-                label: "USERS",
+                label: "Users",
                 value: formatNumber(section.uniqueUsers),
-                icon: "👥",
+                image: usersImage,
                 color: "#8fd6ff",
             },
             {
-                label: "ATTEMPTS",
+                label: "Attempts",
                 value: formatNumber(section.totalAttempts),
-                icon: "🎯",
+                image: attemptsImage,
                 color: "#c5a4ff",
             },
         ];
@@ -445,22 +461,34 @@ async function renderLeaderboardImage(data, client) {
             ctx.fillStyle = "rgba(255,255,255,0.035)";
             ctx.fill();
 
-            // Icon and label.
-            ctx.textAlign = "center";
+            // Draw the actual emoji PNG beside its label.
+            ctx.font = "700 13px Sans";
+            const labelWidth = ctx.measureText(stat.label).width;
+            const iconSize = 16;
+            const iconGap = 5;
+            const groupWidth = labelWidth + (stat.image ? iconSize + iconGap : 0);
+            const groupStartX = centerX - groupWidth / 2;
+
+            if (stat.image) {
+                ctx.drawImage(
+                    stat.image,
+                    groupStartX,
+                    summaryY + 12,
+                    iconSize,
+                    iconSize
+                );
+            }
+
+            ctx.textAlign = "left";
             ctx.fillStyle = stat.color;
-            ctx.font = "700 12px Sans";
-
-            const label = stat.icon === "mora"
-                ? "MORA"
-                : `${stat.icon} ${stat.label}`;
-
             ctx.fillText(
-                label,
-                centerX,
+                stat.label,
+                groupStartX + (stat.image ? iconSize + iconGap : 0),
                 summaryY + 25
             );
 
             // Value.
+            ctx.textAlign = "center";
             ctx.fillStyle = "#f1f4fa";
             const valueFontSize = fitText(
                 ctx,
@@ -475,18 +503,6 @@ async function renderLeaderboardImage(data, client) {
                 centerX,
                 summaryY + 48
             );
-
-            // Render the actual custom Discord Mora emoji beside the label.
-            if (stat.icon === "mora" && moraImage) {
-                const labelWidth = ctx.measureText("MORA").width;
-                ctx.drawImage(
-                    moraImage,
-                    centerX - labelWidth / 2 - 21,
-                    summaryY + 13,
-                    16,
-                    16
-                );
-            }
         });
     }
 
