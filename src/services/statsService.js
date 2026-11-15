@@ -855,6 +855,55 @@ async function rebuildLeaderboardCache() {
 // const TTL = 400 * 24 * 60 * 60; // 400 days
 // rebuildLeaderboardCache()
 //     .catch(console.error);
+
+// ==========================================
+// LEADERBOARD PARTICIPATION SUMMARY
+// ==========================================
+
+async function getLeaderboardParticipationSummary(
+    startTimestamp,
+    endTimestamp
+) {
+    const users = new Set();
+    let totalAttempts = 0;
+
+    for (const event of VALID_EVENTS) {
+        const days = await getAvailableDays(event);
+
+        const activityResults = await Promise.all(
+            days.map(async dateKey => {
+                const keys = getDayKeys(event, dateKey);
+
+                return redis.zrange(
+                    keys.activity,
+                    startTimestamp,
+                    endTimestamp,
+                    { byScore: true }
+                );
+            })
+        );
+
+        for (const activityIds of activityResults) {
+            if (!activityIds?.length) continue;
+
+            totalAttempts += activityIds.length;
+
+            for (const activityId of activityIds) {
+                // Format: timestamp:userId:random
+                const parts = String(activityId).split(":");
+
+                if (parts.length >= 2 && parts[1]) {
+                    users.add(parts[1]);
+                }
+            }
+        }
+    }
+
+    return {
+        totalAttempts,
+        uniqueUsers: users.size,
+    };
+}
 module.exports = {
     recordParticipation,
     recordMora,
@@ -870,6 +919,6 @@ module.exports = {
     getDayStats,
     getUserDayCount,
     getAllStats,
-
+    getLeaderboardParticipationSummary,
     getDateKey,
 };

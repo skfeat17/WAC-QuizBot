@@ -245,7 +245,7 @@ async function renderLeaderboardImage(data, client) {
         const entries = section.entries || [];
 
         for (let i = 0; i < 10; i++) {
-            const rowY = panelY + 92 + i * 55;
+            const rowY = panelY + 92 + i * 52;
             const entry = entries[i];
 
             if (!entry) {
@@ -382,59 +382,81 @@ async function renderLeaderboardImage(data, client) {
             }
         }
 
-        // TOTAL REWARDED
-        const summaryY = panelY + 640;
+        // LEADERBOARD SUMMARY
+        // Compact inline stats: icon + label + value.
+        const summaryY = panelY + 620;
+        const summaryX = x + 18;
+        const summaryW = panelW - 36;
+        const summaryH = 62;
+        const innerGap = 8;
+        const statW = (summaryW - innerGap * 2) / 3;
 
-        roundedRect(
-            ctx,
-            x + 20,
-            summaryY,
-            panelW - 40,
-            42,
-            12
-        );
+        const stats = [
+            {
+                label: "Mora",
+                value: formatNumber(section.totalRewarded),
+                icon: "mora",
+                color: "#f3c969",
+            },
+            {
+                label: "Users",
+                value: formatNumber(section.uniqueUsers),
+                icon: "👤",
+                color: "#8fd6ff",
+            },
+            {
+                label: "Attempts",
+                value: formatNumber(section.totalAttempts),
+                icon: "🎯",
+                color: "#c5a4ff",
+            },
+        ];
 
-        ctx.fillStyle = "rgba(243,201,105,0.10)";
-        ctx.fill();
+        stats.forEach((stat, index) => {
+            const statX = summaryX + index * (statW + innerGap);
+            const cardY = summaryY + 7;
+            const cardH = summaryH - 14;
+            const centerX = statX + statW / 2;
 
-        ctx.strokeStyle = "rgba(243,201,105,0.35)";
-        ctx.lineWidth = 1;
-        ctx.stroke();
-
-        const summaryText =
-            `Mora Rewarded: ${formatNumber(section.totalRewarded)}`;
-
-        ctx.font = "700 17px Sans";
-
-        const summaryWidth =
-            ctx.measureText(summaryText).width;
-
-        const moraWidth = moraImage ? 21 : 0;
-
-        const totalWidth =
-            summaryWidth + moraWidth + 8;
-
-        const summaryStartX =
-            x + (panelW - totalWidth) / 2;
-
-        ctx.textAlign = "left";
-        ctx.fillStyle = "#f3c969";
-
-        ctx.fillText(
-            summaryText,
-            summaryStartX,
-            summaryY + 27
-        );
-
-        if (moraImage) {
-            ctx.drawImage(
-                moraImage,
-                summaryStartX + summaryWidth + 8,
-                summaryY + 10,
-                21,
-                21
+            roundedRect(
+                ctx,
+                statX,
+                cardY,
+                statW,
+                cardH,
+                9
             );
-        }
+
+            ctx.fillStyle = "rgba(255,255,255,0.045)";
+            ctx.fill();
+
+            ctx.strokeStyle = "rgba(255,255,255,0.08)";
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            const iconText = stat.icon === "mora" ? "" : `${stat.icon} `;
+            const lineText = `${iconText}${stat.label} : ${stat.value}`;
+
+            ctx.textAlign = "center";
+            ctx.fillStyle = stat.color;
+
+            const fontSize = fitText(ctx, lineText, statW - 12, 16);
+            ctx.font = `700 ${fontSize}px Sans`;
+            ctx.fillText(lineText, centerX, summaryY + 39);
+
+            // Use the actual custom Discord Mora emoji.
+            if (stat.icon === "mora" && moraImage) {
+                const textWidth = ctx.measureText(lineText).width;
+                const emojiSize = 17;
+                ctx.drawImage(
+                    moraImage,
+                    centerX - textWidth / 2 - emojiSize - 4,
+                    summaryY + 22,
+                    emojiSize,
+                    emojiSize
+                );
+            }
+        });
     }
 
     // FOOTER
