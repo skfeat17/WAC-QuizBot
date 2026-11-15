@@ -130,7 +130,19 @@ const ANSWER_BUTTON_PREFIX =
 function randomInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
+function formatDuration(seconds) {
+    seconds = Math.max(0, Number(seconds) || 0);
 
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const remainingSeconds = seconds % 60;
+
+    return [
+        hours > 0 ? `${hours}h` : null,
+        minutes > 0 ? `${minutes}m` : null,
+        remainingSeconds > 0 ? `${remainingSeconds}s` : null,
+    ].filter(Boolean).join(" ") || "0s";
+}
 function generateReward() {
     const roll = Math.random() * 100;
 
@@ -1073,7 +1085,7 @@ async function handleMysteryAnswer(
             }
 
             cooldownSeconds = Number(cooldownResult.cooldownSeconds) || 0;
-            console.log(`⏱️ COOLDOWN CREATED | ${cooldownSeconds}s | ${userId}`);
+            console.log(`⏱️ COOLDOWN CREATED | ${formatDuration(cooldownSeconds)} | ${userId}`);
         } else {
             console.log(`🛡️ COOLDOWN IMMUNE | ${userId}`);
         }
@@ -1296,7 +1308,7 @@ async function processMysteryAnswerAfterResponse({
         );
 
         console.log(
-            `⏱️ Cooldown: ${attempt.cooldownSeconds ??
+            `⏱️ Cooldown:  ${formatDuration(attempt.cooldownSeconds) ??
             "IMMUNE"
             }`
         );
