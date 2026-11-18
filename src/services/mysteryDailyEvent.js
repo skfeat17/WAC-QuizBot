@@ -144,27 +144,42 @@ function formatDuration(seconds) {
     ].filter(Boolean).join(" ") || "0s";
 }
 function generateReward() {
+const DROP_RATES = {
+    common: 70,
+    uncommon: 20,
+    rare: 9,
+    jackpot: 1
+};
+
 const roll = Math.random() * 100;
 
-if (roll < 75) {
-    return randomInt(10, 12); // 75% — Common
+if (roll < DROP_RATES.common) {
+    return randomInt(10, 12);
 }
 
-if (roll < 95) {
-    return randomInt(13, 14); // 20% — Uncommon
+if (roll < DROP_RATES.common + DROP_RATES.uncommon) {
+    return randomInt(13, 14);
 }
 
-if (roll < 99.5) {
+if (roll < DROP_RATES.common + DROP_RATES.uncommon + DROP_RATES.rare) {
+    const rareRewards = [
+        { chance: 50, reward: 15 },
+        { chance: 30, reward: 16 },
+        { chance: 13, reward: 17 },
+        { chance: 5, reward: 18 },
+        { chance: 2, reward: 19 }
+    ];
+
     const rareRoll = Math.random() * 100;
+    let cumulative = 0;
 
-    if (rareRoll < 50) return 15;
-    if (rareRoll < 80) return 16;
-    if (rareRoll < 93) return 17;
-    if (rareRoll < 98) return 18;
-    return 19;
+    for (const item of rareRewards) {
+        cumulative += item.chance;
+        if (rareRoll < cumulative) return item.reward;
+    }
 }
 
-return 20; // 0.5% — Jackpot
+return 20;
 }
 
 function createAttemptId() {
