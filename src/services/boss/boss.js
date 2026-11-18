@@ -12,7 +12,7 @@ const {
 
 const R = require('./bossRedis');
 const E = require('./bossEmbeds');
-const questionData = require('./weekly-questions-v5.json');
+const questionData = require('./world_quiz_hard_only_v7.json');
 const { COMMAND_ACCESS } = require('../COMMAND_ACCESS');
 
 // --------------------------------------------------
