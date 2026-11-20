@@ -145,9 +145,9 @@ function formatDuration(seconds) {
 }
 function generateReward() {
 const DROP_RATES = {
-    common: 70,
-    uncommon: 20,
-    rare: 9,
+    common: 55,
+    uncommon: 30,
+    rare: 14,
     jackpot: 1
 };
 
