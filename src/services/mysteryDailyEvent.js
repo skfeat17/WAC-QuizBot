@@ -145,9 +145,9 @@ function formatDuration(seconds) {
 }
 function generateReward() {
 const DROP_RATES = {
-    common: 45,
-    uncommon: 30,
-    rare: 24,
+    common: 55,
+    uncommon: 25,
+    rare: 19,
     jackpot: 1
 };
 
@@ -163,8 +163,8 @@ if (roll < DROP_RATES.common + DROP_RATES.uncommon) {
 
 if (roll < DROP_RATES.common + DROP_RATES.uncommon + DROP_RATES.rare) {
     const rareRewards = [
-        { chance: 50, reward: 15 },
-        { chance: 30, reward: 16 },
+        { chance: 60, reward: 15 },
+        { chance: 20, reward: 16 },
         { chance: 13, reward: 17 },
         { chance: 5, reward: 18 },
         { chance: 2, reward: 19 }
