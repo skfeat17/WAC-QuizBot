@@ -169,7 +169,7 @@ function bossCommand() {
                 .setName('duration')
                 .setDescription('Event duration in minutes')
                 .setMinValue(1)
-                .setMaxValue(1440)
+                .setMaxValue(86400000)
                 .setRequired(false)
         );
 }
