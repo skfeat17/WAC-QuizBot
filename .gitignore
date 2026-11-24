@@ -3,3 +3,4 @@ node_modules
 .mainfile
 test.html
 weekly-test.json
+migrate.js

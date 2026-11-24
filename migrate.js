@@ -1,477 +1,166 @@
+
 require("dotenv").config();
 
 const { Redis } = require("@upstash/redis");
 
-const redis = new Redis({
-    url: process.env.UPSTASH_REDIS_REST_URL,
-    token: process.env.UPSTASH_REDIS_REST_TOKEN,
+// ==========================================
+// DATABASE CONFIGURATION
+// ==========================================
+
+const sourceRedis = new Redis({
+    url: process.env.SOURCE_UPSTASH_REDIS_REST_URL,
+    token: process.env.SOURCE_UPSTASH_REDIS_REST_TOKEN,
 });
 
-// ==========================================
-// REDIS KEYS
-// ==========================================
-
-const PAYMENT_PREFIX = "wac:payment:transaction:";
-
-const LEADERBOARD_ZSET =
-    "wac:leaderboard:v1:mora:activity";
-
-const LEADERBOARD_HASH =
-    "wac:leaderboard:v1:mora:entries";
-
-const MYSTERY_DAYS_KEY =
-    "wac:stats:mystery:days";
-
-const MIGRATED_KEY =
-    "wac:stats:mystery:migration:payment-transactions";
+const destinationRedis = new Redis({
+    url: process.env.DESTINATION_UPSTASH_REDIS_REST_URL,
+    token: process.env.DESTINATION_UPSTASH_REDIS_REST_TOKEN,
+});
 
 // ==========================================
 // SETTINGS
 // ==========================================
 
-const SCAN_COUNT = 100;
+const SOURCE_KEY = "wac:mysteryevent:pool";
+const DESTINATION_KEY = "wac:mysteryevent:pool";
 
-const TTL = 400 * 24 * 60 * 60;
-
-// November 1, 2026, 00:00 IST
-const START_TIMESTAMP = Date.parse(
-    "2026-11-01T00:00:00+05:30"
-);
-
-// Capture current time when script starts
-const END_TIMESTAMP = Date.now();
+const BATCH_SIZE = 100;
 
 // ==========================================
-// HELPERS
+// VALIDATE ENVIRONMENT
 // ==========================================
 
-function parseTransaction(raw) {
-    if (!raw) return null;
-
-    if (typeof raw === "string") {
-        try {
-            return JSON.parse(raw);
-        } catch {
-            return null;
-        }
-    }
-
-    return raw;
-}
-
-function toTimestamp(value) {
-    if (value === null || value === undefined) {
-        return null;
-    }
-
-    if (value instanceof Date) {
-        const timestamp = value.getTime();
-        return Number.isFinite(timestamp) ? timestamp : null;
-    }
-
-    if (
-        typeof value === "number" ||
-        /^\d+(\.\d+)?$/.test(String(value).trim())
-    ) {
-        const numeric = Number(value);
-
-        if (!Number.isFinite(numeric)) {
-            return null;
-        }
-
-        // Unix seconds -> milliseconds
-        return numeric < 100000000000
-            ? numeric * 1000
-            : numeric;
-    }
-
-    const parsed = Date.parse(String(value));
-
-    return Number.isFinite(parsed) ? parsed : null;
-}
-
-// Use paidAt first, then createdAt as fallback.
-function getTransactionTimestamp(transaction) {
-    const paidAt = toTimestamp(transaction.paidAt);
-
-    if (paidAt !== null) {
-        return {
-            timestamp: paidAt,
-            source: "paidAt",
-        };
-    }
-
-    const createdAt = toTimestamp(transaction.createdAt);
-
-    if (createdAt !== null) {
-        return {
-            timestamp: createdAt,
-            source: "createdAt",
-        };
-    }
-
-    return {
-        timestamp: null,
-        source: null,
-    };
-}
-
-// Match the existing Stats Service convention (UTC).
-function getDateKey(timestamp) {
-    return new Date(timestamp)
-        .toISOString()
-        .slice(0, 10);
-}
-
-function isMysteryEvent(transaction) {
-    const values = [
-        transaction.eventType,
-        transaction.eventName,
-        transaction.event,
+function validateEnvironment() {
+    const required = [
+        "SOURCE_UPSTASH_REDIS_REST_URL",
+        "SOURCE_UPSTASH_REDIS_REST_TOKEN",
+        "DESTINATION_UPSTASH_REDIS_REST_URL",
+        "DESTINATION_UPSTASH_REDIS_REST_TOKEN",
     ];
 
-    return values.some(value =>
-        String(value || "")
-            .trim()
-            .toLowerCase()
-            .includes("mystery")
-    );
-}
-
-function isPaid(transaction) {
-    return String(transaction.status || "")
-        .trim()
-        .toLowerCase() === "paid";
-}
-
-function isWithinDateRange(timestamp) {
-    return (
-        timestamp >= START_TIMESTAMP &&
-        timestamp <= END_TIMESTAMP
-    );
-}
-
-function formatIST(timestamp) {
-    if (!timestamp) return "Invalid date";
-
-    return new Date(timestamp).toLocaleString("en-IN", {
-        timeZone: "Asia/Kolkata",
-        dateStyle: "medium",
-        timeStyle: "medium",
-    });
-}
-
-// ==========================================
-// MIGRATION STATISTICS
-// ==========================================
-
-const stats = {
-    scanned: 0,
-    matched: 0,
-
-    dailyMigrated: 0,
-    leaderboardMigrated: 0,
-
-    alreadyMigrated: 0,
-
-    skippedNotMystery: 0,
-    skippedUnpaid: 0,
-    skippedOutOfRange: 0,
-    skippedInvalid: 0,
-
-    errors: 0,
-};
-
-// ==========================================
-// PROCESS ONE TRANSACTION
-// ==========================================
-
-async function processTransaction(key) {
-    try {
-        const raw = await redis.get(key);
-        const transaction = parseTransaction(raw);
-
-        if (
-            !transaction ||
-            !transaction.transactionId ||
-            !transaction.winnerId
-        ) {
-            stats.skippedInvalid++;
-            return;
+    for (const key of required) {
+        if (!process.env[key]) {
+            throw new Error(`Missing environment variable: ${key}`);
         }
-
-        // Mystery Event only
-        if (!isMysteryEvent(transaction)) {
-            stats.skippedNotMystery++;
-            return;
-        }
-
-        // Paid transactions only
-        if (!isPaid(transaction)) {
-            stats.skippedUnpaid++;
-            return;
-        }
-
-        // Get payment date
-        const {
-            timestamp,
-            source: timestampSource,
-        } = getTransactionTimestamp(transaction);
-
-        const amount = Number(transaction.reward);
-
-        if (
-            timestamp === null ||
-            !Number.isFinite(amount) ||
-            amount <= 0
-        ) {
-            console.log("\nINVALID TRANSACTION:", {
-                transactionId: transaction.transactionId,
-                createdAt: transaction.createdAt,
-                paidAt: transaction.paidAt,
-                reward: transaction.reward,
-            });
-
-            stats.skippedInvalid++;
-            return;
-        }
-
-        // November 1 through script start time
-        if (!isWithinDateRange(timestamp)) {
-            console.log("\n⚠️ OUTSIDE DATE RANGE:", {
-                transactionId: transaction.transactionId,
-
-                timestampSource,
-
-                createdAt: transaction.createdAt,
-                paidAt: transaction.paidAt,
-
-                selectedTimestamp: timestamp,
-                selectedDateIST: formatIST(timestamp),
-
-                startDateIST: formatIST(START_TIMESTAMP),
-                endDateIST: formatIST(END_TIMESTAMP),
-
-                beforeStart: timestamp < START_TIMESTAMP,
-                afterEnd: timestamp > END_TIMESTAMP,
-            });
-
-            stats.skippedOutOfRange++;
-            return;
-        }
-
-        stats.matched++;
-
-        const transactionId = String(
-            transaction.transactionId
-        );
-
-        const userId = String(
-            transaction.winnerId
-        );
-
-        const dateKey = getDateKey(timestamp);
-
-        const ledgerId = `payment:${transactionId}`;
-
-        const dailyMoraKey =
-            `wac:stats:mystery:day:${dateKey}:mora`;
-
-        // ==================================
-        // 1. MIGRATE DAILY STATS
-        // ==================================
-
-        const alreadyMigrated = await redis.sismember(
-            MIGRATED_KEY,
-            transactionId
-        );
-
-        if (!alreadyMigrated) {
-            await redis.hincrby(
-                dailyMoraKey,
-                userId,
-                amount
-            );
-
-            await redis.sadd(
-                MYSTERY_DAYS_KEY,
-                dateKey
-            );
-
-            await redis.expire(
-                dailyMoraKey,
-                TTL
-            );
-
-            await redis.expire(
-                MYSTERY_DAYS_KEY,
-                TTL
-            );
-
-            await redis.sadd(
-                MIGRATED_KEY,
-                transactionId
-            );
-
-            await redis.expire(
-                MIGRATED_KEY,
-                TTL
-            );
-
-            stats.dailyMigrated++;
-        } else {
-            stats.alreadyMigrated++;
-        }
-
-        // ==================================
-        // 2. MIGRATE GLOBAL LEADERBOARD
-        // ==================================
-
-        const entry = {
-            userId,
-            amount,
-            event: "mystery",
-            timestamp,
-            source: "payment_transaction",
-            transactionId,
-        };
-
-        const ledgerExists = await redis.hexists(
-            LEADERBOARD_HASH,
-            ledgerId
-        );
-
-        if (!ledgerExists) {
-            await redis.hset(
-                LEADERBOARD_HASH,
-                {
-                    [ledgerId]: JSON.stringify(entry),
-                }
-            );
-
-            stats.leaderboardMigrated++;
-        }
-
-        // Always ensure the ZSET entry exists.
-        // This also repairs missing ZSET entries.
-        await redis.zadd(
-            LEADERBOARD_ZSET,
-            {
-                score: timestamp,
-                member: ledgerId,
-            }
-        );
-
-        await redis.expire(
-            LEADERBOARD_HASH,
-            TTL
-        );
-
-        await redis.expire(
-            LEADERBOARD_ZSET,
-            TTL
-        );
-
-        console.log(
-            `✅ ${transactionId} | ` +
-            `${transaction.username || userId} | ` +
-            `${amount} Mora | ` +
-            `${formatIST(timestamp)} (${timestampSource})`
-        );
-
-    } catch (error) {
-        stats.errors++;
-
-        console.error(
-            `❌ Transaction error (${key}):`,
-            error.message || error
-        );
     }
 }
 
 // ==========================================
-// SCAN ALL TRANSACTIONS
+// NORMALIZE REDIS VALUES
 // ==========================================
 
-async function migrateAllTransactions() {
-    if (
-        !process.env.UPSTASH_REDIS_REST_URL ||
-        !process.env.UPSTASH_REDIS_REST_TOKEN
-    ) {
-        throw new Error("Missing Upstash Redis credentials in .env");
+function normalizeQuestion(question) {
+    return typeof question === "string"
+        ? question
+        : JSON.stringify(question);
+}
+
+// ==========================================
+// MIGRATION
+// ==========================================
+
+async function migrateQuestionPool() {
+    console.log("================================");
+    console.log(" MYSTERY QUESTION POOL MIGRATION");
+    console.log("================================");
+
+    validateEnvironment();
+
+    // 1. Read source pool
+    console.log("\n📥 Reading source question pool...");
+
+    const sourceQuestions = await sourceRedis.lrange(
+        SOURCE_KEY,
+        0,
+        -1
+    );
+
+    if (!Array.isArray(sourceQuestions) || sourceQuestions.length === 0) {
+        console.log("ℹ️ Source question pool is empty.");
+        return;
     }
 
-    console.log("\n==========================================");
-    console.log("       MYSTERY EVENT DATA MIGRATION");
-    console.log("==========================================");
+    const questions = sourceQuestions.map(normalizeQuestion);
 
-    console.log("Start:", formatIST(START_TIMESTAMP));
-    console.log("End:", formatIST(END_TIMESTAMP));
+    console.log(`📦 Found ${questions.length} questions.`);
 
-    let cursor = "0";
-    let batchNumber = 0;
+    // 2. Check destination pool
+    const existingCount = Number(
+        await destinationRedis.llen(DESTINATION_KEY)
+    );
 
-    do {
-        const result = await redis.scan(cursor, {
-            match: `${PAYMENT_PREFIX}*`,
-            count: SCAN_COUNT,
-        });
+    if (existingCount > 0) {
+        throw new Error(
+            `Destination already contains ${existingCount} questions. ` +
+            "Migration cancelled to prevent duplicates."
+        );
+    }
 
-        cursor = String(result[0]);
-        const keys = result[1] || [];
+    // 3. Copy questions in batches
+    console.log("\n📤 Transferring questions...");
 
-        batchNumber++;
+    let transferred = 0;
 
-        console.log(
-            `\n[BATCH ${batchNumber}] ` +
-            `Retrieved: ${keys.length} | ` +
-            `Next cursor: ${cursor}`
+    for (let i = 0; i < questions.length; i += BATCH_SIZE) {
+        const batch = questions.slice(
+            i,
+            i + BATCH_SIZE
         );
 
-        for (const key of keys) {
-            stats.scanned++;
-            await processTransaction(key);
-        }
-
-        console.log(
-            `[BATCH ${batchNumber}] ` +
-            `Scanned: ${stats.scanned} | ` +
-            `Daily migrated: ${stats.dailyMigrated} | ` +
-            `Leaderboard migrated: ${stats.leaderboardMigrated}`
+        await destinationRedis.rpush(
+            DESTINATION_KEY,
+            ...batch
         );
 
-    } while (cursor !== "0");
+        transferred += batch.length;
 
-    console.log("\n==========================================");
-    console.log("           MIGRATION COMPLETED");
-    console.log("==========================================");
+        console.log(
+            `✅ Transferred ${transferred}/${questions.length}`
+        );
+    }
 
-    console.log(`Total scanned:              ${stats.scanned}`);
-    console.log(`Matching Mystery Events:    ${stats.matched}`);
+    // 4. Verify destination
+    console.log("\n🔍 Verifying destination...");
 
-    console.log("\nDAILY STATS:");
-    console.log(`Migrated:                   ${stats.dailyMigrated}`);
-    console.log(`Already migrated:           ${stats.alreadyMigrated}`);
+    const destinationQuestions = await destinationRedis.lrange(
+        DESTINATION_KEY,
+        0,
+        -1
+    );
 
-    console.log("\nLEADERBOARD:");
-    console.log(`New entries:                ${stats.leaderboardMigrated}`);
+    const copiedQuestions = destinationQuestions.map(normalizeQuestion);
 
-    console.log("\nSKIPPED:");
-    console.log(`Not Mystery Event:          ${stats.skippedNotMystery}`);
-    console.log(`Unpaid:                     ${stats.skippedUnpaid}`);
-    console.log(`Outside date range:         ${stats.skippedOutOfRange}`);
-    console.log(`Invalid:                    ${stats.skippedInvalid}`);
-    console.log(`Errors:                     ${stats.errors}`);
+    const isValid =
+        copiedQuestions.length === questions.length &&
+        copiedQuestions.every(
+            (question, index) => question === questions[index]
+        );
 
-    console.log("\n==========================================");
+    if (!isValid) {
+        throw new Error(
+            `Verification failed! Source: ${questions.length}, ` +
+            `Destination: ${copiedQuestions.length}`
+        );
+    }
+
+    // 5. Success
+    console.log("\n================================");
+    console.log("       MIGRATION SUCCESS");
+    console.log("================================");
+
+    console.log(`📦 Total questions: ${questions.length}`);
+    console.log(`✅ Transferred: ${transferred}`);
+    console.log("🔍 Verification: Passed");
+    console.log("🔒 Source database: Untouched");
+    console.log("================================");
 }
 
 // ==========================================
 // RUN
 // ==========================================
 
-migrateAllTransactions().catch(error => {
-    console.error("\n🚨 MIGRATION FAILED:", error);
-
+migrateQuestionPool().catch((error) => {
+    console.error("\n❌ MIGRATION FAILED:");
+    console.error(error);
     process.exitCode = 1;
 });
