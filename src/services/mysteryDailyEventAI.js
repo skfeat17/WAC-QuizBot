@@ -23,11 +23,13 @@ const ai = new GoogleGenAI({
 // AI MODELS
 // ==========================================
 
-const PRIMARY_MODEL =
-    "gemini-3.1-flash-lite";
+const PRIMARY_MODEL = "gemini-3.1-flash-lite";
 
-const FALLBACK_MODEL =
-    "gemini-3.5-flash-lite";
+const FALLBACK_MODELS = [
+    "gemini-3.8-flash",
+    "gemini-3.6-flash",
+    "gemini-3.5-flash-lite"
+];
 
 // ==========================================
 // SCHEMA
@@ -438,113 +440,90 @@ function isModelBusyError(error) {
 // TWO-MODEL AI GENERATOR
 // ==========================================
 
-async function generateWithFallback(
-    prompt,
-    responseSchema
-) {
-    // ==========================================
-    // TRY PRIMARY MODEL
-    // ==========================================
 
-    try {
-        console.log(
-            `🤖 Mystery AI | Trying ${PRIMARY_MODEL}`
-        );
+async function generateWithFallback(prompt, responseSchema) {
+    const models = [
+        PRIMARY_MODEL,
+        ...FALLBACK_MODELS,
+    ].filter(
+        (model) => typeof model === "string" && model.trim()
+    );
 
-        const response =
-            await ai.models.generateContent({
-                model: PRIMARY_MODEL,
+    if (models.length === 0) {
+        throw new Error("No valid Gemini models configured");
+    }
 
-                contents: prompt,
+    console.log(
+        `🚀 Mystery AI | Racing ${models.length} models simultaneously`
+    );
 
-                config: {
-                    responseMimeType:
-                        "application/json",
+    const requests = models.map(async (model) => {
+        const startedAt = Date.now();
 
-                    responseSchema,
-
-                    maxOutputTokens: 10000,
-                },
-            });
-
-        if (
-            !response ||
-            !response.text
-        ) {
-            throw new Error(
-                `${PRIMARY_MODEL} returned an empty response.`
-            );
-        }
-
-        console.log(
-            `✅ Mystery AI | ${PRIMARY_MODEL} responded`
-        );
-
-        return response;
-
-    } catch (error) {
-        console.warn(
-            `⚠️ Mystery AI | ${PRIMARY_MODEL} failed:`,
-            error.message
-        );
-
-        // ==========================================
-        // ONLY FALL BACK FOR TEMPORARY AI ERRORS
-        // ==========================================
-
-        if (!isModelBusyError(error)) {
-            throw error;
-        }
-
-        console.warn(
-            `🔄 Mystery AI | Switching to ${FALLBACK_MODEL}`
-        );
-
-        // ==========================================
-        // FALLBACK MODEL
-        // ==========================================
-
-        let response;
+        console.log(`🤖 Mystery AI | Started: ${model}`);
 
         try {
-            response = await ai.models.generateContent({
-                model: FALLBACK_MODEL,
+            const response = await ai.models.generateContent({
+                model: model.trim(),
                 contents: prompt,
                 config: {
                     responseMimeType: "application/json",
                     responseSchema,
-                    maxOutputTokens: 10000,
                 },
             });
-        } catch (fallbackError) {
-            console.error(
-                `❌ Mystery AI | ${FALLBACK_MODEL} failed:`,
-                JSON.stringify({
-                    message: fallbackError?.message,
-                    status: fallbackError?.status,
-                    code: fallbackError?.code,
-                    details: fallbackError?.error,
-                }, null, 2)
-            );
-            throw fallbackError;
-        }
 
-        if (
-            !response ||
-            !response.text
-        ) {
-            throw new Error(
-                `${FALLBACK_MODEL} returned an empty response.`
+            if (
+                !response ||
+                typeof response.text !== "string" ||
+                !response.text.trim()
+            ) {
+                throw new Error("Empty response received");
+            }
+
+            const elapsed = Date.now() - startedAt;
+
+            console.log(
+                `✅ Mystery AI | Response received: ${model} (${elapsed}ms)`
             );
+
+            return {
+                model,
+                response,
+                elapsed,
+            };
+
+        } catch (error) {
+            const elapsed = Date.now() - startedAt;
+
+            console.error(
+                `❌ Mystery AI | ${model} failed (${elapsed}ms):`,
+                error.message || error
+            );
+
+            throw error;
         }
+    });
+
+    try {
+        // First successful response wins.
+        const winner = await Promise.any(requests);
 
         console.log(
-            `✅ Mystery AI | ${FALLBACK_MODEL} responded`
+            `🏆 Mystery AI | WINNER: ${winner.model} (${winner.elapsed}ms)`
         );
 
-        return response;
+        return winner.response;
+
+    } catch (error) {
+        console.error(
+            "❌ Mystery AI | ALL MODELS FAILED:",
+            error.errors || error
+        );
+
+        throw new Error("All Gemini models failed to generate a response");
     }
 }
+
 
 // ==========================================
 // GEMINI RESPONSE SCHEMA
