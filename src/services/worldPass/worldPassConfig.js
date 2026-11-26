@@ -14,8 +14,8 @@ const WORLD_PASS_CONFIG = {
     // --------------------------------------
 
     DROP_RATES: {
-        explorer: 60,
-        voyager: 25,
+        explorer: 70,
+        voyager: 15,
         pathfinder: 10,
         discoverer: 4,
         celestial: 1,
