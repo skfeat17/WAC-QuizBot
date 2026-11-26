@@ -1,6 +1,7 @@
 
 const {
     SlashCommandBuilder,
+    AttachmentBuilder,
     ActionRowBuilder,
     ButtonBuilder,
     ButtonStyle,
@@ -13,12 +14,17 @@ const {
 const {
     getChallengeAttempt,
     getAllPassInventories,
+    getAllLifetimePassInventories,
 } = require("./worldPassRedis");
 
 
 const {
     WORLD_PASS_CONFIG,
 } = require("./worldPassConfig");
+
+const {
+    renderWorldPassLeaderboard,
+} = require("./worldPassLeaderboardImage");
 
 const {
     startWorldPassChallenge,
@@ -47,7 +53,7 @@ const worldPassCommand = new SlashCommandBuilder()
             .setRequired(true)
             .addChoices(
                 { name: "Start", value: "start" },
-                // { name: "End", value: "end" },
+                { name: "End", value: "end" },
                 { name: "Statistics", value: "statistics" }
             )
     );
@@ -63,6 +69,7 @@ const ANSWER_PREFIX = "worldpass:answer:";
 const TIER_SELECT_ID = "worldpass:tier";
 const INVENTORY_BUTTON_ID = "worldpass:inventory";
 const GUIDE_BUTTON_ID = "worldpass:guide";
+const LEADERBOARD_BUTTON_ID = "worldpass:leaderboard";
 
 const WORLD_PASS_TIER_EMOJIS = {
     explorer: "🧭",
@@ -215,9 +222,9 @@ function logWorldPassActivity(interaction, activity, details = {}) {
 
     console.log(
         [
-            "[WORLD PASS LOG]",
-             `Activity: ${activity}`,
-            `Global Name: ${globalName}`,
+            "🎟️[WORLD PASS LOG]",
+             `${activity}`,
+            `${globalName}`,
             detailText,
         ].filter(Boolean).join(" | ")
     );
@@ -296,6 +303,8 @@ function buildWorldPassPanel() {
             ...tierLines,
             "",
             "Select a tier below to enter a challenge.",
+            "",
+             "Get 1 🎟️ World Pass for Every Daily Event Question You Answer Correctly.",
         ].join("\n"))
         .setFooter({
             text: "Correct answer: earn Mora • Incorrect answer: passes returned",
@@ -324,11 +333,18 @@ function buildWorldPassPanel() {
             .setEmoji("🎒")
             .setStyle(ButtonStyle.Secondary),
 
+
+
         new ButtonBuilder()
             .setCustomId(GUIDE_BUTTON_ID)
             .setLabel("Guide")
             .setEmoji("📖")
-            .setStyle(ButtonStyle.Secondary)
+            .setStyle(ButtonStyle.Secondary),
+   new ButtonBuilder()
+            .setCustomId(LEADERBOARD_BUTTON_ID)
+            .setLabel("World Pass Leaderboard")
+            .setEmoji("🏆")
+            .setStyle(ButtonStyle.Secondary),
     );
 
     return {
@@ -346,7 +362,7 @@ function buildWorldPassGuideEmbed() {
         ([tier, config]) => {
             const dropRate = WORLD_PASS_CONFIG.DROP_RATES[tier] || 0;
 
-            return `${getTierEmoji(tier)} **${config.name}** — ${dropRate}% drop rate • ${config.passCost} 🎟️ • ${formatNumber(config.reward)} ${MORA_EMOJI}`;
+            return `${getTierEmoji(tier)} **${config.name}** — ${config.passCost} 🎟️ • ${formatNumber(config.reward)} ${MORA_EMOJI}`;
         }
     );
 
@@ -355,9 +371,9 @@ function buildWorldPassGuideEmbed() {
         .setTitle("📖 WORLD PASS GUIDE")
         .setDescription([
             "**How to get passes**",
-            "Answer the Daily World Event correctly to receive one random-tier World Pass.",
+            "Answer the Daily World Event correctly to get 50% Chance to receive one random-tier World Pass.",
             "",
-            "**Tiers, rarity and rewards**",
+            "**Tiers and rewards**",
             ...tierLines,
             "",
             "**How challenges work**",
@@ -514,6 +530,83 @@ async function handleWorldPassCommand(interaction) {
         }
 
     
+if (action === "leaderboard") {
+    logWorldPassActivity(interaction, "LIFETIME LEADERBOARD VIEWED");
+
+    const inventories = await getAllLifetimePassInventories();
+
+    const ranked = [...inventories]
+        .filter(player => Number(player.total) > 0)
+        .sort((a, b) => {
+            const difference =
+                Number(b.total || 0) - Number(a.total || 0);
+
+            return difference ||
+                String(a.userId).localeCompare(String(b.userId));
+        });
+
+    const rarityOrder = [
+        "celestial",
+        "discoverer",
+        "pathfinder",
+        "voyager",
+        "explorer",
+    ];
+
+    const rarestPasses = rarityOrder.map(tier => {
+        const holders = ranked
+            .map(player => ({
+                userId: player.userId,
+                count: Number(player.lifetime?.[tier] || 0),
+            }))
+            .filter(player => player.count > 0)
+            .sort((a, b) =>
+                b.count - a.count ||
+                String(a.userId).localeCompare(String(b.userId))
+            );
+
+        return {
+            tier,
+            dropRate: Number(WORLD_PASS_CONFIG.DROP_RATES?.[tier] || 0),
+            totalEarned: holders.reduce(
+                (sum, holder) => sum + holder.count,
+                0
+            ),
+            holderCount: holders.length,
+            leadingHolder: holders[0] || null,
+        };
+    });
+
+    const data = {
+        generatedAt: Date.now(),
+        holders: ranked.length,
+        totalEarned: ranked.reduce(
+            (sum, player) => sum + Number(player.total || 0),
+            0
+        ),
+        totalAvailable: ranked.reduce(
+            (sum, player) => sum + Number(player.available || 0),
+            0
+        ),
+        entries: ranked.slice(0, 10),
+        rarestPasses,
+    };
+
+    const image = await renderWorldPassLeaderboard(
+        data,
+        interaction.client
+    );
+
+    const attachment = new AttachmentBuilder(image, {
+        name: "world-pass-lifetime-leaderboard.png",
+    });
+
+    return interaction.editReply({
+        content: "🏆 **WORLD ADVENTURE CLUB — LIFETIME WORLD PASS LEADERBOARD**",
+        files: [attachment],
+    });
+}
+
 if (action === "statistics") {
     logWorldPassActivity(interaction, "STATISTICS VIEWED");
 
@@ -959,6 +1052,99 @@ async function handleWorldPassComponent(interaction) {
     }
 
     if (interaction.isButton()) {
+        if (interaction.customId === LEADERBOARD_BUTTON_ID) {
+            logWorldPassActivity(
+                interaction,
+                "LIFETIME LEADERBOARD BUTTON CLICKED"
+            );
+
+            await interaction.deferReply({
+                flags: MessageFlags.Ephemeral,
+            });
+
+            try {
+                const inventories = await getAllLifetimePassInventories();
+
+                const ranked = [...inventories]
+                    .filter(player => Number(player.total) > 0)
+                    .sort((a, b) => {
+                        const difference =
+                            Number(b.total || 0) - Number(a.total || 0);
+
+                        return difference ||
+                            String(a.userId).localeCompare(String(b.userId));
+                    });
+
+                const rarityOrder = [
+                    "celestial",
+                    "discoverer",
+                    "pathfinder",
+                    "voyager",
+                    "explorer",
+                ];
+
+                const rarestPasses = rarityOrder.map(tier => {
+                    const holders = ranked
+                        .map(player => ({
+                            userId: player.userId,
+                            count: Number(player.lifetime?.[tier] || 0),
+                        }))
+                        .filter(player => player.count > 0)
+                        .sort((a, b) =>
+                            b.count - a.count ||
+                            String(a.userId).localeCompare(String(b.userId))
+                        );
+
+                    return {
+                        tier,
+                        dropRate: Number(WORLD_PASS_CONFIG.DROP_RATES?.[tier] || 0),
+                        totalEarned: holders.reduce(
+                            (sum, holder) => sum + holder.count,
+                            0
+                        ),
+                        holderCount: holders.length,
+                        leadingHolder: holders[0] || null,
+                    };
+                });
+
+                const data = {
+                    generatedAt: Date.now(),
+                    holders: ranked.length,
+                    totalEarned: ranked.reduce(
+                        (sum, player) => sum + Number(player.total || 0),
+                        0
+                    ),
+                    totalAvailable: ranked.reduce(
+                        (sum, player) => sum + Number(player.available || 0),
+                        0
+                    ),
+                    entries: ranked.slice(0, 10),
+                    rarestPasses,
+                };
+
+                const image = await renderWorldPassLeaderboard(
+                    data,
+                    interaction.client
+                );
+
+                const attachment = new AttachmentBuilder(image, {
+                    name: "world-pass-lifetime-leaderboard.png",
+                });
+
+                await interaction.editReply({
+                    content: "🏆 **WORLD ADVENTURE CLUB — LIFETIME WORLD PASS LEADERBOARD**",
+                    files: [attachment],
+                });
+            } catch (error) {
+                console.error("❌ WORLD PASS LEADERBOARD BUTTON FAILED:", error);
+                await interaction.editReply({
+                    content: "❌ Could not load the World Pass leaderboard.",
+                });
+            }
+
+            return true;
+        }
+
         if (interaction.customId === INVENTORY_BUTTON_ID) {
             return handleWorldPassInventory(interaction);
         }

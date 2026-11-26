@@ -342,14 +342,18 @@ function buildCorrectEmbed(attempt) {
         .setDescription([
             "You answered the daily question correctly!",
             "",
-            `🎁 **Reward: ${attempt.reward} ${MORA_EMOJI}**`,
+            `🎁 **Reward:** ${attempt.reward} ${MORA_EMOJI}`,
+            `🎟️ **Bonus Unlocked:** 1 World Pass`,
+            "",
+            "Your World Pass can be used to enter the **World Pass Event** and earn additional rewards!",
+            "Check out **World Pass Event → Guide** to learn more.",
             "",
             "📖 **Did you know?**",
             attempt.explanation,
             "",
             getNextAttemptText(attempt),
             "",
-            "**NOTE:** We will appreciate if you copy and share the fact of the next message! <:1EmojiCatSalute:936530415177576458>",
+            "**NOTE:** We'd appreciate it if you shared the fact from the next message! <:1EmojiCatSalute:936530415177576458>",
         ].join("\n"));
 }
 
@@ -647,10 +651,9 @@ async function handleMysteryReveal(interaction) {
                     : `${seconds}s`;
 
             console.log(
-                `👤 Display Name: ${
-                    interaction.member?.displayName ||
-                    interaction.user.displayName ||
-                    interaction.user.username
+                `👤 Display Name: ${interaction.member?.displayName ||
+                interaction.user.displayName ||
+                interaction.user.username
                 }`
             );
 
@@ -764,10 +767,9 @@ async function handleMysteryReveal(interaction) {
     );
 
     console.log(
-        `⏱️ Cooldown: ${
-            immune
-                ? "IMMUNE"
-                : "NOT STARTED — starts after answer"
+        `⏱️ Cooldown: ${immune
+            ? "IMMUNE"
+            : "NOT STARTED — starts after answer"
         }`
     );
 
@@ -1010,8 +1012,7 @@ async function handleMysteryAnswer(interaction) {
         );
 
         console.log(
-            `📊 STATS RECORDED | DAILY EVENT | ${userId} | ${
-                isCorrect ? "CORRECT" : "INCORRECT"
+            `📊 STATS RECORDED | DAILY EVENT | ${userId} | ${isCorrect ? "CORRECT" : "INCORRECT"
             }`
         );
     } catch (error) {

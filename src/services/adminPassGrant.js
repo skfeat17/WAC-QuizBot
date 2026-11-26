@@ -1,35 +1,26 @@
-const { awardPass } = require("./worldPass/worldPassRedis");
 
-// Replace with your Discord user ID
-const ADMIN_USER_ID = "759810328791482428";
+const {
+    setPassInventory,
+} = require("./worldPass/worldPassRedis");
 
-async function giveMyPasses() {
-    if (!ADMIN_USER_ID) {
-        throw new Error("Admin user ID is missing.");
-    }
+const ADMIN_USER_ID = "1242132608574292118";
 
-    const passes = [
-        { tier: "explorer", amount: 50 },
-        { tier: "voyager", amount: 50 },
-        { tier: "pathfinder", amount: 30 },
-        { tier: "discoverer", amount: 20 },
-        { tier: "celestial", amount: 10 },
-    ];
+async function setMyPasses() {
+    const passes = {
+        explorer: 0,
+        voyager: 0,
+        pathfinder: 0,
+        discoverer: 0,
+        celestial: 0,
+    };
 
-    for (const pass of passes) {
-        for (let i = 0; i < pass.amount; i++) {
-            const grantId =
-                `ADMIN-GRANT-${pass.tier}-${Date.now()}-${i}`;
+    const updated = await setPassInventory(
+        ADMIN_USER_ID,
+        passes
+    );
 
-            await awardPass(
-                ADMIN_USER_ID,
-                pass.tier,
-                grantId
-            );
-        }
-    }
-
-    console.log("🎟️ Admin passes awarded successfully!");
+    console.log("🎟️ World Pass inventory replaced successfully!");
+    console.log(updated);
 }
 
-giveMyPasses().catch(console.error);
+setMyPasses().catch(console.error);

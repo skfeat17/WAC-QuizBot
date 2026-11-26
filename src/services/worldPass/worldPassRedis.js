@@ -114,12 +114,24 @@ function normalizeInventory(data = {}) {
 // LUA: AWARD PASS ONCE
 // ==========================================
 
+const lifetimeInventoryKey = userId =>
+    `${PREFIX}lifetime:${userId}`;
+
+const LIFETIME_USERS_KEY = `${PREFIX}lifetime:users`;
+
+// ==========================================
+// LUA: AWARD PASS ONCE + LIFETIME TRACKING
+// ==========================================
+
 const AWARD_PASS_SCRIPT = `
 local awardKey = KEYS[1]
 local inventoryKey = KEYS[2]
+local lifetimeKey = KEYS[3]
+local lifetimeUsersKey = KEYS[4]
 
-local tier = ARGV[1]
-local ttl = tonumber(ARGV[2])
+local userId = ARGV[1]
+local tier = ARGV[2]
+local ttl = tonumber(ARGV[3])
 
 if redis.call("EXISTS", awardKey) == 1 then
     return 0
@@ -127,6 +139,10 @@ end
 
 redis.call("HINCRBY", inventoryKey, tier, 1)
 redis.call("EXPIRE", inventoryKey, ttl)
+
+-- Lifetime totals never expire and are never reduced when passes are spent.
+redis.call("HINCRBY", lifetimeKey, tier, 1)
+redis.call("SADD", lifetimeUsersKey, userId)
 
 redis.call("SET", awardKey, tier, "EX", ttl, "NX")
 
@@ -156,8 +172,11 @@ async function awardPass(userId, tier, sourceId) {
             [
                 passAwardKey(sourceId),
                 inventoryKey(userId),
+                lifetimeInventoryKey(userId),
+                LIFETIME_USERS_KEY,
             ],
             [
+                userId,
                 tier,
                 INVENTORY_TTL,
             ]
@@ -1031,6 +1050,147 @@ async function updateRewardStatus(
 }
 
 // ==========================================
+// ALL-TIME LIFETIME PASS INVENTORIES
+// ==========================================
+
+// Lifetime counts are increased only when awardPass successfully awards
+// a pass. Spending or reserving a pass never decreases these totals.
+async function getAllLifetimePassInventories() {
+    try {
+        const userIds = new Set();
+
+        // New users are indexed permanently when their first pass is awarded.
+        const indexedUsers = await redis.smembers(LIFETIME_USERS_KEY);
+        for (const userId of indexedUsers || []) {
+            userIds.add(String(userId));
+        }
+
+        // Include users who already owned passes before lifetime tracking
+        // was introduced. Their current owned balance becomes the baseline.
+        let cursor = "0";
+        const pattern = `${PREFIX}inventory:*`;
+
+        do {
+            const [nextCursor, keys] = await redis.scan(cursor, {
+                match: pattern,
+                count: 100,
+            });
+
+            cursor = String(nextCursor);
+
+            for (const key of keys || []) {
+                const userId = String(key).slice(
+                    `${PREFIX}inventory:`.length
+                );
+                if (userId) userIds.add(userId);
+            }
+        } while (cursor !== "0");
+
+        const ids = [...userIds];
+        const results = [];
+
+        for (let i = 0; i < ids.length; i += 20) {
+            const batch = ids.slice(i, i + 20);
+
+            const batchResults = await Promise.all(
+                batch.map(async userId => {
+                    const inventory = await getPassInventory(userId);
+
+                    // One-time, atomic baseline migration for players who had
+                    // passes before lifetime tracking was added. HSETNX means
+                    // concurrent awards cannot be overwritten by this migration.
+                    const baselineArgs = [userId];
+                    for (const tier of TIERS) {
+                        baselineArgs.push(
+                            tier,
+                            Number(inventory?.[tier]?.owned || 0)
+                        );
+                    }
+
+                    await redis.eval(
+                        `
+                        local lifetimeKey = KEYS[1]
+                        local usersKey = KEYS[2]
+                        local userId = ARGV[1]
+
+                        for i = 2, #ARGV, 2 do
+                            redis.call(
+                                "HSETNX",
+                                lifetimeKey,
+                                ARGV[i],
+                                tonumber(ARGV[i + 1]) or 0
+                            )
+                        end
+
+                        redis.call("SADD", usersKey, userId)
+                        return 1
+                        `,
+                        [
+                            lifetimeInventoryKey(userId),
+                            LIFETIME_USERS_KEY,
+                        ],
+                        baselineArgs
+                    );
+
+                    const lifetimeRaw = await redis.hgetall(
+                        lifetimeInventoryKey(userId)
+                    );
+
+                    const lifetime = {};
+                    for (const tier of TIERS) {
+                        const storedLifetime = Number(
+                            lifetimeRaw?.[tier] || 0
+                        );
+                        const currentlyOwned = Number(
+                            inventory?.[tier]?.owned || 0
+                        );
+
+                        lifetime[tier] = Math.max(
+                            Number.isFinite(storedLifetime) ? storedLifetime : 0,
+                            currentlyOwned
+                        );
+                    }
+
+                    const total = Object.values(lifetime).reduce(
+                        (sum, count) => sum + count,
+                        0
+                    );
+
+                    const available = Object.values(inventory).reduce(
+                        (sum, item) => sum + Number(item.available || 0),
+                        0
+                    );
+
+                    const reserved = Object.values(inventory).reduce(
+                        (sum, item) => sum + Number(item.reserved || 0),
+                        0
+                    );
+
+                    return {
+                        userId,
+                        lifetime,
+                        total,
+                        available,
+                        reserved,
+                        inventory,
+                    };
+                })
+            );
+
+            results.push(...batchResults);
+        }
+
+        return results.filter(player => player.total > 0);
+    } catch (error) {
+        console.error(
+            "[World Pass] Could not retrieve lifetime pass inventories:",
+            error.message
+        );
+        throw error;
+    }
+}
+
+// ==========================================
 // EXPORTS
 // ==========================================
 
@@ -1115,13 +1275,123 @@ async function getAllPassInventories() {
     }
 }
 
+// ==========================================
+// LUA: SET EXACT PASS INVENTORY
+// ==========================================
+
+const SET_PASS_INVENTORY_SCRIPT = `
+local inventoryKey = KEYS[1]
+local reservedKey = KEYS[2]
+local ttl = tonumber(ARGV[1])
+
+-- Check reservations before replacing inventory.
+for i = 2, #ARGV, 2 do
+    local tier = ARGV[i]
+    local newAmount = tonumber(ARGV[i + 1]) or 0
+
+    local reserved = tonumber(
+        redis.call("HGET", reservedKey, tier) or "0"
+    )
+
+    if newAmount < reserved then
+        return {"RESERVED", tier, tostring(reserved)}
+    end
+end
+
+-- Replace the entire current inventory.
+redis.call("DEL", inventoryKey)
+
+for i = 2, #ARGV, 2 do
+    redis.call(
+        "HSET",
+        inventoryKey,
+        ARGV[i],
+        tonumber(ARGV[i + 1])
+    )
+end
+
+redis.call("EXPIRE", inventoryKey, ttl)
+
+return {"SUCCESS"}
+`;
+
+// ==========================================
+// SET EXACT PASS INVENTORY
+// ==========================================
+
+async function setPassInventory(userId, passes) {
+    userId = String(userId);
+
+    if (!userId || userId === "undefined") {
+        throw new Error("[World Pass] Invalid user ID.");
+    }
+
+    if (!passes || typeof passes !== "object" || Array.isArray(passes)) {
+        throw new Error("[World Pass] Invalid pass inventory.");
+    }
+
+    const normalized = {};
+
+    for (const tier of TIERS) {
+        const amount = Number(passes[tier] ?? 0);
+
+        if (!Number.isSafeInteger(amount) || amount < 0) {
+            throw new Error(
+                `[World Pass] Invalid amount for ${tier}: ${passes[tier]}`
+            );
+        }
+
+        normalized[tier] = amount;
+    }
+
+    for (const tier of Object.keys(passes)) {
+        if (!isValidTier(tier)) {
+            throw new Error(`[World Pass] Invalid tier: ${tier}`);
+        }
+    }
+
+    const args = [INVENTORY_TTL];
+
+    for (const tier of TIERS) {
+        args.push(tier, normalized[tier]);
+    }
+
+    const result = await redis.eval(
+        SET_PASS_INVENTORY_SCRIPT,
+        [
+            inventoryKey(userId),
+            reservedKey(userId),
+        ],
+        args
+    );
+
+    if (result?.[0] === "RESERVED") {
+        throw new Error(
+            `[World Pass] Cannot set ${result[1]} to ${normalized[result[1]]}. ` +
+            `${result[2]} pass(es) are currently reserved.`
+        );
+    }
+
+    if (result?.[0] !== "SUCCESS") {
+        throw new Error("[World Pass] Inventory update failed.");
+    }
+
+    console.log(
+        `[World Pass] Inventory replaced for ${userId}:`,
+        normalized
+    );
+
+    return normalized;
+}
+
 module.exports = {
     PREFIX,
 
     awardPass,
-
+   setPassInventory,
     getPassInventory,
     getAllPassInventories,
+    getAllLifetimePassInventories,
     getQuestionPoolSize,
     addQuestionsToPool,
     claimQuestion,
