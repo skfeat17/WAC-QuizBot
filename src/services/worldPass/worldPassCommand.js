@@ -47,7 +47,7 @@ const worldPassCommand = new SlashCommandBuilder()
             .setRequired(true)
             .addChoices(
                 { name: "Start", value: "start" },
-                { name: "End", value: "end" },
+                // { name: "End", value: "end" },
                 { name: "Statistics", value: "statistics" }
             )
     );
@@ -57,7 +57,8 @@ const worldPassCommand = new SlashCommandBuilder()
 // ============================================================
 
 const PANEL_COLOR = 0x5865f2;
-
+const STATS_PAGE_PREFIX = "worldpass:stats:";
+const STATS_PAGE_SIZE = 10;
 const ANSWER_PREFIX = "worldpass:answer:";
 const TIER_SELECT_ID = "worldpass:tier";
 const INVENTORY_BUTTON_ID = "worldpass:inventory";
@@ -73,7 +74,7 @@ const WORLD_PASS_TIER_EMOJIS = {
 
 const MORA_EMOJI = "<:mora:1503931162525962333>";
 
-function buildPassRankings(inventories, limit = 20) {
+function buildPassRankings(inventories, page = 0) {
     const sorted = [...inventories].sort((a, b) => {
         if (a.total !== b.total) {
             return a.total - b.total;
@@ -82,35 +83,109 @@ function buildPassRankings(inventories, limit = 20) {
         return a.userId.localeCompare(b.userId);
     });
 
-    const shown = sorted.slice(0, limit);
+    const totalPages = Math.max(
+        1,
+        Math.ceil(sorted.length / STATS_PAGE_SIZE)
+    );
+
+    page = Math.max(0, Math.min(page, totalPages - 1));
+
+    const start = page * STATS_PAGE_SIZE;
+    const shown = sorted.slice(
+        start,
+        start + STATS_PAGE_SIZE
+    );
 
     if (!shown.length) {
-        return "No players currently have World Passes.";
+        return {
+            description: "No players currently have World Passes.",
+            page,
+            totalPages,
+        };
     }
 
     const lines = shown.map((player, index) => {
-        const tierBreakdown = Object.entries(
+        const rank = start + index + 1;
+
+        const tierBreakdown = Object.keys(
             WORLD_PASS_CONFIG.CHALLENGES
-        ).map(([tier]) => {
-            const count = player.inventory[tier]?.owned || 0;
+        ).map(tier => {
+            const count =
+                player.inventory[tier]?.owned || 0;
 
             return `${getTierEmoji(tier)} ${count}`;
         }).join(" • ");
 
         return [
-            `**${index + 1}.** <@${player.userId}> — **${player.total} passes**`,
+            `**${rank}.** <@${player.userId}> — **${player.total} passes**`,
             `Available: ${player.available} • Reserved: ${player.reserved}`,
             tierBreakdown,
         ].join("\n");
     });
 
-    if (sorted.length > limit) {
-        lines.push(
-            `\n*Showing the first ${limit} of ${sorted.length} pass holders.*`
-        );
-    }
+    return {
+        description: lines.join("\n\n"),
+        page,
+        totalPages,
+    };
+}
 
-    return lines.join("\n\n");
+function buildPassStatisticsEmbed(
+    stats,
+    active,
+    inventories,
+    page = 0
+) {
+    const totalHolders = inventories.length;
+
+    const totalPasses = inventories.reduce(
+        (sum, player) => sum + player.total,
+        0
+    );
+
+    const ranking = buildPassRankings(inventories, page);
+
+    const embed = new EmbedBuilder()
+        .setColor(PANEL_COLOR)
+        .setTitle("📊 WORLD PASS CHALLENGE STATISTICS")
+        .setDescription([
+            `**Status:** ${active ? "🟢 Active" : "🔴 Inactive"}`,
+            "",
+            `🎟️ **Total Entries:** ${formatNumber(stats.entries)}`,
+            `🎫 **Passes Spent:** ${formatNumber(stats.passesSpent)}`,
+            `💰 **Mora Rewards Queued:** ${formatNumber(stats.moraQueued)} ${MORA_EMOJI}`,
+            "",
+            "━━━━━━━━━━━━━━━━━━━━",
+            "**🎟️ PASS HOLDER RANKINGS**",
+            `👥 Holders: **${formatNumber(totalHolders)}**`,
+            `🎟️ Total Passes Owned: **${formatNumber(totalPasses)}**`,
+            "",
+            ranking.description,
+        ].join("\n"))
+        .setFooter({
+            text: `Lowest to highest passes • Page ${ranking.page + 1}/${ranking.totalPages}`,
+        });
+
+    const row = new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+            .setCustomId(`${STATS_PAGE_PREFIX}${ranking.page - 1}`)
+            .setLabel("Previous")
+            .setEmoji("◀️")
+            .setStyle(ButtonStyle.Secondary)
+            .setDisabled(ranking.page <= 0),
+
+        new ButtonBuilder()
+            .setCustomId(`${STATS_PAGE_PREFIX}${ranking.page + 1}`)
+            .setLabel("Next")
+            .setEmoji("▶️")
+            .setStyle(ButtonStyle.Secondary)
+            .setDisabled(ranking.page >= ranking.totalPages - 1)
+    );
+
+    return {
+        embeds: [embed],
+        components: [row],
+    };
 }
 
 // ============================================================
@@ -440,54 +515,22 @@ async function handleWorldPassCommand(interaction) {
 
     
 if (action === "statistics") {
-    logWorldPassActivity(
-        interaction,
-        "STATISTICS VIEWED"
-    );
+    logWorldPassActivity(interaction, "STATISTICS VIEWED");
 
-    const [
-        stats,
-        active,
-        inventories,
-    ] = await Promise.all([
+    const [stats, active, inventories] = await Promise.all([
         getWorldPassStatistics(),
         isWorldPassChallengeActive(),
         getAllPassInventories(),
     ]);
 
-    const totalHolders = inventories.length;
-
-    const totalPasses = inventories.reduce(
-        (sum, player) => sum + player.total,
-        0
+    return interaction.editReply(
+        buildPassStatisticsEmbed(
+            stats,
+            active,
+            inventories,
+            0
+        )
     );
-
-    const embed = new EmbedBuilder()
-        .setColor(PANEL_COLOR)
-        .setTitle("📊 WORLD PASS CHALLENGE STATISTICS")
-        .setDescription([
-            `**Status:** ${active ? "🟢 Active" : "🔴 Inactive"}`,
-            "",
-            `🎟️ **Total Entries:** ${formatNumber(stats.entries)}`,
-            `✅ **Correct Answers:** ${formatNumber(stats.correct)}`,
-            `❌ **Incorrect Answers:** ${formatNumber(stats.incorrect)}`,
-            `⌛ **Expired Attempts:** ${formatNumber(stats.expired)}`,
-            `🎫 **Passes Spent:** ${formatNumber(stats.passesSpent)}`,
-            `💰 **Mora Rewards Queued:** ${formatNumber(stats.moraQueued)} ${MORA_EMOJI}`,
-            "",
-            "**PASS HOLDER RANKINGS**",
-            `👥 Holders: **${formatNumber(totalHolders)}**`,
-            `🎟️ Total Passes Owned: **${formatNumber(totalPasses)}**`,
-            "",
-            buildPassRankings(inventories),
-        ].join("\n"))
-        .setFooter({
-            text: "Ranked from fewest to most passes • Lifetime statistics",
-        });
-
-    return interaction.editReply({
-        embeds: [embed],
-    });
 }
 
 
