@@ -9,9 +9,12 @@ const {
     MessageFlags,
 } = require("discord.js");
 
+
 const {
     getChallengeAttempt,
+    getAllPassInventories,
 } = require("./worldPassRedis");
+
 
 const {
     WORLD_PASS_CONFIG,
@@ -69,6 +72,46 @@ const WORLD_PASS_TIER_EMOJIS = {
 };
 
 const MORA_EMOJI = "<:mora:1503931162525962333>";
+
+function buildPassRankings(inventories, limit = 20) {
+    const sorted = [...inventories].sort((a, b) => {
+        if (a.total !== b.total) {
+            return a.total - b.total;
+        }
+
+        return a.userId.localeCompare(b.userId);
+    });
+
+    const shown = sorted.slice(0, limit);
+
+    if (!shown.length) {
+        return "No players currently have World Passes.";
+    }
+
+    const lines = shown.map((player, index) => {
+        const tierBreakdown = Object.entries(
+            WORLD_PASS_CONFIG.CHALLENGES
+        ).map(([tier]) => {
+            const count = player.inventory[tier]?.owned || 0;
+
+            return `${getTierEmoji(tier)} ${count}`;
+        }).join(" • ");
+
+        return [
+            `**${index + 1}.** <@${player.userId}> — **${player.total} passes**`,
+            `Available: ${player.available} • Reserved: ${player.reserved}`,
+            tierBreakdown,
+        ].join("\n");
+    });
+
+    if (sorted.length > limit) {
+        lines.push(
+            `\n*Showing the first ${limit} of ${sorted.length} pass holders.*`
+        );
+    }
+
+    return lines.join("\n\n");
+}
 
 // ============================================================
 // ACTIVITY LOGGER
@@ -395,36 +438,58 @@ async function handleWorldPassCommand(interaction) {
             });
         }
 
-        if (action === "statistics") {
-            logWorldPassActivity(
-                interaction,
-                "STATISTICS VIEWED"
-            );
+    
+if (action === "statistics") {
+    logWorldPassActivity(
+        interaction,
+        "STATISTICS VIEWED"
+    );
 
-            const stats = await getWorldPassStatistics();
-            const active = await isWorldPassChallengeActive();
+    const [
+        stats,
+        active,
+        inventories,
+    ] = await Promise.all([
+        getWorldPassStatistics(),
+        isWorldPassChallengeActive(),
+        getAllPassInventories(),
+    ]);
 
-            const embed = new EmbedBuilder()
-                .setColor(PANEL_COLOR)
-                .setTitle("📊 WORLD PASS CHALLENGE STATISTICS")
-                .setDescription([
-                    `**Status:** ${active ? "🟢 Active" : "🔴 Inactive"}`,
-                    "",
-                    `🎟️ **Total Entries:** ${formatNumber(stats.entries)}`,
-                    `✅ **Correct Answers:** ${formatNumber(stats.correct)}`,
-                    `❌ **Incorrect Answers:** ${formatNumber(stats.incorrect)}`,
-                    `⌛ **Expired Attempts:** ${formatNumber(stats.expired)}`,
-                    `🎫 **Passes Spent:** ${formatNumber(stats.passesSpent)}`,
-                    `💰 **Mora Rewards Queued:** ${formatNumber(stats.moraQueued)} ${MORA_EMOJI}`,
-                ].join("\n"))
-                .setFooter({
-                    text: "World Pass Challenge • Lifetime statistics",
-                });
+    const totalHolders = inventories.length;
 
-            return interaction.editReply({
-                embeds: [embed],
-            });
-        }
+    const totalPasses = inventories.reduce(
+        (sum, player) => sum + player.total,
+        0
+    );
+
+    const embed = new EmbedBuilder()
+        .setColor(PANEL_COLOR)
+        .setTitle("📊 WORLD PASS CHALLENGE STATISTICS")
+        .setDescription([
+            `**Status:** ${active ? "🟢 Active" : "🔴 Inactive"}`,
+            "",
+            `🎟️ **Total Entries:** ${formatNumber(stats.entries)}`,
+            `✅ **Correct Answers:** ${formatNumber(stats.correct)}`,
+            `❌ **Incorrect Answers:** ${formatNumber(stats.incorrect)}`,
+            `⌛ **Expired Attempts:** ${formatNumber(stats.expired)}`,
+            `🎫 **Passes Spent:** ${formatNumber(stats.passesSpent)}`,
+            `💰 **Mora Rewards Queued:** ${formatNumber(stats.moraQueued)} ${MORA_EMOJI}`,
+            "",
+            "**PASS HOLDER RANKINGS**",
+            `👥 Holders: **${formatNumber(totalHolders)}**`,
+            `🎟️ Total Passes Owned: **${formatNumber(totalPasses)}**`,
+            "",
+            buildPassRankings(inventories),
+        ].join("\n"))
+        .setFooter({
+            text: "Ranked from fewest to most passes • Lifetime statistics",
+        });
+
+    return interaction.editReply({
+        embeds: [embed],
+    });
+}
+
 
         logWorldPassActivity(
             interaction,

@@ -1034,13 +1034,94 @@ async function updateRewardStatus(
 // EXPORTS
 // ==========================================
 
+// ==========================================
+// ALL PLAYER INVENTORIES
+// ==========================================
+
+async function getAllPassInventories() {
+    try {
+        const pattern = `${PREFIX}inventory:*`;
+        const userIds = new Set();
+
+        let cursor = "0";
+
+        do {
+            const [nextCursor, keys] = await redis.scan(
+                cursor,
+                {
+                    match: pattern,
+                    count: 100,
+                }
+            );
+
+            cursor = String(nextCursor);
+
+            for (const key of keys || []) {
+                const userId = String(key).slice(
+                    `${PREFIX}inventory:`.length
+                );
+
+                if (userId) userIds.add(userId);
+            }
+        } while (cursor !== "0");
+
+        const ids = [...userIds];
+        const results = [];
+
+        // Process in batches to avoid excessive Redis requests.
+        for (let i = 0; i < ids.length; i += 25) {
+            const batch = ids.slice(i, i + 25);
+
+            const inventories = await Promise.all(
+                batch.map(async (userId) => {
+                    const inventory = await getPassInventory(userId);
+
+                    const total = Object.values(inventory).reduce(
+                        (sum, item) => sum + item.owned,
+                        0
+                    );
+
+                    const available = Object.values(inventory).reduce(
+                        (sum, item) => sum + item.available,
+                        0
+                    );
+
+                    const reserved = Object.values(inventory).reduce(
+                        (sum, item) => sum + item.reserved,
+                        0
+                    );
+
+                    return {
+                        userId,
+                        inventory,
+                        total,
+                        available,
+                        reserved,
+                    };
+                })
+            );
+
+            results.push(...inventories);
+        }
+
+        return results;
+    } catch (error) {
+        console.error(
+            "[World Pass] Could not retrieve all inventories:",
+            error.message
+        );
+
+        throw error;
+    }
+}
+
 module.exports = {
     PREFIX,
 
     awardPass,
 
     getPassInventory,
-
+    getAllPassInventories,
     getQuestionPoolSize,
     addQuestionsToPool,
     claimQuestion,
