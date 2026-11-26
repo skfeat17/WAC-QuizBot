@@ -8,9 +8,11 @@ const {
     EmbedBuilder,
     MessageFlags,
 } = require("discord.js");
+
 const {
     getChallengeAttempt,
 } = require("./worldPassRedis");
+
 const {
     WORLD_PASS_CONFIG,
 } = require("./worldPassConfig");
@@ -52,6 +54,7 @@ const worldPassCommand = new SlashCommandBuilder()
 // ============================================================
 
 const PANEL_COLOR = 0x5865f2;
+
 const ANSWER_PREFIX = "worldpass:answer:";
 const TIER_SELECT_ID = "worldpass:tier";
 const INVENTORY_BUTTON_ID = "worldpass:inventory";
@@ -66,6 +69,41 @@ const WORLD_PASS_TIER_EMOJIS = {
 };
 
 const MORA_EMOJI = "<:mora:1503931162525962333>";
+
+// ============================================================
+// ACTIVITY LOGGER
+// ============================================================
+
+function logWorldPassActivity(interaction, activity, details = {}) {
+    const user = interaction?.user;
+
+    const globalName =
+        user?.globalName ||
+        user?.username ||
+        "Unknown User";
+
+    const username = user?.username || "Unknown";
+    const userId = user?.id || "Unknown";
+
+    const detailText = Object.entries(details)
+        .map(([key, value]) => {
+            const safeValue = String(value ?? "None")
+                .replace(/[\r\n]/g, " ")
+                .replace(/\|/g, "/");
+
+            return `${key}: ${safeValue}`;
+        })
+        .join(" | ");
+
+    console.log(
+        [
+            "[WORLD PASS LOG]",
+             `Activity: ${activity}`,
+            `Global Name: ${globalName}`,
+            detailText,
+        ].filter(Boolean).join(" | ")
+    );
+}
 
 // ============================================================
 // HELPERS
@@ -167,6 +205,7 @@ function buildWorldPassPanel() {
             .setLabel("My Passes")
             .setEmoji("🎒")
             .setStyle(ButtonStyle.Secondary),
+
         new ButtonBuilder()
             .setCustomId(GUIDE_BUTTON_ID)
             .setLabel("Guide")
@@ -180,10 +219,15 @@ function buildWorldPassPanel() {
     };
 }
 
+// ============================================================
+// GUIDE
+// ============================================================
+
 function buildWorldPassGuideEmbed() {
     const tierLines = Object.entries(WORLD_PASS_CONFIG.CHALLENGES).map(
         ([tier, config]) => {
             const dropRate = WORLD_PASS_CONFIG.DROP_RATES[tier] || 0;
+
             return `${getTierEmoji(tier)} **${config.name}** — ${dropRate}% drop rate • ${config.passCost} 🎟️ • ${formatNumber(config.reward)} ${MORA_EMOJI}`;
         }
     );
@@ -206,7 +250,9 @@ function buildWorldPassGuideEmbed() {
             "• Incorrect answer: reserved passes are returned immediately, so you can retry.",
             "• You can have multiple active entries at the same time.",
         ].join("\n"))
-        .setFooter({ text: "Choose a tier from the main panel to begin" });
+        .setFooter({
+            text: "Choose a tier from the main panel to begin",
+        });
 }
 
 // ============================================================
@@ -222,7 +268,9 @@ function buildChallengeQuestionEmbed(attempt) {
 
     return new EmbedBuilder()
         .setColor(PANEL_COLOR)
-        .setTitle(`${getTierEmoji(attempt.tier)} ${config?.name || "WORLD"} CHALLENGE`)
+        .setTitle(
+            `${getTierEmoji(attempt.tier)} ${config?.name || "WORLD"} CHALLENGE`
+        )
         .setDescription([
             `**${attempt.question}**`,
             "",
@@ -264,6 +312,10 @@ function buildChallengeAnswerButtons(attempt) {
 async function handleWorldPassCommand(interaction) {
     const action = interaction.options.getString("action");
 
+    logWorldPassActivity(interaction, "COMMAND USED", {
+        action,
+    });
+
     if (action === "start") {
         await interaction.deferReply();
     } else {
@@ -277,12 +329,23 @@ async function handleWorldPassCommand(interaction) {
             const alreadyActive = await isWorldPassChallengeActive();
 
             if (alreadyActive) {
+                logWorldPassActivity(
+                    interaction,
+                    "START FAILED",
+                    { reason: "Already active" }
+                );
+
                 return interaction.editReply({
                     content: "⚠️ The World Pass Challenge is already active.",
                 });
             }
 
             await setWorldPassChallengeActive(true);
+
+            logWorldPassActivity(
+                interaction,
+                "CHALLENGE ACTIVATED"
+            );
 
             console.log("🌍 WORLD PASS CHALLENGE ACTIVATED");
 
@@ -295,12 +358,23 @@ async function handleWorldPassCommand(interaction) {
             const alreadyActive = await isWorldPassChallengeActive();
 
             if (!alreadyActive) {
+                logWorldPassActivity(
+                    interaction,
+                    "END FAILED",
+                    { reason: "Already inactive" }
+                );
+
                 return interaction.editReply({
                     content: "⚠️ The World Pass Challenge is already inactive.",
                 });
             }
 
             await setWorldPassChallengeActive(false);
+
+            logWorldPassActivity(
+                interaction,
+                "CHALLENGE DEACTIVATED"
+            );
 
             console.log("🛑 WORLD PASS CHALLENGE DEACTIVATED");
 
@@ -322,6 +396,11 @@ async function handleWorldPassCommand(interaction) {
         }
 
         if (action === "statistics") {
+            logWorldPassActivity(
+                interaction,
+                "STATISTICS VIEWED"
+            );
+
             const stats = await getWorldPassStatistics();
             const active = await isWorldPassChallengeActive();
 
@@ -347,11 +426,26 @@ async function handleWorldPassCommand(interaction) {
             });
         }
 
+        logWorldPassActivity(
+            interaction,
+            "UNKNOWN COMMAND ACTION",
+            { action }
+        );
+
         return interaction.editReply({
             content: "❌ Unknown action.",
         });
 
     } catch (error) {
+        logWorldPassActivity(
+            interaction,
+            "COMMAND ERROR",
+            {
+                action,
+                error: error.message,
+            }
+        );
+
         console.error("❌ WORLD PASS COMMAND FAILED:", error);
 
         return interaction.editReply({
@@ -365,7 +459,17 @@ async function handleWorldPassCommand(interaction) {
 // ============================================================
 
 async function handleWorldPassTierSelect(interaction) {
-    if (interaction.customId !== TIER_SELECT_ID) return false;
+    if (interaction.customId !== TIER_SELECT_ID) {
+        return false;
+    }
+
+    const tier = interaction.values[0];
+
+    logWorldPassActivity(
+        interaction,
+        "CHALLENGE ENTRY REQUESTED",
+        { tier }
+    );
 
     await interaction.deferReply({
         flags: MessageFlags.Ephemeral,
@@ -373,13 +477,21 @@ async function handleWorldPassTierSelect(interaction) {
 
     try {
         if (!(await isWorldPassChallengeActive())) {
+            logWorldPassActivity(
+                interaction,
+                "CHALLENGE ENTRY FAILED",
+                {
+                    tier,
+                    reason: "Challenge inactive",
+                }
+            );
+
             await interaction.editReply({
                 content: "❌ The World Pass Challenge is currently inactive.",
             });
+
             return true;
         }
-
-        const tier = interaction.values[0];
 
         const result = await startWorldPassChallenge(
             interaction.user.id,
@@ -387,11 +499,28 @@ async function handleWorldPassTierSelect(interaction) {
         );
 
         if (!result.success) {
+            logWorldPassActivity(
+                interaction,
+                "CHALLENGE ENTRY FAILED",
+                {
+                    tier,
+                    reason: result.code,
+                    required: result.required,
+                    available: result.available,
+                }
+            );
+
             const messages = {
                 INVALID_TIER: "❌ Invalid challenge tier.",
-                NOT_ENOUGH_PASSES: `❌ You don't have enough passes. You need **${result.required}** and have **${result.available}** available.`,
-                QUESTION_POOL_EMPTY: "⏳ Questions for this tier are being restocked. Please try again shortly.",
-                ENTRY_CREATION_FAILED: "❌ Could not create your challenge entry. Please try again.",
+
+                NOT_ENOUGH_PASSES:
+                    `❌ You don't have enough passes. You need **${result.required}** and have **${result.available}** available.`,
+
+                QUESTION_POOL_EMPTY:
+                    "⏳ Questions for this tier are being restocked. Please try again shortly.",
+
+                ENTRY_CREATION_FAILED:
+                    "❌ Could not create your challenge entry. Please try again.",
             };
 
             await interaction.editReply({
@@ -404,6 +533,16 @@ async function handleWorldPassTierSelect(interaction) {
 
         await recordWorldPassStat("entries");
 
+        logWorldPassActivity(
+            interaction,
+            "CHALLENGE ENTRY CREATED",
+            {
+                tier,
+                attemptId: result.attempt.attemptId,
+                expiresAt: result.attempt.expiresAt,
+            }
+        );
+
         await interaction.editReply({
             embeds: [
                 buildChallengeQuestionEmbed(result.attempt),
@@ -411,13 +550,18 @@ async function handleWorldPassTierSelect(interaction) {
             components: buildChallengeAnswerButtons(result.attempt),
         });
 
-        console.log(
-            `🎟️ WORLD PASS ENTRY | ${interaction.user.id} | ${tier} | ${result.attempt.attemptId}`
-        );
-
         return true;
 
     } catch (error) {
+        logWorldPassActivity(
+            interaction,
+            "CHALLENGE ENTRY ERROR",
+            {
+                tier,
+                error: error.message,
+            }
+        );
+
         console.error("❌ WORLD PASS TIER SELECTION FAILED:", error);
 
         await interaction.editReply({
@@ -433,7 +577,14 @@ async function handleWorldPassTierSelect(interaction) {
 // ============================================================
 
 async function handleWorldPassInventory(interaction) {
-    if (interaction.customId !== INVENTORY_BUTTON_ID) return false;
+    if (interaction.customId !== INVENTORY_BUTTON_ID) {
+        return false;
+    }
+
+    logWorldPassActivity(
+        interaction,
+        "INVENTORY VIEWED"
+    );
 
     await interaction.deferReply({
         flags: MessageFlags.Ephemeral,
@@ -459,6 +610,12 @@ async function handleWorldPassInventory(interaction) {
         });
 
     } catch (error) {
+        logWorldPassActivity(
+            interaction,
+            "INVENTORY ERROR",
+            { error: error.message }
+        );
+
         console.error("❌ WORLD PASS INVENTORY FAILED:", error);
 
         await interaction.editReply({
@@ -484,34 +641,71 @@ async function handleWorldPassAnswer(interaction) {
     const attemptId = value.slice(0, separator);
     const selectedIndex = Number(value.slice(separator + 1));
 
+    logWorldPassActivity(
+        interaction,
+        "ANSWER SUBMITTED",
+        {
+            attemptId,
+            selectedIndex,
+        }
+    );
+
     await interaction.deferUpdate();
 
     try {
-        if (!attemptId || !Number.isInteger(selectedIndex)) {
+        if (
+            !attemptId ||
+            !Number.isInteger(selectedIndex) ||
+            selectedIndex < 0
+        ) {
+            logWorldPassActivity(
+                interaction,
+                "INVALID ANSWER SELECTION",
+                { attemptId, selectedIndex }
+            );
+
             await interaction.followUp({
                 content: "❌ Invalid answer selection.",
                 flags: MessageFlags.Ephemeral,
             });
+
             return true;
         }
 
         const storedAttempt = await getChallengeAttempt(attemptId);
 
         if (!storedAttempt) {
+            logWorldPassActivity(
+                interaction,
+                "ATTEMPT NOT FOUND",
+                { attemptId }
+            );
+
             await interaction.followUp({
                 content: "❌ This challenge attempt could not be found.",
                 flags: MessageFlags.Ephemeral,
             });
+
             return true;
         }
 
-        const selectedOption = storedAttempt.options[selectedIndex];
+        const selectedOption = storedAttempt.options?.[selectedIndex];
 
         if (typeof selectedOption !== "string") {
+            logWorldPassActivity(
+                interaction,
+                "INVALID ANSWER OPTION",
+                {
+                    attemptId,
+                    selectedIndex,
+                }
+            );
+
             await interaction.followUp({
                 content: "❌ Invalid answer selection.",
                 flags: MessageFlags.Ephemeral,
             });
+
             return true;
         }
 
@@ -522,12 +716,30 @@ async function handleWorldPassAnswer(interaction) {
         );
 
         if (!result.success) {
+            logWorldPassActivity(
+                interaction,
+                "ANSWER PROCESSING REJECTED",
+                {
+                    attemptId,
+                    reason: result.code,
+                }
+            );
+
             const messages = {
-                ATTEMPT_NOT_FOUND: "❌ This challenge attempt could not be found.",
-                NOT_YOUR_ATTEMPT: "❌ This challenge belongs to another player.",
-                ATTEMPT_ALREADY_FINISHED: "⚠️ This challenge has already been completed.",
-                ATTEMPT_EXPIRED: "⌛ This challenge has expired.",
-                INVALID_ANSWER: "❌ Invalid answer.",
+                ATTEMPT_NOT_FOUND:
+                    "❌ This challenge attempt could not be found.",
+
+                NOT_YOUR_ATTEMPT:
+                    "❌ This challenge belongs to another player.",
+
+                ATTEMPT_ALREADY_FINISHED:
+                    "⚠️ This challenge has already been completed.",
+
+                ATTEMPT_EXPIRED:
+                    "⌛ This challenge has expired.",
+
+                INVALID_ANSWER:
+                    "❌ Invalid answer.",
             };
 
             await interaction.followUp({
@@ -540,6 +752,20 @@ async function handleWorldPassAnswer(interaction) {
         }
 
         const config = WORLD_PASS_CONFIG.CHALLENGES[result.tier];
+
+        logWorldPassActivity(
+            interaction,
+            result.correct
+                ? "CORRECT ANSWER"
+                : "INCORRECT ANSWER",
+            {
+                tier: result.tier,
+                attemptId,
+                selectedOption,
+                reward: result.reward || 0,
+                passCost: config?.passCost || 0,
+            }
+        );
 
         const embed = new EmbedBuilder()
             .setColor(result.correct ? 0x57f287 : 0xed4245)
@@ -579,15 +805,27 @@ async function handleWorldPassAnswer(interaction) {
         );
 
         if (result.correct) {
-            await recordWorldPassStat("passesSpent", config?.passCost || 0);
-            await recordWorldPassStat("moraQueued", result.reward || 0);
+            await recordWorldPassStat(
+                "passesSpent",
+                config?.passCost || 0
+            );
+
+            await recordWorldPassStat(
+                "moraQueued",
+                result.reward || 0
+            );
         }
 
-        console.log(
-            `🏁 WORLD PASS ANSWER | ${interaction.user.id} | ${attemptId} | ${result.correct ? "CORRECT" : "INCORRECT"}`
+    } catch (error) {
+        logWorldPassActivity(
+            interaction,
+            "ANSWER PROCESSING ERROR",
+            {
+                attemptId,
+                error: error.message,
+            }
         );
 
-    } catch (error) {
         console.error("❌ WORLD PASS ANSWER FAILED:", error);
 
         await interaction.followUp({
@@ -605,7 +843,11 @@ async function handleWorldPassAnswer(interaction) {
 
 async function handleWorldPassComponent(interaction) {
     if (interaction.isStringSelectMenu()) {
-        return handleWorldPassTierSelect(interaction);
+        if (interaction.customId === TIER_SELECT_ID) {
+            return handleWorldPassTierSelect(interaction);
+        }
+
+        return false;
     }
 
     if (interaction.isButton()) {
@@ -614,10 +856,16 @@ async function handleWorldPassComponent(interaction) {
         }
 
         if (interaction.customId === GUIDE_BUTTON_ID) {
+            logWorldPassActivity(
+                interaction,
+                "GUIDE VIEWED"
+            );
+
             await interaction.reply({
                 embeds: [buildWorldPassGuideEmbed()],
                 flags: MessageFlags.Ephemeral,
             });
+
             return true;
         }
 
