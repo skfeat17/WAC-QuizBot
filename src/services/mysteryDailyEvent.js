@@ -1,3 +1,4 @@
+
 const {
     ActionRowBuilder,
     ButtonBuilder,
@@ -37,54 +38,21 @@ const {
 } = require("./mysteryDailyEventAI");
 
 // ============================================================
-// BACKGROUND QUESTION-POOL RESTOCK
+// WORLD PASS
 // ============================================================
 
-const MYSTERY_POOL_RESTOCK_THRESHOLD = 5;
-let mysteryPoolRestockInProgress = false;
+const {
+    generateRandomPassTier,
+    WORLD_PASS_CONFIG,
+} = require("./worldPass/worldPassConfig");
 
-/**
- * Checks the current pool and starts generation without blocking
- * the event/reveal interaction whenever the pool has 5 or fewer
- * questions. A local lock prevents multiple simultaneous batches.
- */
-function startMysteryPoolRestockInBackground(source = "unknown") {
-    if (mysteryPoolRestockInProgress) {
-        console.log(`🔄 POOL RESTOCK ALREADY RUNNING | ${source}`);
-        return;
-    }
+const {
+    awardPass,
+} = require("./worldPass/worldPassRedis");
 
-    mysteryPoolRestockInProgress = true;
-
-    (async () => {
-        try {
-            const poolSize = await getMysteryQuestionPoolSize();
-
-            console.log(`📦 QUESTION POOL CHECK | ${poolSize} questions | ${source}`);
-
-            if (poolSize > MYSTERY_POOL_RESTOCK_THRESHOLD) {
-                console.log(`✅ POOL ABOVE RESTOCK THRESHOLD | ${poolSize}`);
-                return;
-            }
-
-            console.log(
-                `🔄 BACKGROUND RESTOCK STARTED | Pool: ${poolSize} (threshold: ${MYSTERY_POOL_RESTOCK_THRESHOLD})`
-            );
-
-            await generateMysteryQuestionBatch();
-
-            const updatedPoolSize = await getMysteryQuestionPoolSize();
-
-            console.log(
-                `✅ BACKGROUND RESTOCK COMPLETE | Pool: ${updatedPoolSize}`
-            );
-        } catch (error) {
-            console.error("❌ BACKGROUND MYSTERY POOL RESTOCK FAILED:", error);
-        } finally {
-            mysteryPoolRestockInProgress = false;
-        }
-    })();
-}
+// ============================================================
+// PAYMENT & STATISTICS
+// ============================================================
 
 const {
     createPaymentTransaction,
@@ -98,38 +66,93 @@ const {
 // ============================================================
 // CONFIG
 // ============================================================
+
 let formattedTime;
-const MYSTERY_EVENT_ID =
-    "daily-world-mystery";
 
-const EVENT_NAME =
-    "🌍 Daily World Event";
+const MYSTERY_EVENT_ID = "daily-world-mystery";
 
-const EVENT_TYPE =
-    "Mystery Event";
+const EVENT_NAME = "🌍 Daily World Event";
+
+const EVENT_TYPE = "Mystery Event";
 
 const REWARD_MIN = 10;
 const REWARD_MAX = 20;
 
-const MORA_EMOJI =
-    "<:mora:1503931162525962333>";
+const MORA_EMOJI = "<:mora:1503931162525962333>";
 
-const PAYMENT_STAFF_ID =
-    "1295671787375296542";
+const PAYMENT_STAFF_ID = "1295671787375296542";
 
-const REVEAL_BUTTON_ID =
-    "mysteryevent_reveal";
+const REVEAL_BUTTON_ID = "mysteryevent_reveal";
 
-const ANSWER_BUTTON_PREFIX =
-    "mysteryevent_answer";
+const ANSWER_BUTTON_PREFIX = "mysteryevent_answer";
 
 // ============================================================
-// RANDOM
+// QUESTION POOL RESTOCK
+// ============================================================
+
+const MYSTERY_POOL_RESTOCK_THRESHOLD = 5;
+
+let mysteryPoolRestockInProgress = false;
+
+/**
+ * Restocks the question pool in the background
+ * whenever 5 or fewer questions remain.
+ */
+function startMysteryPoolRestockInBackground(source = "unknown") {
+    if (mysteryPoolRestockInProgress) {
+        console.log(`🔄 POOL RESTOCK ALREADY RUNNING | ${source}`);
+        return;
+    }
+
+    mysteryPoolRestockInProgress = true;
+
+    (async () => {
+        try {
+            const poolSize = await getMysteryQuestionPoolSize();
+
+            console.log(
+                `📦 QUESTION POOL CHECK | ${poolSize} questions | ${source}`
+            );
+
+            if (poolSize > MYSTERY_POOL_RESTOCK_THRESHOLD) {
+                console.log(
+                    `✅ POOL ABOVE RESTOCK THRESHOLD | ${poolSize}`
+                );
+
+                return;
+            }
+
+            console.log(
+                `🔄 BACKGROUND RESTOCK STARTED | Pool: ${poolSize}`
+            );
+
+            await generateMysteryQuestionBatch();
+
+            const updatedPoolSize =
+                await getMysteryQuestionPoolSize();
+
+            console.log(
+                `✅ BACKGROUND RESTOCK COMPLETE | Pool: ${updatedPoolSize}`
+            );
+        } catch (error) {
+            console.error(
+                "❌ BACKGROUND MYSTERY POOL RESTOCK FAILED:",
+                error
+            );
+        } finally {
+            mysteryPoolRestockInProgress = false;
+        }
+    })();
+}
+
+// ============================================================
+// RANDOM HELPERS
 // ============================================================
 
 function randomInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
+
 function formatDuration(seconds) {
     seconds = Math.max(0, Number(seconds) || 0);
 
@@ -143,43 +166,52 @@ function formatDuration(seconds) {
         remainingSeconds > 0 ? `${remainingSeconds}s` : null,
     ].filter(Boolean).join(" ") || "0s";
 }
+
 function generateReward() {
-const DROP_RATES = {
-    common: 55,
-    uncommon: 25,
-    rare: 19,
-    jackpot: 1
-};
+    const DROP_RATES = {
+        common: 55,
+        uncommon: 25,
+        rare: 19,
+        jackpot: 1,
+    };
 
-const roll = Math.random() * 100;
+    const roll = Math.random() * 100;
 
-if (roll < DROP_RATES.common) {
-    return randomInt(10, 12);
-}
-
-if (roll < DROP_RATES.common + DROP_RATES.uncommon) {
-    return randomInt(13, 14);
-}
-
-if (roll < DROP_RATES.common + DROP_RATES.uncommon + DROP_RATES.rare) {
-    const rareRewards = [
-        { chance: 60, reward: 15 },
-        { chance: 20, reward: 16 },
-        { chance: 13, reward: 17 },
-        { chance: 5, reward: 18 },
-        { chance: 2, reward: 19 }
-    ];
-
-    const rareRoll = Math.random() * 100;
-    let cumulative = 0;
-
-    for (const item of rareRewards) {
-        cumulative += item.chance;
-        if (rareRoll < cumulative) return item.reward;
+    if (roll < DROP_RATES.common) {
+        return randomInt(10, 12);
     }
-}
 
-return 20;
+    if (roll < DROP_RATES.common + DROP_RATES.uncommon) {
+        return randomInt(13, 14);
+    }
+
+    if (
+        roll <
+        DROP_RATES.common +
+        DROP_RATES.uncommon +
+        DROP_RATES.rare
+    ) {
+        const rareRewards = [
+            { chance: 60, reward: 15 },
+            { chance: 20, reward: 16 },
+            { chance: 13, reward: 17 },
+            { chance: 5, reward: 18 },
+            { chance: 2, reward: 19 },
+        ];
+
+        const rareRoll = Math.random() * 100;
+        let cumulative = 0;
+
+        for (const item of rareRewards) {
+            cumulative += item.chance;
+
+            if (rareRoll < cumulative) {
+                return item.reward;
+            }
+        }
+    }
+
+    return 20;
 }
 
 function createAttemptId() {
@@ -194,8 +226,7 @@ function createAttemptId() {
 
 // ============================================================
 // PUBLIC EVENT EMBED
-// IMPORTANT:
-// This message is NEVER edited by the bot.
+// This message is never edited by the bot.
 // ============================================================
 
 function buildMysteryEventEmbed() {
@@ -240,14 +271,12 @@ function buildRevealButton() {
             .setStyle(ButtonStyle.Secondary)
     );
 }
+
 // ============================================================
 // EPHEMERAL QUESTION
 // ============================================================
 
-function buildQuestionEmbed(
-    question,
-    attemptId
-) {
+function buildQuestionEmbed(question, attemptId) {
     return new EmbedBuilder()
         .setColor(0x5865f2)
         .setTitle("🌍 YOUR DAILY QUESTION")
@@ -261,35 +290,25 @@ function buildQuestionEmbed(
         .setFooter({
             text:
                 `Category: ${question.category} • ` +
-                `1 Minute Cooldown for Incorrect Answers`,
+                "1 Minute Cooldown for Incorrect Answers",
         });
 }
 
-function buildAnswerButtons(
-    question,
-    attemptId
-) {
-    const row =
-        new ActionRowBuilder();
+function buildAnswerButtons(question, attemptId) {
+    const row = new ActionRowBuilder();
 
-    question.answers.forEach(
-        (answer, index) => {
-            row.addComponents(
-                new ButtonBuilder()
-                    .setCustomId(
-                        `${ANSWER_BUTTON_PREFIX}:${attemptId}:${index}`
-                    )
-                    .setLabel(
-                        `${String.fromCharCode(
-                            65 + index
-                        )}. ${answer}`
-                    )
-                    .setStyle(
-                        ButtonStyle.Secondary
-                    )
-            );
-        }
-    );
+    question.answers.forEach((answer, index) => {
+        row.addComponents(
+            new ButtonBuilder()
+                .setCustomId(
+                    `${ANSWER_BUTTON_PREFIX}:${attemptId}:${index}`
+                )
+                .setLabel(
+                    `${String.fromCharCode(65 + index)}. ${answer}`
+                )
+                .setStyle(ButtonStyle.Secondary)
+        );
+    });
 
     return [row];
 }
@@ -299,14 +318,18 @@ function buildAnswerButtons(
 // ============================================================
 
 function getNextAttemptText(attempt) {
-    const cooldownSeconds = Number(attempt.cooldownSeconds) || 0;
+    const cooldownSeconds =
+        Number(attempt.cooldownSeconds) || 0;
 
     if (cooldownSeconds <= 0) {
         return "You can play again now.";
     }
 
     const nextAttemptTimestamp = Math.floor(
-        (Number(attempt.answeredAt || Date.now()) + cooldownSeconds * 1000) / 1000
+        (
+            Number(attempt.answeredAt || Date.now()) +
+            cooldownSeconds * 1000
+        ) / 1000
     );
 
     return `⏳ **Next attempt:** <t:${nextAttemptTimestamp}:R>`;
@@ -349,127 +372,86 @@ function buildCooldownEmbed() {
     return new EmbedBuilder()
         .setColor(0xfee75c)
         .setTitle("⏳ NOT YET...")
-        .setDescription(
-            [
-                "Your next daily question is waiting",
-                "for you.",
-                "",
-                `⏱️ **Time Remaining:** ${formattedTime}`,
-                "",
-                "Come back later for your next daily question! <:waiting:1505801859502178305>",
-            ].join("\n")
-        );
+        .setDescription([
+            "Your next daily question is waiting",
+            "for you.",
+            "",
+            `⏱️ **Time Remaining:** ${formattedTime}`,
+            "",
+            "Come back later for your next daily question! <:waiting:1505801859502178305>",
+        ].join("\n"));
 }
 
 function buildNoQuestionEmbed() {
     return new EmbedBuilder()
         .setColor(0xfee75c)
-        .setTitle(
-            "🌍 DAILY QUESTIONS ARE RESTOCKING..."
-        )
-        .setDescription(
-            [
-                "There are no fresh questions",
-                "available right now.",
-                "",
-                "The question pool is being refilled.",
-                "Please try again shortly!",
-            ].join("\n")
-        );
+        .setTitle("🌍 DAILY QUESTIONS ARE RESTOCKING...")
+        .setDescription([
+            "There are no fresh questions",
+            "available right now.",
+            "",
+            "The question pool is being refilled.",
+            "Please try again shortly!",
+        ].join("\n"));
 }
-
 
 // ============================================================
 // DISABLED ANSWER BUTTONS
 // ============================================================
 
-function buildDisabledAnswerButtons(
-    attempt
-) {
-    const row =
-        new ActionRowBuilder();
+function buildDisabledAnswerButtons(attempt) {
+    const row = new ActionRowBuilder();
 
-    attempt.answers.forEach(
-        (answer, index) => {
-            let style =
-                ButtonStyle.Secondary;
+    attempt.answers.forEach((answer, index) => {
+        let style = ButtonStyle.Secondary;
 
-            if (
-                index ===
-                attempt.correctAnswer
-            ) {
-                style =
-                    ButtonStyle.Success;
-            } else if (
-                index ===
-                attempt.selectedAnswer
-            ) {
-                style =
-                    ButtonStyle.Danger;
-            }
-
-            row.addComponents(
-                new ButtonBuilder()
-                    .setCustomId(
-                        `${ANSWER_BUTTON_PREFIX}:${attempt.attemptId}:${index}`
-                    )
-                    .setLabel(
-                        `${String.fromCharCode(
-                            65 + index
-                        )}. ${answer}`
-                    )
-                    .setStyle(style)
-                    .setDisabled(true)
-            );
+        if (index === attempt.correctAnswer) {
+            style = ButtonStyle.Success;
+        } else if (index === attempt.selectedAnswer) {
+            style = ButtonStyle.Danger;
         }
-    );
+
+        row.addComponents(
+            new ButtonBuilder()
+                .setCustomId(
+                    `${ANSWER_BUTTON_PREFIX}:${attempt.attemptId}:${index}`
+                )
+                .setLabel(
+                    `${String.fromCharCode(65 + index)}. ${answer}`
+                )
+                .setStyle(style)
+                .setDisabled(true)
+        );
+    });
 
     return [row];
 }
 
-
 // ============================================================
 // START EVENT
-// IMPORTANT:
-// This only activates the Mystery Event.
-// It does NOT require channel access.
-// It does NOT send or edit any message.
 // ============================================================
 
 async function startMysteryEvent(interaction) {
+    console.log("\n========================================");
+    console.log("🌍 STARTING DAILY WORLD EVENT");
 
-    console.log(
-        "\n========================================"
-    );
-
-    console.log(
-        "🌍 STARTING DAILY WORLD EVENT"
-    );
-
-    const existing =
-        await getActiveMysteryEventId();
+    const existing = await getActiveMysteryEventId();
 
     if (existing) {
-
-        console.log(
-            `⚠️ ALREADY ACTIVE | ${existing}`
-        );
+        console.log(`⚠️ ALREADY ACTIVE | ${existing}`);
 
         return {
             success: false,
             reason: "already_active",
-            event:
-                await getMysteryEvent(existing),
+            event: await getMysteryEvent(existing),
         };
     }
 
-    const acquired =
-        await acquireMysteryEvent(
-            MYSTERY_EVENT_ID
-        );
+    const acquired = await acquireMysteryEvent(
+        MYSTERY_EVENT_ID
+    );
 
     if (!acquired) {
-
         return {
             success: false,
             reason: "already_active",
@@ -477,29 +459,20 @@ async function startMysteryEvent(interaction) {
     }
 
     try {
-
-        let poolSize =
+        const poolSize =
             await getMysteryQuestionPoolSize();
 
         console.log(
             `📦 CURRENT QUESTION POOL: ${poolSize}`
         );
 
-        // Restock in the background whenever the pool has 5 or fewer questions.
         startMysteryPoolRestockInBackground("event start");
 
         const event = {
-
-            eventId:
-                MYSTERY_EVENT_ID,
-
+            eventId: MYSTERY_EVENT_ID,
             active: true,
-
-            createdAt:
-                Date.now(),
-
-            updatedAt:
-                Date.now(),
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
         };
 
         await saveMysteryEvent(
@@ -507,50 +480,26 @@ async function startMysteryEvent(interaction) {
             event
         );
 
-        /*
-         * Create the PUBLIC Mystery Event message.
-         *
-         * This is the same pattern as Daily Event:
-         * the deferred slash-command reply becomes
-         * the public event message.
-         */
         await interaction.editReply({
-
             embeds: [
-                buildMysteryEventEmbed()
+                buildMysteryEventEmbed(),
             ],
-
             components: [
-                buildRevealButton()
+                buildRevealButton(),
             ],
         });
 
-        console.log(
-            "✅ MYSTERY EVENT ACTIVE"
-        );
-
-        console.log(
-            `📦 Question Pool: ${poolSize}`
-        );
-
-        console.log(
-            "📢 Public Daily World Event embed created"
-        );
-
-        console.log(
-            "========================================\n"
-        );
+        console.log("✅ MYSTERY EVENT ACTIVE");
+        console.log(`📦 Question Pool: ${poolSize}`);
+        console.log("📢 Public Daily World Event embed created");
+        console.log("========================================\n");
 
         return {
             success: true,
             event,
         };
-
     } catch (error) {
-
-        await releaseMysteryEvent(
-            MYSTERY_EVENT_ID
-        );
+        await releaseMysteryEvent(MYSTERY_EVENT_ID);
 
         console.error(
             "❌ MYSTERY EVENT START FAILED:",
@@ -563,15 +512,10 @@ async function startMysteryEvent(interaction) {
 
 // ============================================================
 // KILL EVENT
-// IMPORTANT:
-// Does NOT delete the public message.
-// Does NOT delete question pool.
-// Does NOT delete question history.
 // ============================================================
 
 async function killMysteryEvent() {
-    const eventId =
-        await getActiveMysteryEventId();
+    const eventId = await getActiveMysteryEventId();
 
     if (!eventId) {
         return {
@@ -580,35 +524,23 @@ async function killMysteryEvent() {
         };
     }
 
-    const event =
-        await getMysteryEvent(eventId);
+    const event = await getMysteryEvent(eventId);
 
-    await releaseMysteryEvent(
-        eventId
-    );
+    await releaseMysteryEvent(eventId);
 
     if (event) {
         event.active = false;
-        event.updatedAt =
-            Date.now();
+        event.updatedAt = Date.now();
 
-        await saveMysteryEvent(
-            eventId,
-            event
-        );
+        await saveMysteryEvent(eventId, event);
     }
 
     console.log(
         `🛑 DAILY WORLD EVENT STOPPED | ${eventId}`
     );
 
-    console.log(
-        "📦 QUESTION POOL PRESERVED"
-    );
-
-    console.log(
-        "📚 QUESTION HISTORY PRESERVED"
-    );
+    console.log("📦 QUESTION POOL PRESERVED");
+    console.log("📚 QUESTION HISTORY PRESERVED");
 
     return {
         success: true,
@@ -620,33 +552,15 @@ async function killMysteryEvent() {
 // REVEAL BUTTON
 // ============================================================
 
-async function handleMysteryReveal(
-    interaction
-) {
-    const userId =
-        interaction.user.id;
+async function handleMysteryReveal(interaction) {
+    const userId = interaction.user.id;
 
-    console.log(
-        "\n========================================"
-    );
-
-    console.log(
-        "🌍 DAILY QUESTION REVEAL"
-    );
-
+    console.log("\n========================================");
+    console.log("🌍 DAILY QUESTION REVEAL");
     console.log(
         `👤 ${interaction.user.username} | ${userId}`
     );
-
-    console.log(
-        "========================================"
-    );
-
-    /*
-     * IMPORTANT:
-     * We immediately create an ephemeral reply.
-     * We NEVER edit the public event message.
-     */
+    console.log("========================================");
 
     await interaction.deferReply({
         flags: MessageFlags.Ephemeral,
@@ -656,8 +570,7 @@ async function handleMysteryReveal(
     // EVENT CHECK
     // --------------------------------------------------------
 
-    const activeEvent =
-        await getActiveMysteryEventId();
+    const activeEvent = await getActiveMysteryEventId();
 
     if (!activeEvent) {
         console.log(
@@ -673,65 +586,56 @@ async function handleMysteryReveal(
     }
 
     // --------------------------------------------------------
-    // INCORRECT-ANSWER COOLDOWN CHECK (SEPARATE FROM NORMAL)
+    // INCORRECT-ANSWER COOLDOWN
     // --------------------------------------------------------
 
-    const incorrectCooldown = await getIncorrectAnswerCooldown(userId);
+    const incorrectCooldown =
+        await getIncorrectAnswerCooldown(userId);
 
     if (Number(incorrectCooldown) > 0) {
-        const timestamp = Math.floor(Date.now() / 1000) + Number(incorrectCooldown);
+        const timestamp =
+            Math.floor(Date.now() / 1000) +
+            Number(incorrectCooldown);
 
         await interaction.editReply({
             embeds: [
                 new EmbedBuilder()
-                    .setColor(0xED4245)
+                    .setColor(0xed4245)
                     .setTitle("⏳ Cooldown Active")
                     .setDescription(
                         `You can try again <t:${timestamp}:R>.`
-                    )
+                    ),
             ],
-            components: []
+            components: [],
         });
 
         return true;
     }
 
     // --------------------------------------------------------
-    // COOLDOWN CHECK
+    // NORMAL COOLDOWN
     // --------------------------------------------------------
 
     const immune =
-        MYSTERY_EVENT_COOLDOWN_IMMUNE.includes(
-            userId
-        );
+        MYSTERY_EVENT_COOLDOWN_IMMUNE.includes(userId);
 
     if (immune) {
-        console.log(
-            `🛡️ COOLDOWN IMMUNE | ${userId}`
-        );
+        console.log(`🛡️ COOLDOWN IMMUNE | ${userId}`);
     } else {
         const cooldown =
-            await getMysteryCooldown(
-                userId
-            );
+            await getMysteryCooldown(userId);
 
         if (Number(cooldown) > 0) {
-            console.log(
-                `⏳ COOLDOWN BLOCK`
-            );
+            console.log("⏳ COOLDOWN BLOCK");
 
             const remainingSeconds =
                 Math.max(0, Number(cooldown));
 
             const hours =
-                Math.floor(
-                    remainingSeconds / 3600
-                );
+                Math.floor(remainingSeconds / 3600);
 
             const minutes =
-                Math.floor(
-                    (remainingSeconds % 3600) / 60
-                );
+                Math.floor((remainingSeconds % 3600) / 60);
 
             const seconds =
                 remainingSeconds % 60;
@@ -743,12 +647,12 @@ async function handleMysteryReveal(
                     : `${seconds}s`;
 
             console.log(
-                `👤 Display Name: ${interaction.member?.displayName ||
-                interaction.user.displayName ||
-                interaction.user.username
+                `👤 Display Name: ${
+                    interaction.member?.displayName ||
+                    interaction.user.displayName ||
+                    interaction.user.username
                 }`
             );
-
 
             console.log(
                 `⏱️ Remaining Cooldown: ${formattedTime}`
@@ -765,20 +669,18 @@ async function handleMysteryReveal(
     }
 
     // --------------------------------------------------------
-    // CHECK POOL + START BACKGROUND RESTOCK
+    // QUESTION POOL
     // --------------------------------------------------------
 
     startMysteryPoolRestockInBackground("question reveal");
 
-    // Do not wait for AI generation here. Use an already available
-    // question immediately; the background task replenishes the pool.
     const question = await claimMysteryQuestion();
 
     if (!question) {
-        console.log("📦 QUESTION POOL EMPTY | BACKGROUND RESTOCK RUNNING");
-    }
+        console.log(
+            "📦 QUESTION POOL EMPTY | BACKGROUND RESTOCK RUNNING"
+        );
 
-    if (!question) {
         console.log(
             `❌ NO DAILY QUESTION AVAILABLE | ${userId}`
         );
@@ -792,75 +694,48 @@ async function handleMysteryReveal(
         return true;
     }
 
-
-
-    // --------------------------------------------------------
-    // COOLDOWN
-    // IMPORTANT:
-    // Cooldown is NOT created during reveal.
-    // It is created only when the user submits an answer.
-    // --------------------------------------------------------
-
-    const cooldownSeconds = null;
-
     // --------------------------------------------------------
     // CREATE ATTEMPT
     // --------------------------------------------------------
 
-    const attemptId =
-        createAttemptId();
+    const attemptId = createAttemptId();
 
     const attempt = {
         attemptId,
 
         userId,
 
-        username:
-            interaction.user.username,
+        username: interaction.user.username,
 
-        questionId:
-            question.id,
+        questionId: question.id,
 
-        category:
-            question.category,
+        category: question.category,
 
-        subject:
-            question.subject,
+        subject: question.subject,
 
-        question:
-            question.question,
+        question: question.question,
 
-        answers:
-            question.answers,
+        answers: question.answers,
 
-        correctAnswer:
-            question.correctAnswer,
+        correctAnswer: question.correctAnswer,
 
-        explanation:
-            question.explanation,
+        explanation: question.explanation,
 
-        selectedAnswer:
-            null,
+        selectedAnswer: null,
 
-        correct:
-            null,
+        correct: null,
 
-        reward:
-            null,
+        reward: null,
 
-        cooldownSeconds,
+        cooldownSeconds: null,
 
-        answered:
-            false,
+        answered: false,
 
-        createdAt:
-            Date.now(),
+        createdAt: Date.now(),
 
-        answeredAt:
-            null,
+        answeredAt: null,
 
-        transactionId:
-            null,
+        transactionId: null,
     };
 
     await saveMysteryAttempt(
@@ -872,51 +747,32 @@ async function handleMysteryReveal(
     // LOG QUESTION
     // --------------------------------------------------------
 
+    console.log("🎯 DAILY QUESTION SELECTED");
+    console.log(`👤 User: ${userId}`);
+    console.log(`📚 Category: ${question.category}`);
+    console.log(`❓ Question: ${question.question}`);
+    console.log("🔢 Options:");
+
+    question.answers.forEach((answer, index) => {
+        console.log(
+            `   ${String.fromCharCode(65 + index)}. ${answer}`
+        );
+    });
+
     console.log(
-        `🎯 DAILY QUESTION SELECTED`
+        `✅ Correct: ${String.fromCharCode(65 + question.correctAnswer)}. ${question.answers[question.correctAnswer]}`
     );
 
     console.log(
-        `👤 User: ${userId}`
-    );
-
-    console.log(
-        `📚 Category: ${question.category}`
-    );
-
-    console.log(
-        `❓ Question: ${question.question}`
-    );
-
-    console.log(
-        `🔢 Options:`
-    );
-
-    question.answers.forEach(
-        (answer, index) => {
-            console.log(
-                `   ${String.fromCharCode(
-                    65 + index
-                )}. ${answer}`
-            );
-        }
-    );
-
-    console.log(
-        `✅ Correct: ${String.fromCharCode(
-            65 + question.correctAnswer
-        )}. ${question.answers[question.correctAnswer]}`
-    );
-
-    console.log(
-        `⏱️ Cooldown: ${immune
-            ? "IMMUNE"
-            : "NOT STARTED — starts after answer"
+        `⏱️ Cooldown: ${
+            immune
+                ? "IMMUNE"
+                : "NOT STARTED — starts after answer"
         }`
     );
 
     // --------------------------------------------------------
-    // EPHEMERAL QUESTION
+    // SHOW EPHEMERAL QUESTION
     // --------------------------------------------------------
 
     await interaction.editReply({
@@ -926,12 +782,10 @@ async function handleMysteryReveal(
                 attemptId
             ),
         ],
-
-        components:
-            buildAnswerButtons(
-                question,
-                attemptId
-            ),
+        components: buildAnswerButtons(
+            question,
+            attemptId
+        ),
     });
 
     return true;
@@ -941,9 +795,7 @@ async function handleMysteryReveal(
 // ANSWER BUTTON
 // ============================================================
 
-async function handleMysteryAnswer(
-    interaction
-) {
+async function handleMysteryAnswer(interaction) {
     if (
         !interaction.customId.startsWith(
             `${ANSWER_BUTTON_PREFIX}:`
@@ -952,52 +804,30 @@ async function handleMysteryAnswer(
         return false;
     }
 
-    const parts =
-        interaction.customId.split(":");
+    const parts = interaction.customId.split(":");
 
-    const attemptId =
-        parts[1];
+    const attemptId = parts[1];
 
-    const selectedAnswer =
-        Number(parts[2]);
+    const selectedAnswer = Number(parts[2]);
 
-    const userId =
-        interaction.user.id;
+    const userId = interaction.user.id;
 
-    console.log(
-        "\n========================================"
-    );
-
-    console.log(
-        "🌍 DAILY QUESTION ANSWER"
-    );
-
+    console.log("\n========================================");
+    console.log("🌍 DAILY QUESTION ANSWER");
     console.log(
         `👤 ${interaction.user.username} | ${userId}`
     );
+    console.log(`🔢 Selected: ${selectedAnswer}`);
+    console.log("========================================");
 
-
-    console.log(
-        `🔢 Selected: ${selectedAnswer}`
-    );
-
-    console.log(
-        "========================================"
-    );
-
-    /*
-     * Acknowledge the button immediately.
-     */
+    // Acknowledge the button immediately.
     await interaction.deferUpdate();
 
     // --------------------------------------------------------
     // LOAD ATTEMPT
     // --------------------------------------------------------
 
-    const attempt =
-        await getMysteryAttempt(
-            attemptId
-        );
+    const attempt = await getMysteryAttempt(attemptId);
 
     if (!attempt) {
         await interaction.followUp({
@@ -1013,9 +843,7 @@ async function handleMysteryAnswer(
     // USER OWNERSHIP
     // --------------------------------------------------------
 
-    if (
-        attempt.userId !== userId
-    ) {
+    if (attempt.userId !== userId) {
         await interaction.followUp({
             content:
                 "❌ This question belongs to another player.",
@@ -1024,23 +852,33 @@ async function handleMysteryAnswer(
 
         return true;
     }
-    const incorrectCooldown = await getIncorrectAnswerCooldown(userId);
+
+    // --------------------------------------------------------
+    // INCORRECT-ANSWER COOLDOWN
+    // --------------------------------------------------------
+
+    const incorrectCooldown =
+        await getIncorrectAnswerCooldown(userId);
 
     if (Number(incorrectCooldown) > 0) {
-        const remainingSeconds = Number(incorrectCooldown);
+        const remainingSeconds =
+            Number(incorrectCooldown);
 
         const embed = new EmbedBuilder()
-            .setColor(0xFF0000)
+            .setColor(0xff0000)
             .setTitle("❌ Incorrect Answer Cooldown")
             .setDescription(
                 `You cannot answer another question yet!\nTry again <t:${Math.floor(Date.now() / 1000) + remainingSeconds}:R>.`
             );
 
-        return interaction.followUp({
+        await interaction.followUp({
             embeds: [embed],
-            ephemeral: true
+            flags: MessageFlags.Ephemeral,
         });
+
+        return true;
     }
+
     // --------------------------------------------------------
     // ALREADY ANSWERED
     // --------------------------------------------------------
@@ -1059,35 +897,38 @@ async function handleMysteryAnswer(
         selectedAnswer >= attempt.answers.length
     ) {
         await interaction.followUp({
-            content:
-                "❌ Invalid answer.",
+            content: "❌ Invalid answer.",
             flags: MessageFlags.Ephemeral,
         });
 
         return true;
     }
 
-    // ========================================================
+    // --------------------------------------------------------
     // CHECK ANSWER
-    // Correct answers use the normal cooldown.
-    // Incorrect answers use a separate fixed cooldown.
-    // ========================================================
+    // --------------------------------------------------------
 
-    const isCorrect = selectedAnswer === attempt.correctAnswer;
+    const isCorrect =
+        selectedAnswer === attempt.correctAnswer;
+
     let cooldownSeconds = 0;
 
     if (isCorrect) {
-        const immune = MYSTERY_EVENT_COOLDOWN_IMMUNE.includes(userId);
+        const immune =
+            MYSTERY_EVENT_COOLDOWN_IMMUNE.includes(userId);
 
         if (!immune) {
-            const cooldownResult = await claimMysteryCooldown(userId);
+            const cooldownResult =
+                await claimMysteryCooldown(userId);
 
             if (!cooldownResult.claimed) {
                 const remaining = Math.max(
                     0,
                     Number(await getMysteryCooldown(userId)) || 0
                 );
-                const nextAttemptTimestamp = Math.floor(Date.now() / 1000) + remaining;
+
+                const nextAttemptTimestamp =
+                    Math.floor(Date.now() / 1000) + remaining;
 
                 await interaction.followUp({
                     content: remaining > 0
@@ -1099,147 +940,175 @@ async function handleMysteryAnswer(
                 return true;
             }
 
-            cooldownSeconds = Number(cooldownResult.cooldownSeconds) || 0;
-            console.log(`⏱️ COOLDOWN CREATED | ${formatDuration(cooldownSeconds)} | ${userId}`);
+            cooldownSeconds =
+                Number(cooldownResult.cooldownSeconds) || 0;
+
+            console.log(
+                `⏱️ COOLDOWN CREATED | ${formatDuration(cooldownSeconds)} | ${userId}`
+            );
         } else {
             console.log(`🛡️ COOLDOWN IMMUNE | ${userId}`);
         }
     } else {
-        const incorrectCooldownResult = await claimIncorrectAnswerCooldown(userId);
+        const incorrectCooldownResult =
+            await claimIncorrectAnswerCooldown(userId);
 
         if (!incorrectCooldownResult.claimed) {
             const remaining = Math.max(
                 0,
-                Number(await getIncorrectAnswerCooldown(userId)) || Incorrect_Answer_Cooldown
+                Number(await getIncorrectAnswerCooldown(userId)) ||
+                Incorrect_Answer_Cooldown
             );
-            const nextAttemptTimestamp = Math.floor(Date.now() / 1000) + remaining;
+
+            const nextAttemptTimestamp =
+                Math.floor(Date.now() / 1000) + remaining;
 
             await interaction.followUp({
-                content: `❌ Incorrect-answer cooldown is active. You can try again <t:${nextAttemptTimestamp}:R>.`,
+                content:
+                    `❌ Incorrect-answer cooldown is active. You can try again <t:${nextAttemptTimestamp}:R>.`,
                 flags: MessageFlags.Ephemeral,
             });
+
             return true;
         }
 
-        cooldownSeconds = Number(incorrectCooldownResult.cooldownSeconds) || Incorrect_Answer_Cooldown;
-        console.log(`⏱️ INCORRECT-ANSWER COOLDOWN CREATED | ${cooldownSeconds}s | ${userId}`);
+        cooldownSeconds =
+            Number(incorrectCooldownResult.cooldownSeconds) ||
+            Incorrect_Answer_Cooldown;
+
+        console.log(
+            `⏱️ INCORRECT-ANSWER COOLDOWN CREATED | ${cooldownSeconds}s | ${userId}`
+        );
     }
 
-    const reward = isCorrect ? generateReward() : 0;
+    // --------------------------------------------------------
+    // REWARD
+    // --------------------------------------------------------
+
+    const reward = isCorrect
+        ? generateReward()
+        : 0;
 
     if (isCorrect) {
-        console.log(`🎁 DAILY REWARD GENERATED | ${reward} Mora`);
+        console.log(
+            `🎁 DAILY REWARD GENERATED | ${reward} Mora`
+        );
     } else {
-        console.log(`❌ INCORRECT ANSWER | ${Incorrect_Answer_Cooldown / 60}-MINUTE SEPARATE COOLDOWN | ${userId}`);
+        console.log(
+            `❌ INCORRECT ANSWER | ${Incorrect_Answer_Cooldown / 60}-MINUTE SEPARATE COOLDOWN | ${userId}`
+        );
     }
 
     // --------------------------------------------------------
     // RECORD PARTICIPATION
-    // User actually answered the mystery.
-    // Records both correct and incorrect answers.
     // --------------------------------------------------------
 
     try {
-
         await recordParticipation(
             "mystery",
             userId
         );
 
         console.log(
-            `📊 STATS RECORDED | DAILY EVENT | ${userId} | ` +
-            `${isCorrect ? "CORRECT" : "INCORRECT"}`
+            `📊 STATS RECORDED | DAILY EVENT | ${userId} | ${
+                isCorrect ? "CORRECT" : "INCORRECT"
+            }`
         );
-
     } catch (error) {
-
         console.error(
             "❌ DAILY EVENT STATS RECORD FAILED:",
             error.message
         );
     }
 
+    // --------------------------------------------------------
+    // SAVE ANSWERED ATTEMPT
+    // --------------------------------------------------------
 
     const answeredAttempt = {
         ...attempt,
 
         selectedAnswer,
 
-        correct:
-            isCorrect,
+        correct: isCorrect,
 
         reward,
 
         cooldownSeconds,
 
-        answered:
-            true,
+        answered: true,
 
-        answeredAt:
-            Date.now(),
+        answeredAt: Date.now(),
     };
 
-    // Save immediately so repeated clicks cannot trigger another reward.
-    await saveMysteryAttempt(attemptId, answeredAttempt);
+    // Save immediately to prevent repeated reward processing.
+    await saveMysteryAttempt(
+        attemptId,
+        answeredAttempt
+    );
 
     const disabledButtons =
-        buildDisabledAnswerButtons(
-            answeredAttempt
-        );
+        buildDisabledAnswerButtons(answeredAttempt);
 
     // --------------------------------------------------------
-    // PRIVATE RESULT — FIRST
+    // PRIVATE RESULT
     // --------------------------------------------------------
 
     if (isCorrect) {
         await interaction.editReply({
             embeds: [
-                buildCorrectEmbed(
-                    answeredAttempt
-                ),
+                buildCorrectEmbed(answeredAttempt),
             ],
-            components:
-                disabledButtons,
+            components: disabledButtons,
         });
     } else {
         await interaction.editReply({
             embeds: [
-                buildIncorrectEmbed(
-                    answeredAttempt
-                ),
+                buildIncorrectEmbed(answeredAttempt),
             ],
-            components:
-                disabledButtons,
+            components: disabledButtons,
         });
     }
 
-
     // --------------------------------------------------------
-    // SHOW THE FACT IMMEDIATELY — DO NOT WAIT FOR PAYMENT
+    // PRIVATE FACT MESSAGE
     // --------------------------------------------------------
 
     try {
         await interaction.followUp({
-            content: `📚 **The fact:**\n\`\`\`\n${attempt.explanation}\n\`\`\``,
+            content:
+                `📚 **The fact:**\n\`\`\`\n${attempt.explanation}\n\`\`\``,
             flags: MessageFlags.Ephemeral,
         });
     } catch (error) {
-        console.error("❌ IMMEDIATE FACT MESSAGE FAILED:", error.message);
+        console.error(
+            "❌ IMMEDIATE FACT MESSAGE FAILED:",
+            error.message
+        );
     }
 
     // --------------------------------------------------------
-    // PUBLIC RESULT
+    // PUBLIC INCORRECT RESULT
+    //
+    // Correct results are announced later, together with
+    // the World Pass drop.
     // --------------------------------------------------------
 
-    try {
-        await interaction.followUp({
-            content: isCorrect
-                ? `🎉 <@${userId}> answered correctly! **+${reward} ${MORA_EMOJI}**`
-                : `🌟 <@${userId}> answered incorrectly!. Give it another try❤️!`,
-            allowedMentions: { users: [userId] },
-        });
-    } catch (error) {
-        console.error("❌ PUBLIC RESULT FAILED:", error.message);
+    if (!isCorrect) {
+        try {
+            await interaction.followUp({
+                content:
+                    `🌟 <@${userId}> answered incorrectly! Give it another try ❤️!`,
+                allowedMentions: {
+                    users: [userId],
+                },
+            });
+        } catch (error) {
+            console.error(
+                "❌ PUBLIC RESULT FAILED:",
+                error.message
+            );
+        }
     }
 
     // --------------------------------------------------------
@@ -1248,14 +1117,12 @@ async function handleMysteryAnswer(
 
     processMysteryAnswerAfterResponse({
         interaction,
-        attempt:
-            answeredAttempt,
+        attempt: answeredAttempt,
         attemptId,
         selectedAnswer,
         isCorrect,
         reward,
     }).catch(error => {
-
         console.error(
             "❌ BACKGROUND ANSWER PROCESSING FAILED:",
             error
@@ -1264,7 +1131,6 @@ async function handleMysteryAnswer(
 
     return true;
 }
-
 
 // ============================================================
 // BACKGROUND ANSWER PROCESSING
@@ -1279,7 +1145,6 @@ async function processMysteryAnswerAfterResponse({
     reward,
 }) {
     try {
-
         // ----------------------------------------------------
         // SAVE ANSWER
         // ----------------------------------------------------
@@ -1293,70 +1158,138 @@ async function processMysteryAnswerAfterResponse({
         // FULL ANSWER LOG
         // ----------------------------------------------------
 
+        console.log(`❓ Question: ${attempt.question}`);
+
         console.log(
-            `❓ Question: ${attempt.question}`
+            `🔘 Selected: ${String.fromCharCode(65 + selectedAnswer)}. ${attempt.answers[selectedAnswer]}`
         );
 
         console.log(
-            `🔘 Selected: ` +
-            `${String.fromCharCode(
-                65 + selectedAnswer
-            )}. ${attempt.answers[selectedAnswer]}`
+            `✅ Correct: ${String.fromCharCode(65 + attempt.correctAnswer)}. ${attempt.answers[attempt.correctAnswer]}`
         );
 
         console.log(
-            `✅ Correct: ` +
-            `${String.fromCharCode(
-                65 + attempt.correctAnswer
-            )}. ${attempt.answers[attempt.correctAnswer]}`
+            `📊 Result: ${isCorrect ? "CORRECT" : "INCORRECT"}`
         );
 
-        console.log(
-            `📊 Result: ${isCorrect
-                ? "CORRECT"
-                : "INCORRECT"
-            }`
-        );
+        console.log(`🎁 Reward: ${reward} Mora`);
 
         console.log(
-            `🎁 Reward: ${reward} Mora`
+            `⏱️ Cooldown: ${formatDuration(attempt.cooldownSeconds)}`
         );
 
-        console.log(
-            `⏱️ Cooldown:  ${formatDuration(attempt.cooldownSeconds) ??
-            "IMMUNE"
-            }`
-        );
+        // ----------------------------------------------------
+        // WORLD PASS DROP + COMBINED PUBLIC ANNOUNCEMENT
+        //
+        // Correct answer announcement is delayed until the
+        // World Pass award has been processed.
+        //
+        // This produces ONE public message containing:
+        // Mora reward + World Pass reward.
+        // ----------------------------------------------------
+
+        if (isCorrect) {
+            let passAnnouncement = "";
+
+            try {
+                // Reuse an already saved tier if one exists.
+                const passTier =
+                    attempt.worldPassTier ||
+                    generateRandomPassTier();
+
+                const awarded = await awardPass(
+                    interaction.user.id,
+                    passTier,
+                    attemptId
+                );
+
+                if (awarded) {
+                    attempt.worldPassTier = passTier;
+
+                    await saveMysteryAttempt(
+                        attemptId,
+                        attempt
+                    );
+
+                    console.log(
+                        `🎟️ WORLD PASS AWARDED | ${interaction.user.id} | ${passTier} | Mystery Attempt: ${attemptId}`
+                    );
+                }
+
+                // Announce the pass only when it was awarded
+                // or its tier was already saved on the attempt.
+                if (awarded || attempt.worldPassTier) {
+                    const savedTier =
+                        attempt.worldPassTier || passTier;
+
+                    const passConfig =
+                        WORLD_PASS_CONFIG.CHALLENGES[savedTier];
+
+                    const passEmojis = {
+                        explorer: "🧭",
+                        voyager: "🌊",
+                        pathfinder: "🗺️",
+                        discoverer: "💎",
+                        celestial: "🌟",
+                    };
+
+                    if (passConfig) {
+                        const passEmoji =
+                            passEmojis[savedTier] || "🎟️";
+
+                        passAnnouncement =
+                            ` and ${passEmoji} **${passConfig.name} Pass**`;
+                    }
+                }
+            } catch (error) {
+                console.error(
+                    "❌ WORLD PASS DROP FAILED:",
+                    error
+                );
+            }
+
+            // ONE combined public announcement.
+            // If the pass award fails, the Mora result
+            // is still announced.
+            try {
+                await interaction.followUp({
+                    content:
+                        `🎉 <@${interaction.user.id}> answered correctly! ` +
+                        `**+${reward} ${MORA_EMOJI}**${passAnnouncement}`,
+                    allowedMentions: {
+                        users: [interaction.user.id],
+                    },
+                });
+            } catch (error) {
+                console.error(
+                    "❌ PUBLIC RESULT FAILED:",
+                    error.message
+                );
+            }
+        }
 
         // ----------------------------------------------------
         // PAYMENT
         // ----------------------------------------------------
 
         if (isCorrect) {
-
             try {
-
                 const transaction =
                     await createPaymentTransaction({
-                        client:
-                            interaction.client,
+                        client: interaction.client,
 
-                        winnerId:
-                            interaction.user.id,
+                        winnerId: interaction.user.id,
 
                         displayName:
-                            interaction.member
-                                ?.displayName ||
+                            interaction.member?.displayName ||
                             interaction.user.displayName,
 
                         username:
                             interaction.user.username,
 
-                        eventName:
-                            EVENT_NAME,
+                        eventName: EVENT_NAME,
 
-                        eventType:
-                            EVENT_TYPE,
+                        eventType: EVENT_TYPE,
 
                         reward,
 
@@ -1364,8 +1297,7 @@ async function processMysteryAnswerAfterResponse({
                             interaction.channelId,
 
                         sourceMessageId:
-                            interaction.message?.id ||
-                            null,
+                            interaction.message?.id || null,
                     });
 
                 attempt.transactionId =
@@ -1377,22 +1309,20 @@ async function processMysteryAnswerAfterResponse({
                 );
 
                 console.log(
-                    `💳 PAYMENT CREATED | ` +
-                    `${transaction.transactionId}`
+                    `💳 PAYMENT CREATED | ${transaction.transactionId}`
                 );
+
                 await recordMora(
                     "mystery",
                     interaction.user.id,
                     reward
                 );
             } catch (error) {
-
                 console.error(
                     "❌ DAILY EVENT PAYMENT CREATION FAILED",
                     error
                 );
             }
-
         }
 
         console.log(
@@ -1402,9 +1332,7 @@ async function processMysteryAnswerAfterResponse({
         console.log(
             "========================================\n"
         );
-
     } catch (error) {
-
         console.error(
             "❌ BACKGROUND ANSWER PROCESSING FAILED:",
             error
@@ -1420,11 +1348,8 @@ async function listAllMysteryUserCooldowns() {
     return listAllMysteryCooldowns();
 }
 
-async function listMysteryCooldown(
-    userId
-) {
-    const ttl =
-        await getMysteryCooldown(userId);
+async function listMysteryCooldown(userId) {
+    const ttl = await getMysteryCooldown(userId);
 
     return ttl > 0 ? ttl : 0;
 }
@@ -1457,14 +1382,11 @@ async function setMysteryUserCooldown(
         (numericHours * 60 * 60) +
         (numericMinutes * 60);
 
-    // Persist the exact duration in seconds.
     const result = await setMysteryCooldown(
         userId,
         seconds
     );
 
-    // Return both the stored value and a human-readable duration
-    // so the command handler can confirm the correct setting.
     return {
         success: true,
         userId,
@@ -1472,28 +1394,26 @@ async function setMysteryUserCooldown(
         minutes: numericMinutes,
         seconds,
         duration: [
-            numericHours > 0 ? `${numericHours} hour${numericHours === 1 ? "" : "s"}` : null,
-            numericMinutes > 0 ? `${numericMinutes} minute${numericMinutes === 1 ? "" : "s"}` : null,
+            numericHours > 0
+                ? `${numericHours} hour${numericHours === 1 ? "" : "s"}`
+                : null,
+
+            numericMinutes > 0
+                ? `${numericMinutes} minute${numericMinutes === 1 ? "" : "s"}`
+                : null,
         ].filter(Boolean).join(" "),
         result,
     };
 }
 
-async function checkMysteryCooldown(
-    userId
-) {
-    const ttl =
-        await getMysteryCooldown(userId);
+async function checkMysteryCooldown(userId) {
+    const ttl = await getMysteryCooldown(userId);
 
     return ttl > 0 ? ttl : 0;
 }
 
-async function clearMysteryUserCooldown(
-    userId
-) {
-    return clearMysteryCooldown(
-        userId
-    );
+async function clearMysteryUserCooldown(userId) {
+    return clearMysteryCooldown(userId);
 }
 
 async function clearAllMysteryUserCooldowns() {

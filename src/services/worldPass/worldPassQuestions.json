@@ -1,0 +1,207 @@
+
+[
+  {
+    "id": "explorer-001",
+    "tier": "explorer",
+    "question": "Which country is home to the Eiffel Tower?",
+    "options": ["Italy", "France", "Spain", "Germany"],
+    "answer": "France",
+    "explanation": "The Eiffel Tower is one of the most famous landmarks in Paris, France."
+  },
+  {
+    "id": "explorer-002",
+    "tier": "explorer",
+    "question": "Which is the largest ocean on Earth?",
+    "options": ["Atlantic Ocean", "Indian Ocean", "Pacific Ocean", "Arctic Ocean"],
+    "answer": "Pacific Ocean",
+    "explanation": "The Pacific Ocean is the largest and deepest ocean on Earth."
+  },
+  {
+    "id": "explorer-003",
+    "tier": "explorer",
+    "question": "What is the capital city of Japan?",
+    "options": ["Kyoto", "Osaka", "Tokyo", "Hiroshima"],
+    "answer": "Tokyo",
+    "explanation": "Tokyo is Japan's capital and one of the world's largest metropolitan areas."
+  },
+  {
+    "id": "explorer-004",
+    "tier": "explorer",
+    "question": "Which animal is known as the largest land animal?",
+    "options": ["Rhinoceros", "African elephant", "Hippopotamus", "Giraffe"],
+    "answer": "African elephant",
+    "explanation": "The African elephant is the largest living land animal."
+  },
+  {
+    "id": "explorer-005",
+    "tier": "explorer",
+    "question": "Which continent is the Sahara Desert located in?",
+    "options": ["Asia", "Africa", "South America", "Australia"],
+    "answer": "Africa",
+    "explanation": "The Sahara stretches across a large part of northern Africa."
+  },
+
+  {
+    "id": "voyager-001",
+    "tier": "voyager",
+    "question": "Which country gifted the Statue of Liberty to the United States?",
+    "options": ["United Kingdom", "France", "Canada", "Spain"],
+    "answer": "France",
+    "explanation": "France gifted the Statue of Liberty to the United States in the nineteenth century."
+  },
+  {
+    "id": "voyager-002",
+    "tier": "voyager",
+    "question": "Which river flows through Budapest?",
+    "options": ["Rhine", "Danube", "Seine", "Thames"],
+    "answer": "Danube",
+    "explanation": "The Danube River divides Budapest into the historic areas of Buda and Pest."
+  },
+  {
+    "id": "voyager-003",
+    "tier": "voyager",
+    "question": "Which country is famous for the ancient city of Petra?",
+    "options": ["Egypt", "Jordan", "Greece", "Turkey"],
+    "answer": "Jordan",
+    "explanation": "Petra is an ancient archaeological city in southern Jordan."
+  },
+  {
+    "id": "voyager-004",
+    "tier": "voyager",
+    "question": "What is the currency of Switzerland?",
+    "options": ["Euro", "Swiss franc", "Krone", "Pound"],
+    "answer": "Swiss franc",
+    "explanation": "Switzerland uses the Swiss franc as its official currency."
+  },
+  {
+    "id": "voyager-005",
+    "tier": "voyager",
+    "question": "Which mountain range separates much of Europe from Asia?",
+    "options": ["Alps", "Andes", "Ural Mountains", "Himalayas"],
+    "answer": "Ural Mountains",
+    "explanation": "The Ural Mountains are commonly considered part of the boundary between Europe and Asia."
+  },
+
+  {
+    "id": "pathfinder-001",
+    "tier": "pathfinder",
+    "question": "Which ancient civilization developed the cuneiform writing system?",
+    "options": ["Sumerians", "Romans", "Incas", "Phoenicians"],
+    "answer": "Sumerians",
+    "explanation": "The Sumerians of ancient Mesopotamia developed one of the earliest known writing systems."
+  },
+  {
+    "id": "pathfinder-002",
+    "tier": "pathfinder",
+    "question": "Which African lake is the primary source of the White Nile?",
+    "options": ["Lake Chad", "Lake Victoria", "Lake Malawi", "Lake Tanganyika"],
+    "answer": "Lake Victoria",
+    "explanation": "Lake Victoria is a major source of the White Nile, one of the Nile's two principal tributaries."
+  },
+  {
+    "id": "pathfinder-003",
+    "tier": "pathfinder",
+    "question": "Which empire built the road network known as the Qhapaq Ñan?",
+    "options": ["Aztec Empire", "Inca Empire", "Maya civilization", "Roman Empire"],
+    "answer": "Inca Empire",
+    "explanation": "The Inca Empire developed an extensive road network across the Andes known as the Qhapaq Ñan."
+  },
+  {
+    "id": "pathfinder-004",
+    "tier": "pathfinder",
+    "question": "Which strait separates the island of Tasmania from mainland Australia?",
+    "options": ["Torres Strait", "Bass Strait", "Cook Strait", "Bering Strait"],
+    "answer": "Bass Strait",
+    "explanation": "Bass Strait lies between Tasmania and the southeastern mainland of Australia."
+  },
+  {
+    "id": "pathfinder-005",
+    "tier": "pathfinder",
+    "question": "Which city was historically known as Byzantium and later Constantinople?",
+    "options": ["Athens", "Istanbul", "Alexandria", "Antioch"],
+    "answer": "Istanbul",
+    "explanation": "The city now known as Istanbul was historically called Byzantium and Constantinople."
+  },
+
+  {
+    "id": "discoverer-001",
+    "tier": "discoverer",
+    "question": "Which ancient civilization used quipu as a system of recording information?",
+    "options": ["Maya", "Inca", "Olmec", "Aztec"],
+    "answer": "Inca",
+    "explanation": "The Inca used knotted cords called quipu to record information, including numerical data."
+  },
+  {
+    "id": "discoverer-002",
+    "tier": "discoverer",
+    "question": "The ancient city of Great Zimbabwe was built primarily by which people?",
+    "options": ["Shona ancestors", "Berbers", "Aksumites", "Swahili city-states"],
+    "answer": "Shona ancestors",
+    "explanation": "Great Zimbabwe was built by ancestors of the Shona people in southern Africa."
+  },
+  {
+    "id": "discoverer-003",
+    "tier": "discoverer",
+    "question": "Which sea is connected to the Red Sea through the Gulf of Suez?",
+    "options": ["Mediterranean Sea", "Arabian Sea", "Black Sea", "Caspian Sea"],
+    "answer": "Mediterranean Sea",
+    "explanation": "The Suez Canal connects the Mediterranean Sea with the Red Sea through the Isthmus of Suez."
+  },
+  {
+    "id": "discoverer-004",
+    "tier": "discoverer",
+    "question": "Which medieval West African empire was ruled by Mansa Musa?",
+    "options": ["Ghana Empire", "Mali Empire", "Songhai Empire", "Kanem-Bornu Empire"],
+    "answer": "Mali Empire",
+    "explanation": "Mansa Musa ruled the Mali Empire during the fourteenth century."
+  },
+  {
+    "id": "discoverer-005",
+    "tier": "discoverer",
+    "question": "Which island is home to the ancient Polynesian statues known as moai?",
+    "options": ["Samoa", "Easter Island", "Tahiti", "Guam"],
+    "answer": "Easter Island",
+    "explanation": "The Rapa Nui people created the monumental moai statues on Easter Island."
+  },
+
+  {
+    "id": "celestial-001",
+    "tier": "celestial",
+    "question": "Which ancient kingdom established its capital at Meroë in present-day Sudan?",
+    "options": ["Kingdom of Kush", "Aksumite Empire", "Ptolemaic Kingdom", "Carthaginian Empire"],
+    "answer": "Kingdom of Kush",
+    "explanation": "Meroë became an important capital of the Kingdom of Kush and a major center of iron production."
+  },
+  {
+    "id": "celestial-002",
+    "tier": "celestial",
+    "question": "Which civilization created the undeciphered Rongorongo script?",
+    "options": ["Rapa Nui", "Minoan", "Etruscan", "Zapotec"],
+    "answer": "Rapa Nui",
+    "explanation": "Rongorongo is a system of glyphs found on wooden objects from Rapa Nui, also known as Easter Island."
+  },
+  {
+    "id": "celestial-003",
+    "tier": "celestial",
+    "question": "Which ancient Anatolian city was the capital of the Hittite Empire?",
+    "options": ["Troy", "Hattusa", "Ephesus", "Pergamon"],
+    "answer": "Hattusa",
+    "explanation": "Hattusa, located in modern-day Turkey, served as the capital of the Hittite Empire."
+  },
+  {
+    "id": "celestial-004",
+    "tier": "celestial",
+    "question": "Which civilization developed the Linear B writing system?",
+    "options": ["Minoan", "Mycenaean Greek", "Phoenician", "Etruscan"],
+    "answer": "Mycenaean Greek",
+    "explanation": "Linear B was used to write an early form of Greek by the Mycenaean civilization."
+  },
+  {
+    "id": "celestial-005",
+    "tier": "celestial",
+    "question": "Which medieval manuscript is famous for its undeciphered text and unusual botanical illustrations?",
+    "options": ["Codex Gigas", "Voynich Manuscript", "Book of Kells", "Rohonc Codex"],
+    "answer": "Voynich Manuscript",
+    "explanation": "The Voynich Manuscript contains an undeciphered writing system and illustrations of plants, astronomical subjects and other unusual imagery."
+  }
+]

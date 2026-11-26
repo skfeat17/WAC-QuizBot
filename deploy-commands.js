@@ -1,5 +1,8 @@
 // deploy-commands.js
 require("dotenv").config();
+const {
+    worldPassCommand,
+} = require("./src/services/worldPass/worldPassCommand");
 const { banCommand } = require("./src/services/quizBan");
 const {
     REST,
@@ -337,6 +340,7 @@ const commands = [
 
     weeklyCommand().toJSON(),
     bossCommand().toJSON(),
+    worldPassCommand.toJSON(),
 ];
 commands.push(banCommand.toJSON());
 // ==========================================

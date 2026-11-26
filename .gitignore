@@ -1,4 +1,5 @@
 node_modules
+src-1
 .env
 .mainfile
 test.html

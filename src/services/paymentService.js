@@ -1,9 +1,11 @@
+
+// src/services/paymentService.js
+
 const {
     ActionRowBuilder,
     ButtonBuilder,
     ButtonStyle,
     EmbedBuilder,
-    MessageFlags,
 } = require("discord.js");
 
 const {
@@ -15,22 +17,24 @@ const {
 // ==========================================
 // PAYMENT STAFF
 // ==========================================
+
 const ID = process.env.CLIENT_ID;
-"759810328791482428"  //kairi    
-const PAYMENT_STAFF = (ID == 1551252240986149016) ? [
-    "1242132608574292118", //me
-] : ["1242132608574292118" //me
-    , "759810328791482428"  //kairi
-    , "1295671787375296542", //ani 
-    "1161273612167295047", //zibai
-    // "1316293140549730336" //skirk
-    "1412675648400658502"  //viiiiii
-]
+
+const PAYMENT_STAFF = ID == "1551252240986149016"
+    ? [
+        "1242132608574292118", // me
+    ]
+    : [
+        "1242132608574292118", // me
+        "759810328791482428",  // kairi
+        "1295671787375296542", // ani
+        "1161273612167295047", // zibai
+        "1412675648400658502", // viiiii
+    ];
 
 // ==========================================
 
-const MORA_EMOJI =
-    "<:mora:1503931162525962333>";
+const MORA_EMOJI = "<:mora:1503931162525962333>";
 
 function createTransactionId() {
     return (
@@ -38,6 +42,10 @@ function createTransactionId() {
         Math.random().toString(36).slice(2, 8).toUpperCase()
     );
 }
+
+// ==========================================
+// PAYMENT EMBED
+// ==========================================
 
 function buildPaymentEmbed(transaction) {
     const status =
@@ -92,6 +100,7 @@ function buildPaymentEmbed(transaction) {
             text: `Transaction ${transaction.transactionId}`,
         })
         .setTimestamp(transaction.createdAt);
+
     if (transaction.paidBy && transaction.paidAt) {
         embed.addFields({
             name: "Paid By",
@@ -99,8 +108,13 @@ function buildPaymentEmbed(transaction) {
             inline: false,
         });
     }
+
     return embed;
 }
+
+// ==========================================
+// PAYMENT BUTTONS
+// ==========================================
 
 function buildPaymentButtons(transaction) {
     const paid = transaction.status === "paid";
@@ -127,41 +141,22 @@ function buildPaymentButtons(transaction) {
     ];
 }
 
-async function createPaymentTransaction({
-    client,
-    winnerId,
-    displayName,
-    username,
-    eventName,
-    eventType,
-    reward,
-    sourceChannelId = null,
-    sourceMessageId = null,
-}) {
-    if (!client) {
-        throw new Error("Payment service requires the Discord client.");
-    }
+// ==========================================
+// STAFF NOTIFICATIONS
+// ==========================================
 
-    const transaction = {
-        transactionId: createTransactionId(),
-        winnerId,
-        displayName: displayName || username || "Unknown User",
-        username: username || "Unknown",
-        eventName: eventName || "Unknown Event",
-        eventType: eventType || "Unknown",
-        reward: Number(reward) || 0,
-        status: "unpaid",
-        paidBy: null,
-        sourceChannelId,
-        sourceMessageId,
-        staffMessages: [],
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-    };
-
-    await savePaymentTransaction(transaction);
+async function sendPaymentNotifications(client, transaction) {
+    const sentStaffIds = new Set(
+        (transaction.staffMessages || []).map(
+            message => message.staffId
+        )
+    );
 
     for (const staffId of PAYMENT_STAFF) {
+        if (sentStaffIds.has(staffId)) {
+            continue;
+        }
+
         try {
             const staff = await client.users.fetch(staffId);
 
@@ -175,6 +170,10 @@ async function createPaymentTransaction({
                 channelId: message.channelId,
                 messageId: message.id,
             });
+
+            // Save after each successful DM.
+            await savePaymentTransaction(transaction);
+
         } catch (error) {
             console.error(
                 `❌ Payment DM failed for staff ${staffId}:`,
@@ -183,15 +182,111 @@ async function createPaymentTransaction({
         }
     }
 
+    return transaction;
+}
+
+// ==========================================
+// CREATE PAYMENT TRANSACTION
+// ==========================================
+
+async function createPaymentTransaction({
+    client,
+    winnerId,
+    displayName,
+    username,
+    eventName,
+    eventType,
+    reward,
+    sourceChannelId = null,
+    sourceMessageId = null,
+
+    // Optional stable ID for idempotent event rewards.
+    transactionId = null,
+}) {
+    if (!client) {
+        throw new Error("Payment service requires the Discord client.");
+    }
+
+    if (!winnerId) {
+        throw new Error("Payment requires a winner ID.");
+    }
+
+    const amount = Number(reward);
+
+    if (!Number.isFinite(amount) || amount <= 0) {
+        throw new Error("Payment reward must be a positive number.");
+    }
+
+    const finalTransactionId =
+        transactionId || createTransactionId();
+
+    // ======================================
+    // IDEMPOTENCY CHECK
+    // ======================================
+
+    let transaction = await getPaymentTransaction(
+        finalTransactionId
+    );
+
+    if (transaction) {
+        // Do not overwrite an existing transaction.
+        if (
+            transaction.winnerId !== winnerId ||
+            Number(transaction.reward) !== amount
+        ) {
+            throw new Error(
+                `Transaction ID collision: ${finalTransactionId}`
+            );
+        }
+
+        // Recover any staff notifications not yet delivered.
+        await sendPaymentNotifications(client, transaction);
+
+        console.log(
+            `♻️ PAYMENT REUSED | ${transaction.transactionId}`
+        );
+
+        return transaction;
+    }
+
+    // ======================================
+    // CREATE NEW TRANSACTION
+    // ======================================
+
+    transaction = {
+        transactionId: finalTransactionId,
+        winnerId,
+        displayName: displayName || username || "Unknown User",
+        username: username || "Unknown",
+        eventName: eventName || "Unknown Event",
+        eventType: eventType || "Unknown",
+        reward: amount,
+        status: "unpaid",
+        paidBy: null,
+        paidAt: null,
+        sourceChannelId,
+        sourceMessageId,
+        staffMessages: [],
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+    };
+
+    // Save before sending staff DMs.
     await savePaymentTransaction(transaction);
+
+    await sendPaymentNotifications(client, transaction);
 
     console.log(
         `💳 PAYMENT CREATED | ${transaction.transactionId} | ` +
-        `Winner: ${username} | Reward: ${reward} Mora`
+        `Winner: ${username} | Reward: ${amount} Mora`
     );
 
     return transaction;
 }
+
+// ==========================================
+// UPDATE ALL PAYMENT MESSAGES
+// ==========================================
 
 async function updateAllPaymentMessages(client, transaction) {
     await Promise.allSettled(
@@ -214,6 +309,10 @@ async function updateAllPaymentMessages(client, transaction) {
     );
 }
 
+// ==========================================
+// MARK PAYMENT AS PAID
+// ==========================================
+
 async function handlePaymentButton(interaction) {
     if (!interaction.customId.startsWith("payment_paid_")) return;
 
@@ -224,10 +323,15 @@ async function handlePaymentButton(interaction) {
         });
     }
 
-    const transactionId = interaction.customId.replace("payment_paid_", "");
+    const transactionId = interaction.customId.replace(
+        "payment_paid_",
+        ""
+    );
 
     try {
-        const transaction = await getPaymentTransaction(transactionId);
+        const transaction = await getPaymentTransaction(
+            transactionId
+        );
 
         if (!transaction) {
             return interaction.reply({
@@ -250,15 +354,16 @@ async function handlePaymentButton(interaction) {
             status: "paid",
             paidBy: interaction.user.id,
             paidAt,
+            updatedAt: paidAt,
         };
 
-        // 1. UPDATE THE CLICKED EMBED IMMEDIATELY
+        // Update the clicked message immediately.
         await interaction.update({
             embeds: [buildPaymentEmbed(updatedTransaction)],
             components: buildPaymentButtons(updatedTransaction),
         });
 
-        // 2. DO EVERYTHING ELSE IN THE BACKGROUND
+        // Update Redis and all staff messages in the background.
         setImmediate(async () => {
             try {
                 await updatePaymentTransaction(transactionId, {
@@ -269,15 +374,17 @@ async function handlePaymentButton(interaction) {
 
                 await updateAllPaymentMessages(
                     interaction.client,
-                    updatedTransaction,
-                    interaction.message.id
+                    updatedTransaction
                 );
 
                 console.log(
-                    `✅ PAYMENT MARKED PAID | ${transactionId} `
+                    `✅ PAYMENT MARKED PAID | ${transactionId}`
                 );
             } catch (error) {
-                console.error("[PAYMENT] Background update failed:", error);
+                console.error(
+                    "[PAYMENT] Background update failed:",
+                    error
+                );
             }
         });
 
@@ -288,10 +395,14 @@ async function handlePaymentButton(interaction) {
             await interaction.reply({
                 content: "❌ Something went wrong while updating this payment.",
                 ephemeral: true,
-            }).catch(() => { });
+            }).catch(() => {});
         }
     }
 }
+
+// ==========================================
+// EXPORTS
+// ==========================================
 
 module.exports = {
     PAYMENT_STAFF,

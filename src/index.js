@@ -1,4 +1,14 @@
 // WAC-QuizBot - index.js
+
+const {
+    startWorldPassScheduler,
+} = require("./services/worldPass/worldPassScheduler.js")
+const {
+    startWorldPassRewardWorker,
+} = require("./services/worldPass/worldPassReward");
+const {
+    getWorldPassChallengeStatus,
+} = require("./services/worldPass/worldPassControlRedis");
 // ==============================
 // USERS WHO CAN ACCESS COMMANDS
 // ==============================
@@ -121,7 +131,10 @@ const {
 } = require("discord.js");
 
 const { generateQuiz } = require("./services/ai");
-
+const {
+    handleWorldPassCommand,
+    handleWorldPassComponent,
+} = require("./services/worldPass/worldPassCommand");
 const {
     startDailyQuiz,
     handleDailyQuizButton,
@@ -161,7 +174,10 @@ const client = new Client({
 // ==============================
 
 const activeQuizzes = new Map();
-
+const {
+    initializeWorldPassPools,
+    startWorldPassPoolManager,
+} = require("./services/worldPass/worldPassPool");
 // 30 seconds
 const QUIZ_DURATION = 20_000;
 
@@ -171,17 +187,54 @@ const MAX_WINNERS = 5;
 // BOT READY
 // ==============================
 
-client.once(Events.ClientReady, (client) => {
+client.once(Events.ClientReady, async (client) => {
     console.log(`✅ ${client.user.tag} is online!`);
+        try {
+        const status = await getWorldPassChallengeStatus();
+
+        console.log(
+            `[World Pass] Restored status: ${
+                status.active ? "ACTIVE" : "INACTIVE"
+            } | Redis value: ${status.storedValue}`
+        );
+    } catch (error) {
+        console.error(
+            "[World Pass] Could not restore challenge status:",
+            error
+        );
+    }
     startWeeklyScheduler(client);
-    console.log("🌍 Weekly Quiz scheduler started!");
+    startWorldPassScheduler();
+    startWorldPassRewardWorker(client);
 });
+
 
 // ==============================
 // INTERACTIONS
 // ==============================
 
 client.on(Events.InteractionCreate, async (interaction) => {
+
+    // ==========================================
+    // WORLD PASS COMPONENTS
+    // Must be outside the chat-input command branch.
+    // ==========================================
+    if (interaction.isButton() || interaction.isStringSelectMenu()) {
+        try {
+            const handled = await handleWorldPassComponent(interaction);
+            if (handled) return;
+        } catch (error) {
+            console.error("❌ WORLD PASS COMPONENT ERROR:", error);
+
+            if (!interaction.replied && !interaction.deferred) {
+                await interaction.reply({
+                    content: "❌ Something went wrong with this World Pass action.",
+                    flags: MessageFlags.Ephemeral,
+                }).catch(() => {});
+            }
+            return;
+        }
+    }
 
     // ==========================================
     // /quiz + /dailyquiz COMMAND
@@ -255,6 +308,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
             accessKey = `kill:${subcommand}`;
         }
 
+        if (interaction.commandName === "pass-challenge") {
+            accessKey = "pass-challenge";
+        }
+
         if (interaction.commandName === "mysteryevent") {
             const subcommand =
                 interaction.options.getSubcommand();
@@ -284,7 +341,30 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
             return;
         }
+        // ==========================================
+        // WORLD PASS CHALLENGE CONTROL
+        // ==========================================
+        if (interaction.commandName === "pass-challenge") {
+            try {
+                await handleWorldPassCommand(interaction);
+            } catch (error) {
+                console.error("❌ WORLD PASS COMMAND ERROR:", error);
 
+                if (interaction.deferred || interaction.replied) {
+                    await interaction.editReply({
+                        content: "❌ World Pass Challenge command failed.",
+                        embeds: [],
+                        components: [],
+                    }).catch(() => {});
+                } else {
+                    await interaction.reply({
+                        content: "❌ World Pass Challenge command failed.",
+                        flags: MessageFlags.Ephemeral,
+                    }).catch(() => {});
+                }
+            }
+            return;
+        }
         // ==========================================
         // WORLD BOSS MODE
         // ==========================================
@@ -1431,17 +1511,17 @@ ${line}`
 
             return;
         }
-// ------------------------------------------
-// MORA LEADERBOARD BUTTON
-// ------------------------------------------
+        // ------------------------------------------
+        // MORA LEADERBOARD BUTTON
+        // ------------------------------------------
 
-if (
-    interaction.isButton() &&
-    interaction.customId === LEADERBOARD_BUTTON_ID
-) {
-    await handleLeaderboardButton(interaction);
-    return;
-}
+        if (
+            interaction.isButton() &&
+            interaction.customId === LEADERBOARD_BUTTON_ID
+        ) {
+            await handleLeaderboardButton(interaction);
+            return;
+        }
         if (
             interaction.customId ===
             "mysteryevent_reveal"
@@ -2094,6 +2174,11 @@ function getMedal(
 // LOGIN
 // ==================================================
 
-client.login(
-    process.env.DISCORD_TOKEN
-);
+async function startBot() {
+    await client.login(process.env.DISCORD_TOKEN);
+
+    await initializeWorldPassPools();
+    startWorldPassPoolManager();
+}
+
+startBot();
