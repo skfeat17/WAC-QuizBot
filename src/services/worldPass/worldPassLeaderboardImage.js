@@ -1,10 +1,60 @@
-
-const { createCanvas, loadImage } = require("@napi-rs/canvas");
+const fs = require("node:fs");
+const {
+    createCanvas,
+    loadImage,
+    GlobalFonts,
+} = require("@napi-rs/canvas");
 
 const {
     getAllPassInventories,
     getAllLifetimePassInventories,
 } = require("./worldPassRedis");
+
+// --------------------------------------------------
+// EMOJI FONT SUPPORT
+// --------------------------------------------------
+
+const EMOJI_FONT_PATHS = [
+    "/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf",
+    "/usr/share/fonts/truetype/noto/NotoEmoji-Regular.ttf",
+    "/usr/share/fonts/google-noto-emoji/NotoColorEmoji.ttf",
+];
+
+let emojiFontRegistered = false;
+
+for (const fontPath of EMOJI_FONT_PATHS) {
+    if (fs.existsSync(fontPath)) {
+        try {
+            GlobalFonts.registerFromPath(
+                fontPath,
+                "Noto Color Emoji"
+            );
+
+            emojiFontRegistered = true;
+
+            console.log(
+                `[WORLD PASS LEADERBOARD] Emoji font registered: ${fontPath}`
+            );
+
+            break;
+        } catch (error) {
+            console.warn(
+                "[WORLD PASS LEADERBOARD] Emoji font registration failed:",
+                error.message
+            );
+        }
+    }
+}
+
+if (!emojiFontRegistered) {
+    console.warn(
+        "[WORLD PASS LEADERBOARD] Noto Emoji font not found. Install fonts-noto-color-emoji on Render."
+    );
+}
+
+// --------------------------------------------------
+// CONFIGURATION
+// --------------------------------------------------
 
 const WIDTH = 1000;
 const HEIGHT = 1200;
@@ -76,13 +126,23 @@ function formatNumber(value) {
     ).toLocaleString("en-IN");
 }
 
-function fitText(ctx, value, maxWidth, initialSize = 18, minSize = 10) {
+function fitText(
+    ctx,
+    value,
+    maxWidth,
+    initialSize = 18,
+    minSize = 10
+) {
     let size = initialSize;
 
     while (size > minSize) {
         ctx.font = `600 ${size}px Sans`;
 
-        if (ctx.measureText(String(value ?? "")).width <= maxWidth) {
+        if (
+            ctx.measureText(
+                String(value ?? "")
+            ).width <= maxWidth
+        ) {
             break;
         }
 
@@ -92,7 +152,14 @@ function fitText(ctx, value, maxWidth, initialSize = 18, minSize = 10) {
     return size;
 }
 
-function drawPanel(ctx, x, y, width, height, radius = 22) {
+function drawPanel(
+    ctx,
+    x,
+    y,
+    width,
+    height,
+    radius = 22
+) {
     roundedRect(ctx, x, y, width, height, radius);
 
     ctx.fillStyle = COLORS.panel;
@@ -113,7 +180,7 @@ function drawDivider(ctx, x1, y, x2) {
     ctx.stroke();
 }
 
-// IMPORTANT: Every call must pass ctx as the first argument.
+// IMPORTANT: Every call must pass ctx first.
 function drawText(ctx, value, x, y, options = {}) {
     const {
         color = COLORS.text,
@@ -149,7 +216,11 @@ function getTierObject(player) {
     );
 }
 
-function getTierCount(player, tier, type = "available") {
+function getTierCount(
+    player,
+    tier,
+    type = "available"
+) {
     const source = getTierObject(player);
     const item = source?.[tier];
 
@@ -213,7 +284,10 @@ function calculateMoraValue(counts) {
     }, 0);
 }
 
-function getInventoryStatistics(inventories, lifetimeInventories) {
+function getInventoryStatistics(
+    inventories,
+    lifetimeInventories
+) {
     const available = Object.fromEntries(
         TIER_ORDER.map(tier => [tier, 0])
     );
@@ -244,12 +318,16 @@ function getInventoryStatistics(inventories, lifetimeInventories) {
 
     for (const player of lifetimeInventories || []) {
         for (const tier of TIER_ORDER) {
-            lifetime[tier] += getLifetimeCount(player, tier);
+            lifetime[tier] += getLifetimeCount(
+                player,
+                tier
+            );
         }
     }
 
     const sumTiers = values => TIER_ORDER.reduce(
-        (sum, tier) => sum + Number(values[tier] || 0),
+        (sum, tier) =>
+            sum + Number(values[tier] || 0),
         0
     );
 
@@ -282,10 +360,17 @@ function getInventoryStatistics(inventories, lifetimeInventories) {
         totalEarned,
         totalRedeemed,
 
-        availableMoraValue: calculateMoraValue(available),
-        redeemedMoraValue: calculateMoraValue(redeemed),
-        reservedMoraValue: calculateMoraValue(reserved),
-        lifetimeMoraValue: calculateMoraValue(lifetime),
+        availableMoraValue:
+            calculateMoraValue(available),
+
+        redeemedMoraValue:
+            calculateMoraValue(redeemed),
+
+        reservedMoraValue:
+            calculateMoraValue(reserved),
+
+        lifetimeMoraValue:
+            calculateMoraValue(lifetime),
     };
 }
 
@@ -295,14 +380,19 @@ function getInventoryStatistics(inventories, lifetimeInventories) {
 
 async function getUserData(client, userId) {
     try {
-        let user = client.users.cache.get(String(userId));
+        let user = client.users.cache.get(
+            String(userId)
+        );
 
         if (!user) {
-            user = await client.users.fetch(String(userId));
+            user = await client.users.fetch(
+                String(userId)
+            );
         }
 
         return {
             name: user.username,
+
             avatarUrl: user.displayAvatarURL({
                 extension: "png",
                 size: AVATAR_SIZE,
@@ -329,7 +419,9 @@ async function getAvatar(url) {
         AVATAR_CACHE.set(url, avatar);
 
         if (AVATAR_CACHE.size > 150) {
-            AVATAR_CACHE.delete(AVATAR_CACHE.keys().next().value);
+            AVATAR_CACHE.delete(
+                AVATAR_CACHE.keys().next().value
+            );
         }
 
         return avatar;
@@ -342,15 +434,29 @@ async function getAvatar(url) {
 // DISTRIBUTION CHART
 // --------------------------------------------------
 
-function drawDonutChart(ctx, distribution, centerX, centerY, radius) {
+function drawDonutChart(
+    ctx,
+    distribution,
+    centerX,
+    centerY,
+    radius
+) {
     const total = TIER_ORDER.reduce(
-        (sum, tier) => sum + Number(distribution[tier] || 0),
+        (sum, tier) =>
+            sum + Number(distribution[tier] || 0),
         0
     );
 
     if (!total) {
         ctx.beginPath();
-        ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+
+        ctx.arc(
+            centerX,
+            centerY,
+            radius,
+            0,
+            Math.PI * 2
+        );
 
         ctx.strokeStyle = "#344158";
         ctx.lineWidth = 28;
@@ -359,13 +465,17 @@ function drawDonutChart(ctx, distribution, centerX, centerY, radius) {
         let angle = -Math.PI / 2;
 
         for (const tier of TIER_ORDER) {
-            const value = Number(distribution[tier] || 0);
+            const value = Number(
+                distribution[tier] || 0
+            );
 
             if (!value) continue;
 
-            const slice = (value / total) * Math.PI * 2;
+            const slice =
+                (value / total) * Math.PI * 2;
 
             ctx.beginPath();
+
             ctx.arc(
                 centerX,
                 centerY,
@@ -383,25 +493,36 @@ function drawDonutChart(ctx, distribution, centerX, centerY, radius) {
         }
     }
 
-    drawText(ctx, formatNumber(total), centerX, centerY + 5, {
-        color: COLORS.text,
-        size: 27,
-        weight: 800,
-        align: "center",
-    });
+    drawText(
+        ctx,
+        formatNumber(total),
+        centerX,
+        centerY + 5,
+        {
+            color: COLORS.text,
+            size: 27,
+            weight: 800,
+            align: "center",
+        }
+    );
 
-    drawText(ctx, "AVAILABLE", centerX, centerY + 26, {
-        color: COLORS.muted,
-        size: 12,
-        weight: 600,
-        align: "center",
-    });
+    drawText(
+        ctx,
+        "AVAILABLE",
+        centerX,
+        centerY + 26,
+        {
+            color: COLORS.muted,
+            size: 12,
+            weight: 600,
+            align: "center",
+        }
+    );
 }
 
 // --------------------------------------------------
 // MAIN RENDERER
 // --------------------------------------------------
-
 
 async function renderWorldPassLeaderboard(data, client) {
     const startedAt = Date.now();
@@ -410,7 +531,10 @@ async function renderWorldPassLeaderboard(data, client) {
     let lifetimeInventories = [];
 
     try {
-        [inventories, lifetimeInventories] = await Promise.all([
+        [
+            inventories,
+            lifetimeInventories,
+        ] = await Promise.all([
             getAllPassInventories(),
             getAllLifetimePassInventories(),
         ]);
@@ -421,56 +545,84 @@ async function renderWorldPassLeaderboard(data, client) {
         );
     }
 
-    const inventoryMap = new Map(
-        (inventories || []).map(player => [
-            String(player.userId),
-            player,
-        ])
-    );
+    // --------------------------------------------------
+    // AVAILABLE LEADERBOARD DATA
+    // --------------------------------------------------
 
-    const sourceEntries = data.entries?.length
-        ? data.entries
-        : lifetimeInventories;
+    // IMPORTANT:
+    // Do NOT use data.entries here.
+    // The command previously supplied only the lifetime
+    // top 10, which caused available members to be lost.
+    //
+    // We now use ALL current inventories and calculate
+    // the available ranking from those records.
+
+    const sourceEntries = inventories || [];
 
     const entries = sourceEntries
         .map(entry => {
             const userId = String(entry.userId);
-            const currentInventory = inventoryMap.get(userId);
 
-            const availableCounts = currentInventory
-                ? getAvailableCounts(currentInventory)
-                : getAvailableCounts(entry);
+            const availableCounts =
+                getAvailableCounts(entry);
 
-            const available = currentInventory
-                ? getAvailableTotal(currentInventory)
-                : getAvailableTotal(entry);
+            const available =
+                getAvailableTotal(entry);
+
+            const availableMoraValue =
+                calculateMoraValue(availableCounts);
 
             return {
                 ...entry,
                 userId,
                 available,
                 availableCounts,
-                availableMoraValue: calculateMoraValue(availableCounts),
+                availableMoraValue,
             };
         })
-        .filter(entry => entry.available > 0)
-        .sort((a, b) => {
-            // Highest available Mora value ranks first.
-            const valueDifference =
-                b.availableMoraValue - a.availableMoraValue;
 
-            if (valueDifference !== 0) return valueDifference;
+        // Only members with available passes.
+        .filter(entry => entry.available > 0)
+
+        // Highest available Mora value first.
+        .sort((a, b) => {
+            const valueDifference =
+                b.availableMoraValue -
+                a.availableMoraValue;
+
+            if (valueDifference !== 0) {
+                return valueDifference;
+            }
 
             // Tie-breaker: more available passes.
-            return b.available - a.available;
+            if (b.available !== a.available) {
+                return b.available - a.available;
+            }
+
+            // Stable final tie-breaker.
+            return String(a.userId).localeCompare(
+                String(b.userId)
+            );
         })
+
+        // Only the top 10 available members.
         .slice(0, 10);
 
-    // Fetch usernames and avatars.
+    console.log(
+        `[WORLD PASS LEADERBOARD] Found ${entries.length} available members.`
+    );
+
+    // --------------------------------------------------
+    // FETCH USERNAMES AND AVATARS
+    // --------------------------------------------------
+
     const userPairs = await Promise.all(
         entries.map(async entry => [
             entry.userId,
-            await getUserData(client, entry.userId),
+            await getUserData(
+                client,
+                entry.userId
+            ),
         ])
     );
 
@@ -487,7 +639,15 @@ async function renderWorldPassLeaderboard(data, client) {
 
     const avatarMap = new Map(avatarPairs);
 
-    const canvas = createCanvas(WIDTH, HEIGHT);
+    // --------------------------------------------------
+    // CREATE CANVAS
+    // --------------------------------------------------
+
+    const canvas = createCanvas(
+        WIDTH,
+        HEIGHT
+    );
+
     const ctx = canvas.getContext("2d");
 
     // --------------------------------------------------
@@ -495,7 +655,10 @@ async function renderWorldPassLeaderboard(data, client) {
     // --------------------------------------------------
 
     const background = ctx.createLinearGradient(
-        0, 0, WIDTH, HEIGHT
+        0,
+        0,
+        WIDTH,
+        HEIGHT
     );
 
     background.addColorStop(0, "#0b101b");
@@ -503,25 +666,43 @@ async function renderWorldPassLeaderboard(data, client) {
     background.addColorStop(1, "#0b101a");
 
     ctx.fillStyle = background;
-    ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+    ctx.fillRect(
+        0,
+        0,
+        WIDTH,
+        HEIGHT
+    );
 
     // --------------------------------------------------
     // HEADER
     // --------------------------------------------------
 
-    drawText(ctx, "WORLD ADVENTURE CLUB", WIDTH / 2, 65, {
-        color: COLORS.gold,
-        size: 32,
-        weight: 800,
-        align: "center",
-    });
+    drawText(
+        ctx,
+        "WORLD ADVENTURE CLUB",
+        WIDTH / 2,
+        65,
+        {
+            color: COLORS.gold,
+            size: 32,
+            weight: 800,
+            align: "center",
+        }
+    );
 
-    drawText(ctx, "🎟️ WORLD PASS LEADERBOARD", WIDTH / 2, 115, {
-        color: COLORS.text,
-        size: 27,
-        weight: 800,
-        align: "center",
-    });
+    drawText(
+        ctx,
+        "🎟️ WORLD PASS LEADERBOARD",
+        WIDTH / 2,
+        115,
+        {
+            color: COLORS.text,
+            size: 27,
+            weight: 800,
+            align: "center",
+        }
+    );
 
     drawText(
         ctx,
@@ -545,7 +726,14 @@ async function renderWorldPassLeaderboard(data, client) {
     const panelW = 930;
     const panelH = 900;
 
-    drawPanel(ctx, panelX, panelY, panelW, panelH, 22);
+    drawPanel(
+        ctx,
+        panelX,
+        panelY,
+        panelW,
+        panelH,
+        22
+    );
 
     const innerLeft = panelX + 25;
     const innerRight = panelX + panelW - 25;
@@ -575,7 +763,12 @@ async function renderWorldPassLeaderboard(data, client) {
         }
     );
 
-    drawDivider(ctx, innerLeft, panelY + 60, innerRight);
+    drawDivider(
+        ctx,
+        innerLeft,
+        panelY + 60,
+        innerRight
+    );
 
     // --------------------------------------------------
     // TABLE HEADER
@@ -583,17 +776,29 @@ async function renderWorldPassLeaderboard(data, client) {
 
     const headerY = panelY + 98;
 
-    drawText(ctx, "RANK", innerLeft, headerY, {
-        color: COLORS.gold,
-        size: 12,
-        weight: 700,
-    });
+    drawText(
+        ctx,
+        "RANK",
+        innerLeft,
+        headerY,
+        {
+            color: COLORS.gold,
+            size: 12,
+            weight: 700,
+        }
+    );
 
-    drawText(ctx, "MEMBER", innerLeft + 65, headerY, {
-        color: COLORS.gold,
-        size: 12,
-        weight: 700,
-    });
+    drawText(
+        ctx,
+        "MEMBER",
+        innerLeft + 65,
+        headerY,
+        {
+            color: COLORS.gold,
+            size: 12,
+            weight: 700,
+        }
+    );
 
     drawText(
         ctx,
@@ -607,14 +812,25 @@ async function renderWorldPassLeaderboard(data, client) {
         }
     );
 
-    drawText(ctx, "TOTAL", innerRight, headerY, {
-        color: COLORS.gold,
-        size: 12,
-        weight: 700,
-        align: "right",
-    });
+    drawText(
+        ctx,
+        "TOTAL",
+        innerRight,
+        headerY,
+        {
+            color: COLORS.gold,
+            size: 12,
+            weight: 700,
+            align: "right",
+        }
+    );
 
-    drawDivider(ctx, innerLeft, headerY + 16, innerRight);
+    drawDivider(
+        ctx,
+        innerLeft,
+        headerY + 16,
+        innerRight
+    );
 
     // --------------------------------------------------
     // MEMBER ROWS
@@ -639,13 +855,20 @@ async function renderWorldPassLeaderboard(data, client) {
     }
 
     entries.forEach((entry, index) => {
-        const rowY = rowStart + index * rowHeight;
+        const rowY =
+            rowStart + index * rowHeight;
 
         if (index > 0) {
-            drawDivider(ctx, innerLeft, rowY, innerRight);
+            drawDivider(
+                ctx,
+                innerLeft,
+                rowY,
+                innerRight
+            );
         }
 
-        const user = userMap.get(entry.userId) || {};
+        const user =
+            userMap.get(entry.userId) || {};
 
         const avatar = user.avatarUrl
             ? avatarMap.get(user.avatarUrl)
@@ -653,11 +876,14 @@ async function renderWorldPassLeaderboard(data, client) {
 
         const rankColor =
             index === 0 ? "#f3c969" :
-                index === 1 ? "#c8d2e3" :
-                    index === 2 ? "#c58d63" :
-                        COLORS.muted;
+            index === 1 ? "#c8d2e3" :
+            index === 2 ? "#c58d63" :
+            COLORS.muted;
 
-        // Rank.
+        // --------------------------------------------------
+        // RANK
+        // --------------------------------------------------
+
         drawText(
             ctx,
             index < 3
@@ -672,7 +898,10 @@ async function renderWorldPassLeaderboard(data, client) {
             }
         );
 
-        // Avatar.
+        // --------------------------------------------------
+        // AVATAR
+        // --------------------------------------------------
+
         const avatarX = innerLeft + 65;
         const avatarY = rowY + 15;
 
@@ -680,6 +909,7 @@ async function renderWorldPassLeaderboard(data, client) {
             ctx.save();
 
             ctx.beginPath();
+
             ctx.arc(
                 avatarX + 20,
                 avatarY + 20,
@@ -701,6 +931,7 @@ async function renderWorldPassLeaderboard(data, client) {
             ctx.restore();
         } else {
             ctx.beginPath();
+
             ctx.arc(
                 avatarX + 20,
                 avatarY + 20,
@@ -713,8 +944,12 @@ async function renderWorldPassLeaderboard(data, client) {
             ctx.fill();
         }
 
-        // Username.
-        const name = user.name ||
+        // --------------------------------------------------
+        // USERNAME
+        // --------------------------------------------------
+
+        const name =
+            user.name ||
             `User ${entry.userId.slice(-4)}`;
 
         drawText(
@@ -742,45 +977,55 @@ async function renderWorldPassLeaderboard(data, client) {
             }
         );
 
-// Pass categories — show only passes the member owns.
-let tierX = innerLeft + 390;
+        // --------------------------------------------------
+        // PASS CATEGORIES
+        // Show only categories with available passes.
+        // --------------------------------------------------
 
-const ownedTiers = TIER_ORDER.filter(
-    tier => Number(entry.availableCounts[tier] || 0) >= 0
-);
+        let tierX = innerLeft + 390;
 
-for (const tier of ownedTiers) {
-    drawText(
-        ctx,
-        `${TIER_EMOJIS[tier]} ${formatNumber(
-            entry.availableCounts[tier]
-        )}`,
-        tierX,
-        rowY + 45,
-        {
-            color: COLORS[tier],
-            size: 18,
-            weight: 800,
-            maxWidth: 75,
+        const ownedTiers = TIER_ORDER.filter(
+            tier =>
+                Number(
+                    entry.availableCounts[tier] || 0
+                ) > 0
+        );
+
+        for (const tier of TIER_ORDER) {
+            drawText(
+                ctx,
+                `${TIER_EMOJIS[tier]} ${formatNumber(
+                    entry.availableCounts[tier]
+                )}`,
+                tierX,
+                rowY + 45,
+                {
+                    color: COLORS[tier],
+                    size: 18,
+                    weight: 800,
+                    maxWidth: 75,
+                }
+            );
+
+            tierX += 78;
         }
-    );
 
-    tierX += 78;
-}
+        // --------------------------------------------------
+        // TOTAL AVAILABLE PASSES
+        // --------------------------------------------------
 
-// Total available passes.
-drawText(
-    ctx,
-    `🎟️ ${formatNumber(entry.available)}`,
-    innerRight,
-    rowY + 46,
-    {
-        color: COLORS.gold,
-        size: 19,
-        weight: 800,
-        align: "right",
-    }
-);
+        drawText(
+            ctx,
+            `🎟️ ${formatNumber(entry.available)}`,
+            innerRight,
+            rowY + 46,
+            {
+                color: COLORS.gold,
+                size: 19,
+                weight: 800,
+                align: "right",
+            }
+        );
     });
 
     // --------------------------------------------------
@@ -800,12 +1045,20 @@ drawText(
         }
     );
 
+    // --------------------------------------------------
+    // FINISH
+    // --------------------------------------------------
+
     console.log(
-        `[WORLD PASS LEADERBOARD] Rendered in ${Date.now() - startedAt}ms`
+        `[WORLD PASS LEADERBOARD] Rendered ${entries.length} members in ${Date.now() - startedAt}ms`
     );
 
     return canvas.toBuffer("image/png");
 }
+
+// --------------------------------------------------
+// EXPORTS
+// --------------------------------------------------
 
 module.exports = {
     renderWorldPassLeaderboard,
