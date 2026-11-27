@@ -145,63 +145,272 @@ function buildPassRankings(inventories, page = 0) {
     };
 }
 
+
+
 function buildPassStatisticsEmbed(
     stats,
     active,
-    inventories,
-    page = 0
+    inventories
 ) {
-    const totalHolders = inventories.length;
-
-    const totalPasses = inventories.reduce(
-        (sum, player) => sum + player.total,
-        0
+    const tiers = Object.entries(
+        WORLD_PASS_CONFIG.CHALLENGES
     );
 
-    const ranking = buildPassRankings(inventories, page);
+    let totalOwned = 0;
+    let totalAvailable = 0;
+    let totalReserved = 0;
+    let availableValue = 0;
+    let reservedValue = 0;
+    let ownedValue = 0;
+
+    // --------------------------------------------------
+    // PLAYER ECONOMY
+    // --------------------------------------------------
+
+    const playerEconomy = inventories.map(player => {
+        let totalPasses = 0;
+        let totalValue = 0;
+        const tierHoldings = [];
+
+        for (const [tier, config] of tiers) {
+            const item = player.inventory?.[tier] || {};
+
+            const available = Number(item.available || 0);
+            const reserved = Number(item.reserved || 0);
+
+            const owned = Number(
+                item.owned ?? (available + reserved)
+            );
+
+            const passValue =
+                Number(config.reward || 0) /
+                (Number(config.passCost) || 10);
+
+            const value = owned * passValue;
+
+            totalPasses += owned;
+            totalValue += value;
+
+            if (owned > 0) {
+                tierHoldings.push({
+                    tier,
+                    name: config.name,
+                    count: owned,
+                    value,
+                });
+            }
+        }
+
+        return {
+            userId: player.userId,
+            totalPasses,
+            totalValue,
+            tierHoldings,
+        };
+    });
+
+    // Find all users tied for most passes.
+    const maxPasses = Math.max(
+        0,
+        ...playerEconomy.map(player => player.totalPasses)
+    );
+
+    const mostPassesPlayers = playerEconomy.filter(
+        player =>
+            player.totalPasses > 0 &&
+            player.totalPasses === maxPasses
+    );
+
+    // Find all users tied for highest inventory value.
+    const maxValue = Math.max(
+        0,
+        ...playerEconomy.map(player => player.totalValue)
+    );
+
+    const highestValuePlayers = playerEconomy.filter(
+        player =>
+            player.totalValue > 0 &&
+            player.totalValue === maxValue
+    );
+
+    // --------------------------------------------------
+    // TIER ECONOMY
+    // --------------------------------------------------
+
+    const tierStats = tiers.map(([tier, config]) => {
+        let owned = 0;
+        let available = 0;
+        let reserved = 0;
+
+        for (const player of inventories) {
+            const item = player.inventory?.[tier] || {};
+
+            const playerAvailable = Number(item.available || 0);
+            const playerReserved = Number(item.reserved || 0);
+
+            const playerOwned = Number(
+                item.owned ??
+                (playerAvailable + playerReserved)
+            );
+
+            owned += playerOwned;
+            available += playerAvailable;
+            reserved += playerReserved;
+        }
+
+        const passValue =
+            Number(config.reward || 0) /
+            (Number(config.passCost) || 10);
+
+        const tierAvailableValue = available * passValue;
+        const tierReservedValue = reserved * passValue;
+        const tierOwnedValue = owned * passValue;
+
+        totalOwned += owned;
+        totalAvailable += available;
+        totalReserved += reserved;
+
+        availableValue += tierAvailableValue;
+        reservedValue += tierReservedValue;
+        ownedValue += tierOwnedValue;
+
+        return {
+            tier,
+            name: config.name,
+            owned,
+            available,
+            reserved,
+            passValue,
+            availableValue: tierAvailableValue,
+            ownedValue: tierOwnedValue,
+        };
+    });
+    const playersWithAvailablePasses = inventories.filter(
+        player => Number(player.available || 0) > 0
+    ).length;
+    // --------------------------------------------------
+    // ECONOMY HIGHLIGHTS
+    // --------------------------------------------------
+
+    const highestValueTier = [...tierStats]
+        .filter(tier => tier.available > 0)
+        .sort((a, b) => b.passValue - a.passValue)[0];
+
+    const mostOwnedTier = [...tierStats]
+        .filter(tier => tier.owned > 0)
+        .sort((a, b) => b.owned - a.owned)[0];
+
+    const highestEconomyTier = [...tierStats]
+        .filter(tier => tier.available > 0)
+        .sort((a, b) => b.availableValue - a.availableValue)[0];
+
+    const totalRedeemed = Number(stats.passesSpent || 0);
+
+    // --------------------------------------------------
+    // PLAYER HIGHLIGHT TEXT
+    // --------------------------------------------------
+
+    const mostPassesText = mostPassesPlayers.length
+        ? [
+            "📦 **Most Passes Owned:**",
+            ...mostPassesPlayers.map(player =>
+                `• <@${player.userId}> — **${formatNumber(player.totalPasses)} passes**`
+            ),
+        ].join("\n")
+        : "📦 **Most Passes Owned:** Nobody owns any passes";
+
+    const highestValueText = highestValuePlayers.length
+        ? [
+            "💎 **Highest Inventory Value:**",
+            ...highestValuePlayers.map(player => {
+
+
+                return [
+                    `• <@${player.userId}> - **${formatNumber(player.totalValue)} ${MORA_EMOJI}**`,
+
+                ].join("\n");
+            }),
+        ].flat().join("\n")
+        : "💎 **Highest Inventory Value:** Nobody owns any passes";
+
+    // --------------------------------------------------
+    // TIER BREAKDOWN
+    // --------------------------------------------------
+
+    const tierBreakdown = tierStats.map(tier => [
+        `${getTierEmoji(tier.tier)} **${tier.name}**`,
+        `Available: **${formatNumber(tier.available)} passes**`,
+        `Value: **${formatNumber(tier.availableValue)} ${MORA_EMOJI}**`,
+    ].join("\n"));
+
+    // --------------------------------------------------
+    // EMBED
+    // --------------------------------------------------
 
     const embed = new EmbedBuilder()
         .setColor(PANEL_COLOR)
-        .setTitle("📊 WORLD PASS CHALLENGE STATISTICS")
+        .setTitle("🌍 WORLD PASS ECONOMY DASHBOARD")
         .setDescription([
-            `**Status:** ${active ? "🟢 Active" : "🔴 Inactive"}`,
-            "",
-            `🎟️ **Total Entries:** ${formatNumber(stats.entries)}`,
-            `🎫 **Passes Spent:** ${formatNumber(stats.passesSpent)}`,
-            `💰 **Mora Rewards Queued:** ${formatNumber(stats.moraQueued)} ${MORA_EMOJI}`,
+            `**Challenge Status:** ${active ? "🟢 Active" : "🔴 Inactive"}`,
+
             "",
             "━━━━━━━━━━━━━━━━━━━━",
-            "**🎟️ PASS HOLDER RANKINGS**",
-            `👥 Holders: **${formatNumber(totalHolders)}**`,
-            `🎟️ Total Passes Owned: **${formatNumber(totalPasses)}**`,
+            "🎟️ **GLOBAL PASS SUPPLY**",
             "",
-            ranking.description,
+            `👥 Total Pass Holders: **${formatNumber(playersWithAvailablePasses)}**`,
+            `📦 Total Passes Owned: **${formatNumber(totalOwned)}**`,
+            `🟢 Available Passes: **${formatNumber(totalAvailable)}**`,
+            `♻️ Total Passes Redeemed: **${formatNumber(totalRedeemed)}**`,
+
+            "",
+            "━━━━━━━━━━━━━━━━━━━━",
+            "💰 **WORLD PASS ECONOMY VALUE**",
+            "",
+            `💎 Available Pass Value: **${formatNumber(availableValue)} ${MORA_EMOJI}**`,
+            `🏦 Total Owned Pass Value: **${formatNumber(ownedValue)} ${MORA_EMOJI}**`,
+            `📈 Average Value Per Owned Pass: **${formatNumber(totalOwned ? ownedValue / totalOwned : 0)} ${MORA_EMOJI}**`,
+
+            "",
+            "━━━━━━━━━━━━━━━━━━━━",
+            "🏆 **ECONOMY HIGHLIGHTS**",
+            "",
+            mostOwnedTier
+                ? `🏅 Most Owned Tier: **${getTierEmoji(mostOwnedTier.tier)} ${mostOwnedTier.name}** — ${formatNumber(mostOwnedTier.owned)} passes`
+                : "🏅 Most Owned Tier: No passes owned",
+            highestEconomyTier
+                ? `🏦 Highest Tier Economy Value: **${getTierEmoji(highestEconomyTier.tier)} ${highestEconomyTier.name}** — ${formatNumber(highestEconomyTier.availableValue)} ${MORA_EMOJI}`
+                : "🏦 Highest Tier Economy Value: No available passes",
+
+            "",
+            mostPassesText,
+            "",
+            highestValueText,
+
+            "",
+            "━━━━━━━━━━━━━━━━━━━━",
+            "📊 **TIER-BY-TIER ECONOMY**",
+            "",
+            ...tierBreakdown,
+
+            "",
+            "━━━━━━━━━━━━━━━━━━━━",
+            "🎮 **CHALLENGE ACTIVITY**",
+            "",
+            `🎯 Total Entries: **${formatNumber(stats.entries)}**`,
+            `♻️ Passes Spent: **${formatNumber(stats.passesSpent)}**`,
+            `💰 Mora Rewards Queued: **${formatNumber(stats.moraQueued)} ${MORA_EMOJI}**`,
         ].join("\n"))
         .setFooter({
-            text: `Lowest to highest passes • Page ${ranking.page + 1}/${ranking.totalPages}`,
-        });
-
-    const row = new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-            .setCustomId(`${STATS_PAGE_PREFIX}${ranking.page - 1}`)
-            .setLabel("Previous")
-            .setEmoji("◀️")
-            .setStyle(ButtonStyle.Secondary)
-            .setDisabled(ranking.page <= 0),
-
-        new ButtonBuilder()
-            .setCustomId(`${STATS_PAGE_PREFIX}${ranking.page + 1}`)
-            .setLabel("Next")
-            .setEmoji("▶️")
-            .setStyle(ButtonStyle.Secondary)
-            .setDisabled(ranking.page >= ranking.totalPages - 1)
-    );
+            text: "World Adventure Club • World Pass Economy",
+        })
+        .setTimestamp();
 
     return {
         embeds: [embed],
-        components: [row],
+        components: [],
     };
 }
+
 
 // ============================================================
 // ACTIVITY LOGGER
@@ -575,23 +784,23 @@ async function handleWorldPassCommand(interaction) {
             });
         }
 
-if (action === "search") {
-    const targetUser =
-        interaction.options.getUser("username") || interaction.user;
+        if (action === "search") {
+            const targetUser =
+                interaction.options.getUser("username") || interaction.user;
 
-    logWorldPassActivity(
-        interaction,
-        "PLAYER INVENTORY SEARCHED",
-        {
-            target: targetUser.username,
-            targetId: targetUser.id,
+            logWorldPassActivity(
+                interaction,
+                "PLAYER INVENTORY SEARCHED",
+                {
+                    target: targetUser.username,
+                    targetId: targetUser.id,
+                }
+            );
+
+            return interaction.editReply(
+                await buildPlayerWorldPassCard(targetUser)
+            );
         }
-    );
-
-    return interaction.editReply(
-        await buildPlayerWorldPassCard(targetUser)
-    );
-}
         if (action === "leaderboard") {
             logWorldPassActivity(interaction, "LIFETIME LEADERBOARD VIEWED");
 
