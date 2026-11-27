@@ -197,9 +197,14 @@ function getPassMoraValue(config = {}) {
     return reward / passCost;
 }
 function getNextRedeem(tiers) {
-    const redeemable = tiers
+    const redeemable = [...tiers]
         .filter(tier => tier.available >= REDEEM_TARGET)
-        .sort((a, b) => b.available - a.available);
+        .sort((a, b) => {
+            const orderA = TIER_ORDER.indexOf(a.id);
+            const orderB = TIER_ORDER.indexOf(b.id);
+
+            return orderB - orderA;
+        });
 
     if (redeemable.length) {
         return {
@@ -555,24 +560,6 @@ async function renderWorldPassProfileCard({
         });
     }
 
-    // --------------------------------------------------
-    // NEXT REDEEM PROGRESS
-    // --------------------------------------------------
-
-    // drawDivider(ctx, 48, 682, 952);
-
-    // const footerText = nextRedeem
-    //     ? nextRedeem.ready
-    //         ? `${nextRedeem.tier.name} is ready to redeem`
-    //         : `${nextRedeem.tier.name}: ${formatNumber(nextRedeem.remaining)} more pass${nextRedeem.remaining === 1 ? "" : "es"} needed for redemption`
-    //     : "Start collecting World Passes!";
-
-    // drawText(ctx, footerText, 500, 704, {
-    //     color: nextRedeem?.ready ? "#63d6a5" : COLORS.muted,
-    //     size: 12,
-    //     weight: 700,
-    //     align: "center",
-    // });
 
     return canvas.toBuffer("image/png");
 }
