@@ -559,20 +559,20 @@ async function renderWorldPassProfileCard({
     // NEXT REDEEM PROGRESS
     // --------------------------------------------------
 
-    drawDivider(ctx, 48, 682, 952);
+    // drawDivider(ctx, 48, 682, 952);
 
-    const footerText = nextRedeem
-        ? nextRedeem.ready
-            ? `${nextRedeem.tier.name} is ready to redeem`
-            : `${nextRedeem.tier.name}: ${formatNumber(nextRedeem.remaining)} more pass${nextRedeem.remaining === 1 ? "" : "es"} needed for redemption`
-        : "Start collecting World Passes!";
+    // const footerText = nextRedeem
+    //     ? nextRedeem.ready
+    //         ? `${nextRedeem.tier.name} is ready to redeem`
+    //         : `${nextRedeem.tier.name}: ${formatNumber(nextRedeem.remaining)} more pass${nextRedeem.remaining === 1 ? "" : "es"} needed for redemption`
+    //     : "Start collecting World Passes!";
 
-    drawText(ctx, footerText, 500, 704, {
-        color: nextRedeem?.ready ? "#63d6a5" : COLORS.muted,
-        size: 12,
-        weight: 700,
-        align: "center",
-    });
+    // drawText(ctx, footerText, 500, 704, {
+    //     color: nextRedeem?.ready ? "#63d6a5" : COLORS.muted,
+    //     size: 12,
+    //     weight: 700,
+    //     align: "center",
+    // });
 
     return canvas.toBuffer("image/png");
 }
