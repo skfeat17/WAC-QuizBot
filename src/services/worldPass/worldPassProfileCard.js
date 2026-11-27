@@ -191,19 +191,11 @@ function getAvailableCount(value) {
 // Mora value per pass.
 // Supports moraValue, passValue, or passCost in challenge config.
 function getPassMoraValue(config = {}) {
-    const value =
-        config.moraValue ??
-        config.passValue ??
-        config.passCost ??
-        0;
+    const reward = safeNumber(config.reward);
+    const passCost = safeNumber(config.passCost) || 10;
 
-    if (typeof value === "object" && value !== null) {
-        return safeNumber(value.mora ?? value.value ?? value.amount);
-    }
-
-    return safeNumber(value);
+    return reward / passCost;
 }
-
 function getNextRedeem(tiers) {
     const redeemable = tiers
         .filter(tier => tier.available >= REDEEM_TARGET)
