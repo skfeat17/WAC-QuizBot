@@ -365,7 +365,7 @@ async function renderWorldPassProfileCard({
         weight: 800,
     });
 
-    drawText(ctx, "YOUR WORLD PASS PROFILE", 48, 112, {
+    drawText(ctx, "YOUR WORLD PASS INVENTORY", 48, 112, {
         color: COLORS.text,
         size: 31,
         weight: 800,
