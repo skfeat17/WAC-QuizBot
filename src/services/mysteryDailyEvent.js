@@ -1255,8 +1255,8 @@ async function processMysteryAnswerAfterResponse({
             try {
                 await interaction.followUp({
                     content:
-                        `🎉 <@${interaction.user.id}> answered correctly! ` +
-                        `**+${reward} ${MORA_EMOJI}**${passAnnouncement}`,
+                        `🎉 <@${interaction.user.id}> answered correctly ` +
+                        `earned **\`${reward} Mora\` ${MORA_EMOJI}**${passAnnouncement}`,
                     allowedMentions: {
                         users: [interaction.user.id],
                     },
