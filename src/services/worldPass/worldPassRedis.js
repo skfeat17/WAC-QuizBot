@@ -28,6 +28,7 @@ const TIERS = Object.keys(WORLD_PASS_CONFIG.CHALLENGES);
 
 // Global index: tracks active attempts across every player.
 const GLOBAL_ACTIVE_KEY = `${PREFIX}active:all`;
+const WINNER_RANKINGS_KEY = `${PREFIX}rankings:winners`;
 
 // ==========================================
 // REDIS KEYS
@@ -577,6 +578,7 @@ local activeKey = KEYS[4]
 local rewardKey = KEYS[5]
 local pendingRewardsKey = KEYS[6]
 local globalActiveKey = KEYS[7]
+local winnerRankingsKey = KEYS[8]
 
 local attemptId = ARGV[1]
 local userId = ARGV[2]
@@ -714,10 +716,16 @@ if correct then
     redis.call("SREM", activeKey, attemptId)
     redis.call("SREM", globalActiveKey, attemptId)
 
+    local wins = redis.call("ZINCRBY", winnerRankingsKey, 1, userId)
+    local rank = redis.call("ZREVRANK", winnerRankingsKey, userId) + 1
+
     return {
         "CORRECT",
         tostring(attempt.reward),
-        tostring(tier)
+        tostring(tier),
+        tostring(owned - cost),
+        tostring(wins),
+        tostring(rank)
     }
 end
 
@@ -764,6 +772,7 @@ async function processChallengeAnswer(
                 rewardKey(attemptId),
                 pendingRewardsKey(),
                 GLOBAL_ACTIVE_KEY,
+                WINNER_RANKINGS_KEY,
             ],
             [
                 attemptId,
@@ -783,6 +792,9 @@ async function processChallengeAnswer(
                 correct: true,
                 reward: Number(result[1]),
                 tier: result[2],
+                passesLeft: Number(result[3]),
+                wins: Number(result[4]),
+                winnerRank: Number(result[5]),
             };
         }
 

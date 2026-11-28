@@ -1261,6 +1261,23 @@ async function handleWorldPassAnswer(interaction) {
             components: [],
         });
 
+        if (result.correct) {
+            const winnerEmbed = new EmbedBuilder()
+                .setColor(0xF1C40F)
+                .setTitle(`🏆 World Pass Event Winner`)
+                .setDescription(
+                    `🎉 <@${interaction.user.id}> conquered the bonus question\n` +
+                    `🎯**Event:** ${getTierEmoji(result.tier)} ${config?.name || result.tier} Challenge\n` +
+                    `🏅 **Win Streak:** ${formatNumber(result.wins)}${Number(result.wins) === 1 ? "st" : Number(result.wins) === 2 ? "nd" : Number(result.wins) === 3 ? "rd" : "th"} win\n` +
+                    `💰 **Reward:** \`${formatNumber(result.reward)} Mora\` ${MORA_EMOJI}`
+                )
+
+            await interaction.followUp({
+                embeds: [winnerEmbed],
+                allowedMentions: { users: [interaction.user.id] },
+            });
+        }
+
         await recordWorldPassStat(
             result.correct ? "correct" : "incorrect"
         );

@@ -207,6 +207,9 @@ async function answerWorldPassChallenge(
             correct: true,
             tier: attempt.tier,
             reward: result.reward,
+            passesLeft: result.passesLeft,
+            wins: result.wins,
+            winnerRank: result.winnerRank,
             explanation: attempt.explanation || null,
             message: "Correct answer! Your Mora reward is being processed.",
         };

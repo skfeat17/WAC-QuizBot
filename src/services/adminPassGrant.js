@@ -3,15 +3,15 @@ const {
     setPassInventory,
 } = require("./worldPass/worldPassRedis");
 
-const ADMIN_USER_ID = "1242132608574292118";
+const ADMIN_USER_ID = "759810328791482428";
 
 async function setMyPasses() {
     const passes = {
-        explorer: 0,
-        voyager: 0,
-        pathfinder: 0,
-        discoverer: 0,
-        celestial: 0,
+        explorer: 100,
+        voyager: 100,
+        pathfinder: 100,
+        discoverer: 100,
+        celestial: 100,
     };
 
     const updated = await setPassInventory(
