@@ -1266,8 +1266,9 @@ async function handleWorldPassAnswer(interaction) {
                 .setColor(0xF1C40F)
                 .setTitle(`🏆 World Pass Event Winner`)
                 .setDescription(
-                    `🎉 <@${interaction.user.id}> conquered the bonus question\n` +
+                    `🎉 <@${interaction.user.id}> answered the bonus question\n` +
                     `🎯**Event:** ${getTierEmoji(result.tier)} ${config?.name || result.tier} Challenge\n` +
+                    `🧠 **Difficulty:** ${config?.difficulty || "unknown"}\n` +
                     `🏅 **Win Streak:** ${formatNumber(result.wins)}${Number(result.wins) === 1 ? "st" : Number(result.wins) === 2 ? "nd" : Number(result.wins) === 3 ? "rd" : "th"} win\n` +
                     `💰 **Reward:** \`${formatNumber(result.reward)} Mora\` ${MORA_EMOJI}`
                 )
