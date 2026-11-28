@@ -1444,7 +1444,7 @@ QUALITY RULES
 - A country name is not mandatory if a clearly identifiable city, island, continent, region, river, mountain, desert, ocean, or landmark is named.
 - Do not focus heavily on one country.
 - Do not make all questions geography.
-- Keep EVERY question moderately easy.
+- Keep EVERY question easy.
 - Questions should be answerable by a general audience.
 - Prefer common, well-known world facts.
 - Avoid obscure facts.
